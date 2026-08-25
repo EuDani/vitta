@@ -1,0 +1,3464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#E8EFD7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#181D14" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vitta">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230b0f16'/%3E%3Cpath d='M90 138c-30-20-46-38-46-58a26 26 0 0 1 46-17 26 26 0 0 1 46 17c0 20-16 38-46 58z' fill='%234ade80'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%85%3C/text%3E%3C/svg%3E">
+<title>Vitta — Saúde &amp; Bem-estar</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Paleta sálvia — fundo claro, verdes de oliveira, texto verde-escuro.
+     Tudo passa por variável: trocar o tema é trocar este bloco.        */
+  --bg:#E8EFD7; --bg2:#F3F7E6; --card:#FBFDF2; --card2:#E2EAC9;
+  --line:#D7E0BF; --line2:#C2CFA4;
+  --tx:#2B3623; --tx2:#6C7B59; --tx3:#93A181;
+  --ac:#5F7346; --ac-d:#4C5D37; --ac-tx:#FBFDF2;
+  --tre:#A9743C; --die:#5F7346; --hab:#7A6E9E; --res:#4A7B8A; --agua:#3E8C9E; --lem:#A2657A;
+  --warn:#9A6F1E; --bad:#A44A4A;
+  --carb:#4A7B8A; --prot:#7A6E9E; --gord:#A9743C;
+  --sombra:0 1px 2px rgba(43,54,35,.05), 0 10px 26px -16px rgba(43,54,35,.22);
+  --r:20px; --r2:14px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --ff:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+/* Mesma identidade, versão noturna — para quem usa o app no escuro. */
+/* Tokens do modo escuro em um lugar só. Valem quando o sistema está no
+   escuro E você não pediu claro, ou quando você escolheu escuro na mão. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-tema="claro"]){
+    --bg:#181D14; --bg2:#1F2619; --card:#242C1D; --card2:#2E3826;
+    --line:#333E29; --line2:#455235;
+    --tx:#E7EEDA; --tx2:#A3B191; --tx3:#7A8869;
+    --ac:#8FA96C; --ac-d:#71894F; --ac-tx:#16200F;
+    --tre:#C9955C; --die:#8FA96C; --hab:#A99AD1; --res:#6FA6B8; --agua:#5CB4C6; --lem:#C98CA0;
+    --warn:#C79B45; --bad:#C97676;
+    --carb:#6FA6B8; --prot:#A99AD1; --gord:#C9955C;
+    --sombra:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
+  }
+}
+:root[data-tema="escuro"]{
+  --bg:#181D14; --bg2:#1F2619; --card:#242C1D; --card2:#2E3826;
+  --line:#333E29; --line2:#455235;
+  --tx:#E7EEDA; --tx2:#A3B191; --tx3:#7A8869;
+  --ac:#8FA96C; --ac-d:#71894F; --ac-tx:#16200F;
+  --tre:#C9955C; --die:#8FA96C; --hab:#A99AD1; --res:#6FA6B8; --agua:#5CB4C6; --lem:#C98CA0;
+  --warn:#C79B45; --bad:#C97676;
+  --carb:#6FA6B8; --prot:#A99AD1; --gord:#C9955C;
+  --sombra:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
+}
+html,body{height:100%}
+body{
+  font-family:var(--ff); background:var(--bg); color:var(--tx);
+  -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
+  font-size:15px; line-height:1.45;
+}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(900px 460px at 15% -10%,rgba(95,115,70,.10),transparent 62%),
+             radial-gradient(700px 380px at 92% 6%,rgba(74,123,138,.07),transparent 64%)}
+#app{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:calc(var(--sat) + 8px) 14px calc(96px + var(--sab));min-height:100%}
+button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+button{background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{color:var(--res)}
+
+/* ---------- ícones ---------- */
+.ic{display:inline-block;vertical-align:-.18em;flex:none}
+.ic.op{opacity:.6}
+.ic.up{transform:rotate(180deg)}
+.stars{display:inline-flex;gap:1px;vertical-align:-.15em;color:var(--warn)}
+.ic.st{opacity:.35}
+.ic.st.on{opacity:1}
+.emo{line-height:1;display:inline-block;vertical-align:-.1em}
+
+/* ---------- header ---------- */
+.hd{display:flex;align-items:center;gap:10px;padding:6px 2px 14px}
+.hd h1{font-size:20px;font-weight:750;letter-spacing:-.4px;flex:1}
+.hd h1 small{display:block;font-size:11.5px;font-weight:500;color:var(--tx2);letter-spacing:0}
+.iconbtn{width:38px;height:38px;border-radius:12px;background:var(--card);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:17px;flex:none;color:var(--tx2)}
+.iconbtn:hover{color:var(--tx)}
+.iconbtn:active{transform:scale(.94)}
+
+/* ---------- date strip ---------- */
+.dstrip{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}
+.dstrip::-webkit-scrollbar{display:none}
+.dchip{flex:none;width:50px;padding:8px 0;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:center}
+.dchip b{display:block;font-size:17px;font-weight:700;line-height:1.1}
+.dchip span{font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px}
+.dchip.on{background:var(--ac);border-color:var(--ac);color:var(--ac-tx)}
+.dchip.on span{color:var(--ac-tx);opacity:.85}
+.dchip.fut{opacity:.45}
+
+/* ---------- cards ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px;margin-bottom:12px;box-shadow:var(--sombra)}
+.card.tight{padding:11px 12px}
+/* cartão de destaque: fundo verde cheio, então o texto inteiro clareia */
+.card.hero{background:linear-gradient(150deg,var(--ac),var(--ac-d));border-color:transparent;color:var(--ac-tx)}
+.card.hero h2,.card.hero .mini,.card.hero .sub{color:var(--ac-tx)}
+.card.hero .mini,.card.hero .sub{opacity:.82}
+.ch{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.ch h2{font-size:14.5px;font-weight:700;letter-spacing:-.2px;flex:1}
+.ch .sub{font-size:11.5px;color:var(--tx2);font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.sec-title{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--tx3);font-weight:700;margin:18px 4px 9px}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 15px;border-radius:13px;
+  background:var(--card2);border:1px solid var(--line2);font-size:14px;font-weight:600;color:var(--tx)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--ac);border-color:transparent;color:var(--ac-tx);font-weight:700}
+.btn.pri:hover{background:var(--ac-d)}
+.btn.gh{background:transparent}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:11px}
+.btn.xs{padding:5px 9px;font-size:12px;border-radius:9px}
+.btn.full{width:100%}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,transparent);background:color-mix(in srgb,var(--bad) 9%,transparent)}
+.btnrow{display:flex;gap:8px}
+.btnrow .btn{flex:1}
+
+/* ---------- forms ---------- */
+.f{margin-bottom:11px}
+.f label{display:block;font-size:11.5px;color:var(--tx2);font-weight:600;margin-bottom:5px;letter-spacing:.2px}
+.in{width:100%;padding:11px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);
+  color:var(--tx);outline:none;font-size:16px}
+.in:focus{border-color:var(--ac);background:var(--card)}
+textarea.in{min-height:76px;resize:vertical;line-height:1.5}
+select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239aa8c4' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.segs{display:flex;gap:6px;background:var(--bg2);padding:4px;border-radius:13px;border:1px solid var(--line)}
+.segs button{flex:1;padding:8px 4px;border-radius:10px;font-size:13px;font-weight:600;color:var(--tx2)}
+.segs button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 5px rgba(43,54,35,.12)}
+.chiprow{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:7px 12px;border-radius:11px;background:var(--bg2);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--tx2)}
+.chip.on{background:color-mix(in srgb,var(--ac) 16%,transparent);border-color:var(--ac);color:var(--ac-d)}
+
+/* ---------- lists ---------- */
+.row{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .g{flex:1;min-width:0}
+.row .t{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .t.wrap{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
+.row .s{font-size:11.5px;color:var(--tx2);margin-top:2px}
+.row .v{font-size:14px;font-weight:700;text-align:right;flex:none}
+.tick{width:27px;height:27px;border-radius:9px;border:2px solid var(--line2);flex:none;display:grid;place-items:center;
+  font-size:14px;color:transparent;transition:.12s}
+.tick .ic{width:16px;height:16px;stroke-width:2.6}
+.tick.on{background:var(--ac);border-color:var(--ac);color:var(--ac-tx)}
+.empty{text-align:center;padding:26px 14px;color:var(--tx3);font-size:13px}
+.empty b{display:block;font-size:26px;margin-bottom:9px;opacity:.5;line-height:0}
+.empty b .ic{width:30px;height:30px}
+
+/* ---------- progress ---------- */
+.bar{height:7px;border-radius:99px;background:var(--bg2);overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--ac);transition:width .35s}
+.bar.thin{height:5px}
+.kpi{display:flex;gap:9px}
+.kpi>div{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:10px 9px;text-align:center}
+.kpi b{display:block;font-size:17px;font-weight:750;letter-spacing:-.4px}
+.kpi span{font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.6px}
+.macro{display:flex;gap:8px;margin-top:11px}
+.macro>div{flex:1}
+.macro .mt{display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:4px;font-weight:600}
+.pill{display:inline-block;padding:3px 8px;border-radius:8px;font-size:10.5px;font-weight:700;letter-spacing:.3px}
+.pill.esc{background:color-mix(in srgb,var(--tre) 16%,transparent);color:var(--tre)}
+.pill.ok{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac-d)}
+.pill.mut{background:var(--bg2);color:var(--tx2)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+
+/* ---------- bottom nav ---------- */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:0 12px calc(10px + var(--sab));
+  background:linear-gradient(to top,var(--bg) 55%,transparent);pointer-events:none}
+.navin{max-width:560px;margin:0 auto;display:flex;background:var(--ac);
+  border:1px solid var(--ac);border-radius:22px;padding:6px;pointer-events:auto;
+  box-shadow:0 10px 28px -10px rgba(43,54,35,.5)}
+.navin button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 1px;border-radius:16px;color:color-mix(in srgb,var(--ac-tx) 72%,transparent)}
+.navin button i{font-style:normal;font-size:17px;line-height:0;display:block}
+.navin button span{font-size:9px;font-weight:700;letter-spacing:0;white-space:nowrap}
+.navin button.on{color:var(--ac);background:var(--ac-tx)}
+
+/* ---------- sheet / modal ---------- */
+.ov{position:fixed;inset:0;z-index:60;background:rgba(30,40,24,.5);backdrop-filter:blur(3px);
+  display:flex;align-items:flex-end;justify-content:center;animation:fade .18s}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(24px);opacity:.4}}
+.sheet{width:100%;max-width:560px;max-height:92vh;overflow-y:auto;background:var(--bg2);
+  border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;
+  padding:8px 14px calc(20px + var(--sab));animation:up .22s ease-out}
+.sheet .grab{width:42px;height:4px;border-radius:99px;background:var(--line2);margin:5px auto 13px}
+.sheet h3{font-size:17px;font-weight:750;margin-bottom:3px;letter-spacing:-.3px}
+.sheet .hint{font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.5}
+/* botão de fechar da folha */
+.sheet{position:relative}
+.sheet-x{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:10px;
+  display:grid;place-items:center;color:var(--tx2);background:var(--card);border:1px solid var(--line);z-index:2}
+.sheet-x:active{transform:scale(.94)}
+.sheet h3{padding-right:40px}
+
+/* pergunta curta, desenhada por cima da folha */
+.ov2{z-index:70;align-items:center;padding:20px;background:rgba(30,40,24,.42)}
+.ask{width:100%;max-width:400px;background:var(--bg2);border:1px solid var(--line2);
+  border-radius:20px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.6);animation:up .18s ease-out}
+.ask h4{font-size:16.5px;font-weight:750;letter-spacing:-.2px;margin-bottom:7px}
+.ask p{font-size:13.5px;color:var(--tx2);line-height:1.55;margin-bottom:16px}
+
+.toast{position:fixed;left:50%;bottom:calc(108px + var(--sab));transform:translateX(-50%);z-index:90;
+  background:var(--tx);color:var(--bg2);padding:11px 17px;border-radius:14px;font-size:13px;
+  font-weight:600;box-shadow:0 10px 26px -8px rgba(43,54,35,.5);animation:up .2s;max-width:88vw}
+.fab{position:fixed;right:calc(50% - 280px + 16px);bottom:calc(104px + var(--sab));z-index:45;width:54px;height:54px;border-radius:18px;
+  background:var(--ac);color:var(--ac-tx);display:grid;place-items:center;
+  box-shadow:0 10px 24px -6px rgba(76,93,55,.5)}
+@media(max-width:592px){.fab{right:16px}}
+
+/* ---------- charts ---------- */
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--tx2)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.trend{font-size:11.5px;font-weight:700}
+.up{color:var(--ac)} .down{color:var(--bad)} .flat{color:var(--tx2)}
+.scroll-x{overflow-x:auto;scrollbar-width:none}
+.scroll-x::-webkit-scrollbar{display:none}
+hr.sep{border:0;border-top:1px solid var(--line);margin:13px 0}
+.mini{font-size:11.5px;color:var(--tx2);line-height:1.55}
+.warnbox{background:color-mix(in srgb,var(--warn) 10%,transparent);border:1px solid color-mix(in srgb,var(--warn) 32%,transparent);color:var(--warn);
+  padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.5;margin-bottom:12px}
+.okbox{background:color-mix(in srgb,var(--ac) 11%,transparent);border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);color:var(--ac-d);
+  padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.5;margin-bottom:12px}
+code{background:var(--bg2);padding:1px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="nav"><div class="navin" id="nav"></div></div>
+<div id="fab"></div>
+<div id="modal"></div>
+<div id="modal2"></div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<script>
+/* =========================================================
+   ÍCONES
+   Conjunto traçado no estilo Lucide/Feather, desenhado aqui
+   dentro. Nada de fonte de ícone nem CDN: o app continua um
+   arquivo só, funciona offline, e o ícone herda a cor e o
+   tamanho de onde está (currentColor).
+   Uso: ic('agua')  ·  ic('agua', 24)  ·  ic('agua', 18, 'op')
+   ========================================================= */
+const ICONS = {
+  /* navegação */
+  hoje: 'M3 10.6 12 3l9 7.6V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  treino: 'M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11',
+  dieta: 'M4 3v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V3M6 11v10M17.5 3c-1.3 1.8-2 3.7-2 5.6 0 1.6.7 2.7 2 3.2v9.2',
+  habitos: 'M17 2.5 21 6l-4 3.5M3 11v-.5A4.5 4.5 0 0 1 7.5 6H21M7 21.5 3 18l4-3.5M21 13v.5a4.5 4.5 0 0 1-4.5 4.5H3',
+  lembretes: 'M18 8.5a6 6 0 1 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 15 18 8.5M13.7 20.5a2 2 0 0 1-3.4 0',
+  resumo: 'M22 7.5 14 15.5l-4-4L2 19.5M15.5 7.5H22V14',
+
+  /* topo e configurações */
+  config: 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z@M19.6 14.4a1.5 1.5 0 0 0 .3 1.7l.1.1a1.9 1.9 0 1 1-2.7 2.7l-.1-.1a1.5 1.5 0 0 0-1.7-.3 1.5 1.5 0 0 0-.9 1.4V20a1.9 1.9 0 1 1-3.8 0v-.1a1.5 1.5 0 0 0-1-1.4 1.5 1.5 0 0 0-1.7.3l-.1.1a1.9 1.9 0 1 1-2.7-2.7l.1-.1a1.5 1.5 0 0 0 .3-1.7 1.5 1.5 0 0 0-1.4-.9H4a1.9 1.9 0 1 1 0-3.8h.1a1.5 1.5 0 0 0 1.4-1 1.5 1.5 0 0 0-.3-1.7l-.1-.1a1.9 1.9 0 1 1 2.7-2.7l.1.1a1.5 1.5 0 0 0 1.7.3H9.7a1.5 1.5 0 0 0 .9-1.4V4a1.9 1.9 0 1 1 3.8 0v.1a1.5 1.5 0 0 0 .9 1.4 1.5 1.5 0 0 0 1.7-.3l.1-.1a1.9 1.9 0 1 1 2.7 2.7l-.1.1a1.5 1.5 0 0 0-.3 1.7v.1a1.5 1.5 0 0 0 1.4.9H20a1.9 1.9 0 1 1 0 3.8h-.1a1.5 1.5 0 0 0-1.4.9z',
+  perfil: 'M20 21v-1.8a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4V21@M12 11.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2z',
+  medidas: 'M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4z@M7.3 10.7l2 2M10.3 7.7l2 2M13.3 4.7l2 2',
+  raio: 'M13 2.5 3.8 13.6a.6.6 0 0 0 .5 1H11l-.9 6.9 9.1-11.1a.6.6 0 0 0-.5-1H12z',
+  conta: 'M3 7.5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z@M3.5 8.2 12 14l8.5-5.8',
+  sair: 'M14.5 3.5H19a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-4.5M10 16.5 5.5 12 10 7.5M5.5 12h10',
+  nuvem: 'M17.5 19a4.5 4.5 0 0 0 .3-9A6.5 6.5 0 0 0 5.2 11.4 3.8 3.8 0 0 0 6 19z',
+
+  /* refeições */
+  cafe: 'M4.5 8.5h12v5.5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z@M16.5 9.5h1.6a2.6 2.6 0 0 1 0 5.2h-1.6M7 2.5v2.2M10.5 2.5v2.2M14 2.5v2.2',
+  fruta: 'M12 7.4c-2.6-2.7-7.5-1-7.5 3.8 0 3.9 2.9 9.6 5.2 9.6.9 0 1.5-.5 2.3-.5s1.4.5 2.3.5c2.3 0 5.2-5.7 5.2-9.6 0-4.8-4.9-6.5-7.5-3.8z@M12 7.4c0-2 1-3.9 2.9-3.9',
+  almoco: 'M4 3v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V3M6 11v10M17.5 3c-1.3 1.8-2 3.7-2 5.6 0 1.6.7 2.7 2 3.2v9.2',
+  copo: 'M6 3.5h12l-1.4 15.6a2 2 0 0 1-2 1.9h-5.2a2 2 0 0 1-2-1.9z@M6.7 10h10.6',
+  lua: 'M20.8 13.4A8.8 8.8 0 1 1 10.6 3.2a6.9 6.9 0 0 0 10.2 10.2z',
+  ceia: 'M20.8 13.4A8.8 8.8 0 1 1 10.6 3.2a6.9 6.9 0 0 0 10.2 10.2z@M17.5 2.5v3.4M15.8 4.2h3.4',
+  pizza: 'M12 21 3.2 6.2c5-2.9 12.6-2.9 17.6 0z@M9.5 10.5h.01M13 13.5h.01',
+
+  /* hábitos e atividades */
+  sono: 'M20.8 13.4A8.8 8.8 0 1 1 10.6 3.2a6.9 6.9 0 0 0 10.2 10.2z',
+  estudo: 'M4.5 4.5A2 2 0 0 1 6.5 2.5H19v17H6.5a2 2 0 0 0-2 2z@M8.5 7.5h6.5M8.5 11h6.5',
+  meditar: 'M20.8 5.9a4.9 4.9 0 0 0-7 0L12 7.6l-1.8-1.7a4.9 4.9 0 1 0-7 7L12 21.5l8.8-8.6a4.9 4.9 0 0 0 0-7z',
+  agua: 'M12 21.5a7 7 0 0 0 7-7c0-5-7-12.5-7-12.5S5 9.5 5 14.5a7 7 0 0 0 7 7z',
+  parar: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M5.6 5.6l12.8 12.8',
+  celular: 'M7.5 2.5h9a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1z@M10.8 18.8h2.4',
+  correr: 'M22 12h-4l-3 8.5L9 3.5l-3 8.5H2',
+  manha: 'M12 3v3.5M5.5 12a6.5 6.5 0 0 1 13 0@M2.5 17.5h19M4.6 6.6l1.4 1.4M18 8l1.4-1.4M8.5 12 12 8.5l3.5 3.5',
+  remedio: 'M10.4 20.6a5 5 0 0 1-7-7l6.2-6.2a5 5 0 0 1 7 7z@M8.4 8.4l7 7',
+  meta: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M12 16.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z@M12 13.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4z',
+  musica: 'M9 17.5V5l11.5-2v12.5@M6.5 20.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z@M18 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  escrever: 'M12 19.5h8.5M4 20l1-4.5 10-10 3.5 3.5-10 10z',
+  casa2: 'M3.5 9.5h17M6.5 9.5v11M17.5 9.5v11M3.5 20.5h17M12 3 20.5 9.5h-17z',
+  bola: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M12 7.4l3.7 2.7-1.4 4.4H9.7L8.3 10.1z@M12 3v4.4M4.3 9.5l4 .6M8.3 20l1.4-5.5M19.7 9.5l-4 .6M15.7 20l-1.4-5.5',
+
+  /* ações */
+  check: 'M20 6.5 9.2 17.3 4 12.1',
+  x: 'M18 6 6 18M6 6l12 12',
+  mais: 'M12 5.5v13M5.5 12h13',
+  menos: 'M5.5 12h13',
+  dir: 'M9.5 18.5 16 12 9.5 5.5',
+  esq: 'M14.5 5.5 8 12l6.5 6.5',
+  baixo: 'M6 9.5 12 15.5l6-6',
+  baixar: 'M12 3.5v12M7.5 11 12 15.5 16.5 11M4.5 20.5h15',
+  enviar: 'M4 12.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6.5M12 15V3.5M8 7.5 12 3.5l4 4',
+  lixo: 'M4 7h16M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l.9 12.6a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4L18.5 7M10 11v6M14 11v6',
+  lapis: 'M12 19.5h8.5M4 20l1-4.5 10-10 3.5 3.5-10 10z',
+  play: 'M7.5 4.8 19 12 7.5 19.2z',
+  pausa: 'M9.5 4.5v15M14.5 4.5v15',
+  estrela: 'M12 3.2l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z',
+  alerta: 'M12 3.2 2.4 20h19.2z@M12 10v4.2M12 17.2v.01',
+  info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M12 11.5v5M12 7.8v.01',
+  lista: 'M8.5 6h12M8.5 12h12M8.5 18h12M4 6h.01M4 12h.01M4 18h.01',
+  ficha: 'M9.5 4.5h5v1.6a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1z@M9.5 5.5h-2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-12a2 2 0 0 0-2-2h-2M9 11.5h6M9 15h6',
+  balanca: 'M12 3.2a2.8 2.8 0 0 0-2.6 1.8H6.2a2 2 0 0 0-2 1.8l-1 12.2a2 2 0 0 0 2 2.2h13.6a2 2 0 0 0 2-2.2l-1-12.2a2 2 0 0 0-2-1.8h-3.2A2.8 2.8 0 0 0 12 3.2z@M9.5 12.5 12 9l2.5 3.5',
+  fogo: 'M12 21.5c3.9 0 6.9-2.7 6.9-6.4 0-3-2-5.5-3.5-7.4-.5 1.5-1.4 2.4-2.4 2.4 0-3-1.5-5.9-3.9-7.9.5 4-3 5.4-3 10.9 0 4.4 2.9 8.4 5.9 8.4z',
+  relogio: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M12 7v5.2l3.2 2',
+  calendario: 'M3.5 6.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z@M3.5 10.5h17M8.5 2.5v4M15.5 2.5v4',
+  copiar: 'M9.5 9h9.5a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1H9.5a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z@M5 15H4.5a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1H14a1 1 0 0 1 1 1V5',
+  planilha: 'M4.5 4.5h15v15h-15z@M4.5 9.5h15M4.5 14.5h15M9.5 4.5v15M14.5 4.5v15',
+  faisca: 'M12 3.5l1.7 4.4 4.4 1.7-4.4 1.7L12 15.7l-1.7-4.4L5.9 9.6l4.4-1.7z@M18.5 15l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z',
+  vazio: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M8.5 14.5s1.3 1.5 3.5 1.5 3.5-1.5 3.5-1.5M9.5 9.5h.01M14.5 9.5h.01',
+  festa: 'M4 20.5l4.5-12 7.5 7.5z@M14 3.5c1.5 0 1.5 2 3 2M17.5 8c1 0 1.5.8 1.5 1.8M20.5 4.5h.01M12.5 6.5h.01M20.5 13.5h.01'
+};
+
+/* Um ícone pode ter mais de um traço; separo com @ para não repetir o <svg>. */
+function ic(nome, tam = 20, cls = '') {
+  const d = ICONS[nome];
+  if (!d) return '';
+  const partes = d.split('@').map(p => `<path d="${p}"/>`).join('');
+  return `<svg class="ic ${cls}" width="${tam}" height="${tam}" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true">${partes}</svg>`;
+}
+
+/* Ícones antigos vieram como emoji dentro dos dados do usuário.
+   Se for um nome conhecido, desenha; se não, mostra o emoji como estava. */
+function icOu(valor, tam = 20) {
+  return ICONS[valor] ? ic(valor, tam) : `<span class="emo" style="font-size:${tam}px">${esc(valor || '')}</span>`;
+}
+
+/* estrelas de qualidade: cheias até n, vazias depois */
+function estrelas(n, total = 5, tam = 13) {
+  let h = '';
+  for (let i = 1; i <= total; i++) {
+    h += `<svg class="ic st ${i <= n ? 'on' : ''}" width="${tam}" height="${tam}" viewBox="0 0 24 24"
+      fill="${i <= n ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.6"
+      stroke-linejoin="round" aria-hidden="true"><path d="${ICONS.estrela}"/></svg>`;
+  }
+  return `<span class="stars">${h}</span>`;
+}
+
+
+/* =========================================================
+   LOGO
+   Marca do app: folha/lótus dentro de um círculo — a ideia de
+   cuidado e crescimento, no mesmo traço dos ícones.
+
+   PARA TROCAR PELO SVG QUE VOCÊ BAIXOU: substitua o conteúdo de
+   LOGO_PATHS pelos <path>/<circle> do arquivo, mantendo o
+   viewBox em 24 24 (ou ajuste LOGO_VB junto).
+   ========================================================= */
+const LOGO_VB = '0 0 24 24';
+const LOGO_PATHS = `
+  <path d="M12 21.5c0-4.6 0-7.3 0-8.4" />
+  <path d="M12 13.1c-3.4 0-6.2-2.6-6.2-5.9 0-1 .2-2 .6-2.8 3.3.2 5.9 2.9 5.9 6.2" />
+  <path d="M12 13.1c3.4 0 6.2-2.6 6.2-5.9 0-1-.2-2-.6-2.8-3.3.2-5.9 2.9-5.9 6.2" />
+  <path d="M4.6 16.2c1.9-1.1 4.3-.7 5.7.9M19.4 16.2c-1.9-1.1-4.3-.7-5.7.9" />`;
+
+function logo(tam = 28, cls = '') {
+  return `<svg class="ic logo ${cls}" width="${tam}" height="${tam}" viewBox="${LOGO_VB}" fill="none"
+    stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true">${LOGO_PATHS}</svg>`;
+}
+/* mesma marca como imagem, para favicon e ícone da tela de início */
+function logoDataURI(cor = '%235F7346', fundo = '%23FBFDF2') {
+  const p = LOGO_PATHS.replace(/\s+/g, ' ').replace(/"/g, "'").trim();
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>` +
+    `<rect width='24' height='24' rx='6' fill='${decodeURIComponent(fundo)}'/>` +
+    `<g fill='none' stroke='${decodeURIComponent(cor)}' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'>${p}</g></svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+/* =========================================================
+   VITTA — núcleo: estado, storage, utilidades, render
+   ========================================================= */
+/* ACT e SCREENS nascem aqui porque as folhas (mais abaixo) já
+   registram ações, e este arquivo carrega antes do shell. */
+const ACT = {};
+const SCREENS = {};
+
+const KEY = 'vitta_db_v1';
+const VERSAO = '2026-08-25g';   // conferível nas Configurações — serve para saber se o navegador
+                                // está servindo o arquivo novo ou uma cópia em cache
+const $ = s => document.querySelector(s);
+const APP = $('#app');
+
+const nowISO = () => new Date().toISOString();
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const pad = n => String(n).padStart(2, '0');
+const dstr = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const today = () => dstr(new Date());
+const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); return dstr(d); };
+const DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+const MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MESL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const n0 = v => Math.round(v || 0).toLocaleString('pt-BR');
+const n1 = v => (Math.round((v || 0) * 10) / 10).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+const num = v => { const x = parseFloat(String(v).replace(',', '.')); return isNaN(x) ? 0 : x; };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const dLabel = s => { const d = parseD(s); return `${DOW[d.getDay()]}, ${d.getDate()} ${MES[d.getMonth()]}`; };
+
+/* ---------- storage (com fallback em memória) ---------- */
+let MEM = null, STORAGE_OK = true;
+function readRaw() {
+  try { return localStorage.getItem(KEY); } catch (e) { STORAGE_OK = false; return MEM; }
+}
+function writeRaw(v) {
+  MEM = v;
+  try { localStorage.setItem(KEY, v); } catch (e) { STORAGE_OK = false; }
+}
+
+/* ---------- dados semente ---------- */
+const SEED_ALIM = [
+  ['Arroz branco cozido', 100, 'g', 128, 28, 2.5, 0.2],
+  ['Arroz integral cozido', 100, 'g', 124, 26, 2.6, 1],
+  ['Feijão carioca cozido', 100, 'g', 76, 13.6, 4.8, 0.5],
+  ['Peito de frango grelhado', 100, 'g', 165, 0, 31, 3.6],
+  ['Patinho moído cozido', 100, 'g', 219, 0, 27, 12],
+  ['Ovo cozido (unid.)', 1, 'un', 78, 0.6, 6.3, 5.3],
+  ['Tilápia grelhada', 100, 'g', 128, 0, 26, 2.6],
+  ['Batata doce cozida', 100, 'g', 86, 20, 1.6, 0.1],
+  ['Macarrão cozido', 100, 'g', 158, 31, 5.8, 0.9],
+  ['Pão francês (unid.)', 1, 'un', 135, 27, 4.4, 1.1],
+  ['Aveia em flocos', 30, 'g', 117, 20, 4.1, 2.1],
+  ['Banana prata (unid.)', 1, 'un', 90, 23, 1.1, 0.1],
+  ['Maçã (unid.)', 1, 'un', 95, 25, 0.5, 0.3],
+  ['Leite integral', 200, 'ml', 122, 9.4, 6.4, 6.6],
+  ['Iogurte natural', 170, 'g', 100, 7.7, 10, 2.7],
+  ['Whey protein (scoop)', 1, 'un', 120, 3, 24, 1.5],
+  ['Azeite (colher)', 1, 'un', 119, 0, 0, 13.5],
+  ['Salada verde', 100, 'g', 20, 3.5, 1.4, 0.2],
+  ['Brócolis cozido', 100, 'g', 35, 7, 2.4, 0.4],
+  ['Pasta de amendoim (colher)', 1, 'un', 94, 3.1, 4, 8]
+];
+const SEED_LIQ = [
+  ['Refrigerante lata 350ml', 350, 'ml', 149, 37, 0, 0],
+  ['Suco de laranja natural 300ml', 300, 'ml', 134, 31, 2, 0.6],
+  ['Café preto sem açúcar', 200, 'ml', 4, 0.8, 0.2, 0],
+  ['Cerveja lata 350ml', 350, 'ml', 153, 12.6, 1.6, 0]
+];
+const MET = { 'Caminhada leve': 3.0, 'Caminhada rápida': 4.8, 'Corrida': 9.8, 'Bicicleta': 7.5, 'Futebol': 8.0, 'Natação': 7.0, 'Vôlei': 4.0, 'Basquete': 6.5, 'Musculação': 5.0, 'Funcional / HIIT': 8.5, 'Dança': 5.0, 'Trilha': 6.0, 'Tênis / Beach tennis': 6.5, 'Pular corda': 11.0 };
+/* Para atividades que você mesmo cadastra: em vez de pedir o MET (que ninguém
+   sabe de cabeça), pergunta o esforço e traduz para um MET razoável.          */
+const ESFORCO = [
+  ['3', 'Leve — alongamento, caminhada tranquila, ioga'],
+  ['5', 'Moderado — musculação, dança, pedalada leve'],
+  ['7', 'Puxado — natação, trilha, futebol de quadra'],
+  ['9.5', 'Intenso — corrida, futebol de campo, HIIT'],
+  ['11', 'Muito intenso — pular corda, competição']
+];
+const ATIV = [
+  ['1.2', 'Sedentário — pouco ou nenhum exercício'],
+  ['1.375', 'Leve — treino 1 a 3x por semana'],
+  ['1.55', 'Moderado — treino 3 a 5x por semana'],
+  ['1.725', 'Intenso — treino 6 a 7x por semana'],
+  ['1.9', 'Muito intenso — atleta / trabalho físico']
+];
+const REFS = [
+  ['cafe', 'Café da manhã', 'cafe'], ['lanche1', 'Lanche da manhã', 'fruta'],
+  ['almoco', 'Almoço', 'almoco'], ['lanche2', 'Lanche da tarde', 'copo'],
+  ['janta', 'Jantar', 'lua'], ['ceia', 'Ceia', 'ceia'], ['livre', 'Refeição livre', 'pizza']
+];
+
+/* =========================================================
+   CREDENCIAIS DO SUPABASE — já embutidas
+   ---------------------------------------------------------
+   O app conecta sozinho na primeira abertura: não precisa
+   colar nada em nenhum aparelho novo.
+
+   A chave abaixo é a PUBLICÁVEL (sb_publishable_ / anon).
+   Ela foi feita para ficar visível dentro do app — quem
+   protege os dados é o RLS, criado no banco pelo schema.sql.
+   NUNCA troque por uma sb_secret_ ou service_role aqui.
+
+   Para apontar para outro projeto, é só editar estas duas
+   linhas (ou usar a tela de Configurações dentro do app).
+   ========================================================= */
+const SB_URL = 'https://yobnnkpmlwhrjfwfbsyu.supabase.co';
+const SB_KEY = 'sb_publishable_4XXqlx_HrCMw3CXSZH_xNw_BOvRWzBN';
+
+/* ---------- estado ---------- */
+/* Os alimentos que já vêm no app usam id derivado do nome, e não sorteado:
+   assim dois aparelhos geram exatamente a mesma linha e o banco não duplica.
+   O carimbo antigo faz qualquer edição sua vencer o valor de fábrica.        */
+const SEED_UPD = '2000-01-01T00:00:00.000Z';
+const slug = s => 'sd-' + s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+
+function novoDB() {
+  const al = [...SEED_ALIM.map(a => ({ id: slug(a[0]), nome: a[0], porcao: a[1], un: a[2], kcal: a[3], c: a[4], p: a[5], g: a[6], liq: 0, upd: SEED_UPD })),
+  ...SEED_LIQ.map(a => ({ id: slug(a[0]), nome: a[0], porcao: a[1], un: a[2], kcal: a[3], c: a[4], p: a[5], g: a[6], liq: a[1], upd: SEED_UPD }))];
+  return {
+    v: 1,
+    perfil: {
+      nome: '', sexo: 'M', peso: 75, altura: 175, idade: 30, ativ: 1.55,
+      objetivo: 'manter', ajuste: 0, protKg: 1.8, gordPct: 25,
+      aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, upd: null
+    },
+    fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], dias: {},
+    delFila: [],
+    cfg: { url: SB_URL, key: SB_KEY, autoSync: true, ultimoSync: null, tema: 'auto' }
+  };
+}
+const SEMENTES = () => novoDB().alimentos;
+
+/* Alimentos de fábrica de versões antigas nasciam com id sorteado, então cada
+   aparelho criava a sua cópia. Aqui eles voltam para o id determinístico e as
+   cópias repetidas caem fora (e entram na fila para sumir também do servidor). */
+function limparAlimentos(lista) {
+  const semente = new Map(SEMENTES().map(s => [s.nome.toLowerCase(), s]));
+  const iguais = (a, b) => ['porcao', 'un', 'kcal', 'c', 'p', 'g'].every(f => String(a[f]) === String(b[f]));
+
+  const migrada = lista.map(a => {
+    const s = semente.get((a.nome || '').toLowerCase());
+    return (s && !String(a.id).startsWith('sd-') && iguais(s, a))
+      ? Object.assign({}, a, { id: s.id, upd: SEED_UPD, idAntigo: a.id })
+      : a;
+  });
+
+  const vistos = new Map(), remover = [], fica = [];
+  migrada.forEach(a => {
+    const chave = String(a.id).startsWith('sd-') ? a.id : (a.nome || '').toLowerCase() + '|' + a.kcal;
+    const ant = vistos.get(chave);
+    if (!ant) { vistos.set(chave, a); fica.push(a); return; }
+    if (!iguais(ant, a)) { fica.push(a); return; }        // mesmo nome, valores diferentes: são dois alimentos
+    remover.push(a.idAntigo || a.id);                     // duplicata de verdade
+  });
+  fica.forEach(a => delete a.idAntigo);
+  migrada.forEach(a => { if (a.idAntigo && !remover.includes(a.idAntigo)) remover.push(a.idAntigo); });
+  fica.forEach(a => delete a.idAntigo);
+  return { lista: fica, remover: [...new Set(remover)].filter(Boolean) };
+}
+
+/* Exclusões esperando para serem aplicadas no servidor no próximo sync. */
+function enfileirarDel(tabela, id) {
+  DB.delFila = DB.delFila || [];
+  if (!DB.delFila.some(d => d.t === tabela && d.id === id)) DB.delFila.push({ t: tabela, id });
+}
+
+let DB = (() => {
+  const raw = readRaw();
+  if (!raw) { const d = novoDB(); writeRaw(JSON.stringify(d)); return d; }
+  try {
+    const d = JSON.parse(raw), base = novoDB();
+    const cfg = Object.assign(base.cfg, d.cfg || {});
+    // aparelho que já usava o app antes das credenciais virem no arquivo
+    if (!cfg.url) cfg.url = SB_URL;
+    if (!cfg.key) cfg.key = SB_KEY;
+    const db = Object.assign(base, d, { perfil: Object.assign(base.perfil, d.perfil || {}), cfg });
+    db.delFila = db.delFila || [];
+    db.atividades = db.atividades || [];
+    db.atividades = db.atividades || [];
+    const lim = limparAlimentos(db.alimentos || []);
+    db.alimentos = lim.lista;
+    lim.remover.forEach(id => { if (!db.delFila.some(x => x.t === 'alimentos' && x.id === id)) db.delFila.push({ t: 'alimentos', id }); });
+    return db;
+  } catch (e) { const d = novoDB(); writeRaw(JSON.stringify(d)); return d; }
+})();
+
+let DIRTY = false;
+function save(sync = true) {
+  writeRaw(JSON.stringify(DB));
+  if (sync) { DIRTY = true; agendarSync(); }
+}
+/* Um dia só existe de verdade depois que você lança alguma coisa nele.
+   Abrir o app cria a estrutura em memória, mas SEM carimbo de hora — é isso
+   que impede um dia em branco de sobrescrever o dia real que está no servidor. */
+function diaVazio(x) {
+  if (!x) return true;
+  return !x.treino && !(x.esportes || []).length
+    && !Object.values(x.refeicoes || {}).some(l => l && l.length)
+    && !x.agua && !Object.keys(x.habitos || {}).length
+    && !x.peso && !x.nota && !x.ajusteKcal && !x.ajusteAgua;
+}
+function dia(d) {
+  if (!DB.dias[d]) DB.dias[d] = { treino: null, esportes: [], refeicoes: {}, agua: 0, habitos: {}, peso: null, nota: '', ajusteKcal: 0, ajusteAgua: 0, upd: null };
+  const x = DB.dias[d];
+  x.esportes = x.esportes || []; x.refeicoes = x.refeicoes || {}; x.habitos = x.habitos || {};
+  x.ajusteKcal = x.ajusteKcal || 0; x.ajusteAgua = x.ajusteAgua || 0;
+  return x;
+}
+const temDia = d => !!DB.dias[d];
+function tocaDia(d) { if (DB.dias[d]) DB.dias[d].upd = nowISO(); }
+
+/* ---------- aparência ----------
+   'auto' segue o sistema; 'claro' e 'escuro' mandam nele.
+   Fica só neste aparelho: é preferência de tela, não dado seu. */
+function aplicarTema() {
+  const t = (DB.cfg && DB.cfg.tema) || 'auto';
+  const r = document.documentElement;
+  if (t === 'auto') delete r.dataset.tema; else r.dataset.tema = t;
+  // a barra do navegador acompanha
+  const escuro = t === 'escuro' ||
+    (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelectorAll("meta[name='theme-color']").forEach(m => m.remove());
+  const m = document.createElement('meta');
+  m.name = 'theme-color'; m.content = escuro ? '#181D14' : '#E8EFD7';
+  document.head.appendChild(m);
+}
+ACT.trocarTema = e => { DB.cfg.tema = e.dataset.t; save(false); aplicarTema(); render(); };
+
+/* ---------- cálculos ---------- */
+function tmb(p = DB.perfil) {
+  const b = 10 * num(p.peso) + 6.25 * num(p.altura) - 5 * num(p.idade);
+  return p.sexo === 'F' ? b - 161 : b + 5;
+}
+// gasto energético total = TMB × atividade + adicional fixo definido no perfil
+const get = (p = DB.perfil) => tmb(p) * num(p.ativ) + num(p.gastoExtra);
+function metaKcal(p = DB.perfil) {
+  const g = get(p);
+  const aj = p.objetivo === 'perder' ? -(num(p.ajuste) || 400)
+    : p.objetivo === 'ganhar' ? +(num(p.ajuste) || 350) : 0;
+  return Math.max(1000, g + aj);
+}
+function metas(p = DB.perfil) {
+  const kcal = metaKcal(p), peso = num(p.peso);
+  const prot = peso * num(p.protKg);
+  const gord = (kcal * (num(p.gordPct) / 100)) / 9;
+  const carb = Math.max(0, (kcal - prot * 4 - gord * 9) / 4);
+  return { kcal, p: prot, g: gord, c: carb, agua: metaAgua(p) };
+}
+function metaAgua(p = DB.perfil) {
+  const extra = num(p.aguaExtra);
+  if (p.aguaModo === 'fixa') return num(p.aguaFixa) + extra;
+  if (p.aguaModo === 'kcal') return Math.round(metaKcal(p)) + extra;  // 1 ml por kcal
+  return Math.round(num(p.peso) * 35) + extra;                       // 35 ml por kg
+}
+// meta de água do dia = meta fixa + ajuste pontual daquele dia
+const metaAguaDia = d => metaAgua() + (DB.dias[d] ? num(DB.dias[d].ajusteAgua) : 0);
+function kcalEsporte(nome, min, peso = num(DB.perfil.peso)) {
+  const m = MET[nome] || 5; return Math.round(m * 3.5 * peso / 200 * min);
+}
+
+/* ---------- soma de refeições ---------- */
+const Z = () => ({ kcal: 0, c: 0, p: 0, g: 0, liq: 0 });
+function somaItens(itens) {
+  const t = Z();
+  (itens || []).forEach(i => { t.kcal += i.kcal || 0; t.c += i.c || 0; t.p += i.p || 0; t.g += i.g || 0; t.liq += i.liq || 0; });
+  return t;
+}
+function somaDia(d) {
+  const x = dia(d), t = Z(); t.escape = 0;
+  Object.values(x.refeicoes).forEach(l => (l || []).forEach(i => {
+    t.kcal += i.kcal || 0; t.c += i.c || 0; t.p += i.p || 0; t.g += i.g || 0; t.liq += i.liq || 0;
+    if (i.escape) t.escape += i.kcal || 0;
+  }));
+  return t;
+}
+function gastoDia(d) {
+  const x = dia(d);
+  let extra = (x.esportes || []).reduce((a, e) => a + (e.kcal || 0), 0);
+  if (x.treino && x.treino.feito) extra += kcalEsporte('Musculação', x.treino.duracao || 60);
+  const ajuste = num(x.ajusteKcal);
+  return { base: get(), extra, ajuste, total: get() + extra + ajuste };
+}
+
+/* ---------- UI helpers ---------- */
+let TOAST_T;
+function toast(msg) {
+  const t = $('#toast'); t.innerHTML = `<div class="toast">${esc(msg)}</div>`;
+  clearTimeout(TOAST_T); TOAST_T = setTimeout(() => t.innerHTML = '', 2200);
+}
+
+/* =========================================================
+   FOLHAS (modais)
+   Regra: nada do que você preencheu some por acidente.
+   - toque fora só fecha se você não escreveu nada;
+   - se escreveu, pergunta antes — e a folha continua ali
+     atrás, intacta, caso você escolha continuar;
+   - Esc faz o mesmo caminho;
+   - tem um X visível, porque nem todo mundo adivinha que
+     dá para tocar fora.
+   ========================================================= */
+let SHEET_SUJO = false;
+
+function sheet(html) {
+  SHEET_SUJO = false;
+  $('#modal').innerHTML = `<div class="ov" data-ov="1"><div class="sheet">
+    <div class="grab"></div>
+    <button class="sheet-x" data-a="tentarFechar" aria-label="Fechar">${ic('x', 17)}</button>
+    ${html}</div></div>`;
+  document.body.style.overflow = 'hidden';
+  const s = $('#modal .sheet');
+  if (s) {
+    s.addEventListener('input', () => SHEET_SUJO = true);
+    s.addEventListener('change', () => SHEET_SUJO = true);
+  }
+}
+function fechar() {
+  $('#modal').innerHTML = ''; $('#modal2').innerHTML = '';
+  SHEET_SUJO = false; document.body.style.overflow = '';
+}
+/* Fecha só a pergunta, deixando a folha de baixo viva. */
+function fecharPergunta() { $('#modal2').innerHTML = ''; }
+
+ACT.tentarFechar = () => {
+  if (!SHEET_SUJO) return fechar();
+  pergunta({
+    titulo: 'Descartar o que você preencheu?',
+    texto: 'Você digitou algo nesta tela. Se sair agora, esse conteúdo se perde.',
+    okLabel: 'Descartar', perigo: true, cb: fechar
+  });
+};
+
+/* Pergunta curta desenhada POR CIMA da folha atual — por isso ela
+   nunca destrói o formulário que está embaixo.                     */
+function pergunta({ titulo, texto, okLabel, cancelLabel, perigo, cb }) {
+  window.__perguntaCb = cb;
+  $('#modal2').innerHTML = `<div class="ov ov2" data-ov2="1"><div class="ask">
+    <h4>${esc(titulo)}</h4>
+    ${texto ? `<p>${esc(texto)}</p>` : ''}
+    <div class="btnrow">
+      <button class="btn" data-a="perguntaNao">${esc(cancelLabel || 'Continuar editando')}</button>
+      <button class="btn ${perigo ? 'danger' : 'pri'}" data-a="perguntaSim">${esc(okLabel || 'Confirmar')}</button>
+    </div></div></div>`;
+}
+ACT.perguntaNao = () => fecharPergunta();
+ACT.perguntaSim = () => { const cb = window.__perguntaCb; fecharPergunta(); if (cb) cb(); };
+
+/* Confirmação de ação destrutiva: mesma camada, e ao confirmar
+   fecha tudo (a folha de origem já não faz sentido).             */
+function confirmar(txt, cb) {
+  pergunta({
+    titulo: 'Confirmar', texto: txt, okLabel: 'Confirmar',
+    cancelLabel: 'Cancelar', perigo: true,
+    cb: () => { fechar(); cb(); }
+  });
+}
+
+const bar = (v, max, cor) => {
+  const pct = clamp(max > 0 ? v / max * 100 : 0, 0, 100);
+  return `<div class="bar"><i style="width:${pct}%;background:${cor || 'var(--ac)'}"></i></div>`;
+};
+function ring(pct, cor, size = 58, txt = '') {
+  const r = size / 2 - 5, c = 2 * Math.PI * r, o = c * (1 - clamp(pct, 0, 1));
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--line)" stroke-width="6"/>
+    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${cor}" stroke-width="6" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${o}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
+    <text x="50%" y="50%" text-anchor="middle" dy="4" fill="var(--tx)" font-size="${size > 50 ? 13 : 11}" font-weight="700"
+      font-family="var(--ff)">${esc(txt)}</text></svg>`;
+}
+function valOf(id, def = '') { const e = document.getElementById(id); return e ? e.value : def; }
+function numOf(id) { return num(valOf(id, 0)); }
+/* =========================================================
+   Shell: navegação, roteador, delegação de eventos
+   ========================================================= */
+let VIEW = 'hoje';
+let D = today();
+let SUB = {};   // estado auxiliar por tela (aba interna, item em edição...)
+
+const NAVITENS = [
+  ['hoje', 'hoje', 'Hoje'], ['treino', 'treino', 'Treino'], ['dieta', 'dieta', 'Dieta'],
+  ['habitos', 'habitos', 'Hábitos'], ['lembretes', 'lembretes', 'Lembretes'], ['resumo', 'resumo', 'Resumo']
+];
+const TITULOS = {
+  hoje: ['Hoje', ''], treino: ['Exercícios', 'fichas, treinos e esportes'],
+  dieta: ['Dieta', 'refeições, macros e água'], habitos: ['Hábitos', 'construção e acompanhamento'],
+  resumo: ['Resumo', 'evolução diária e mensal'], perfil: ['Minhas medidas', 'TMB, gasto calórico, macros e água'],
+  config: ['Configurações', 'sincronização e dados'], fichas: ['Minhas fichas', 'monte seus treinos'],
+  alimentos: ['Alimentos', 'sua biblioteca'], pratos: ['Pratos', 'combinações prontas']
+};
+
+function go(v, keepSub) { VIEW = v; if (!keepSub) SUB = {}; window.scrollTo(0, 0); render(); }
+
+function header() {
+  const [t, s] = TITULOS[VIEW] || ['Vitta', ''];
+  const voltar = !NAVITENS.some(n => n[0] === VIEW);
+  return `<div class="hd">
+    ${voltar ? `<button class="iconbtn" data-a="voltar" aria-label="Voltar">${ic('esq', 20)}</button>` : ''}
+    <h1>${esc(t)}${s ? `<small>${esc(s)}</small>` : ''}</h1>
+    ${VIEW === 'hoje' ? `<button class="iconbtn" data-a="ir" data-v="config" aria-label="Configurações">${ic('config')}</button>
+      <button class="iconbtn" data-a="ir" data-v="perfil" aria-label="Perfil">${ic('perfil')}</button>` : ''}
+    ${VIEW === 'dieta' ? `<button class="iconbtn" data-a="ajustesHoje" title="Ajustes de hoje">${ic('raio')}</button>
+      <button class="iconbtn" data-a="ir" data-v="perfil" title="Minhas medidas">${ic('medidas')}</button>` : ''}
+  </div>`;
+}
+
+function dateStrip() {
+  let h = '<div class="dstrip">';
+  for (let i = -6; i <= 1; i++) {
+    const d = addDays(today(), i), dd = parseD(d), fut = d > today();
+    h += `<button class="dchip ${d === D ? 'on' : ''} ${fut ? 'fut' : ''}" data-a="setDia" data-d="${d}">
+      <span>${DOW[dd.getDay()]}</span><b>${dd.getDate()}</b></button>`;
+  }
+  return h + '</div>';
+}
+
+function render() {
+  APP.innerHTML = header() + (SCREENS[VIEW] ? SCREENS[VIEW]() : '<div class="empty">…</div>');
+  $('#nav').innerHTML = NAVITENS.map(([v, i, t]) =>
+    `<button class="${VIEW === v ? 'on' : ''}" data-a="ir" data-v="${v}"><i>${ic(i, 19)}</i><span>${t}</span></button>`).join('');
+  $('#fab').innerHTML = FAB[VIEW] ? `<button class="fab" data-a="${FAB[VIEW]}" aria-label="Adicionar">${ic('mais', 26)}</button>` : '';
+  const ds = APP.querySelector('.dstrip'), on = ds && ds.querySelector('.dchip.on');
+  if (on) ds.scrollLeft = on.offsetLeft - ds.clientWidth / 2 + on.offsetWidth / 2;
+  syncBadge();
+}
+const FAB = {};
+
+/* ---------- ações globais ---------- */
+ACT.ir = e => go(e.dataset.v);
+ACT.voltar = () => go(SUB._back || 'hoje');
+ACT.fechar = () => fechar();
+ACT.setDia = e => { D = e.dataset.d; render(); };
+
+ACT.aba = e => { SUB.aba = e.dataset.t; render(); };
+
+/* ---------- delegação ---------- */
+/* Guardo onde o toque COMEÇOU: arrastar de dentro da folha para fora
+   não pode fechar nada — era assim que o formulário sumia sem querer. */
+let TOQUE_FORA = false;
+document.addEventListener('pointerdown', ev => {
+  const t = ev.target;
+  TOQUE_FORA = !!(t.classList && (t.classList.contains('ov') || t.classList.contains('ov2')));
+}, true);
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-a]');
+  if (b) {
+    ev.preventDefault();
+    const f = ACT[b.dataset.a];
+    if (f) f(b, ev); else console.warn('ação sem handler:', b.dataset.a);
+    return;
+  }
+  const t = ev.target;
+  if (!TOQUE_FORA || !t.classList) return;
+  if (t.classList.contains('ov2')) return fecharPergunta();   // pergunta: toque fora só cancela
+  if (t.classList.contains('ov')) ACT.tentarFechar();
+});
+
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape') return;
+  if ($('#modal2').innerHTML) return fecharPergunta();
+  if ($('#modal').innerHTML) ACT.tentarFechar();
+});
+document.addEventListener('change', ev => {
+  const b = ev.target.closest('[data-ch]');
+  if (b && ACT[b.dataset.ch]) ACT[b.dataset.ch](b, ev);
+});
+document.addEventListener('input', ev => {
+  const b = ev.target.closest('[data-inp]');
+  if (b && ACT[b.dataset.inp]) ACT[b.dataset.inp](b, ev);
+});
+/* =========================================================
+   Perfil, metas e configurações
+   ========================================================= */
+function perfilDosCampos() {
+  const p = Object.assign({}, DB.perfil);
+  p.nome = valOf('p_nome'); p.peso = numOf('p_peso'); p.altura = numOf('p_altura');
+  p.idade = numOf('p_idade'); p.ativ = num(valOf('p_ativ', 1.55));
+  p.ajuste = numOf('p_ajuste'); p.protKg = numOf('p_prot'); p.gordPct = numOf('p_gord');
+  if (document.getElementById('p_aguafixa')) p.aguaFixa = numOf('p_aguafixa');
+  p.gastoExtra = numOf('p_gextra'); p.aguaExtra = numOf('p_aextra');
+  return p;
+}
+function boxMetas(p) {
+  const m = metas(p), g = get(p);
+  return `<div class="kpi" style="margin-bottom:11px">
+      <div><b>${n0(tmb(p))}</b><span>TMB</span></div>
+      <div><b>${n0(g)}</b><span>Gasto/dia</span></div>
+      <div><b style="color:var(--ac)">${n0(m.kcal)}</b><span>Meta kcal</span></div>
+    </div>
+    <div class="grid3">
+      <div class="row" style="border:0;padding:0"><div class="g"><div class="s">Carbo</div><div class="t">${n0(m.c)} g</div></div></div>
+      <div class="row" style="border:0;padding:0"><div class="g"><div class="s">Proteína</div><div class="t">${n0(m.p)} g</div></div></div>
+      <div class="row" style="border:0;padding:0"><div class="g"><div class="s">Gordura</div><div class="t">${n0(m.g)} g</div></div></div>
+    </div>
+    <hr class="sep">
+    <div class="row" style="border:0;padding:0"><div class="g"><div class="t">Meta de água</div>
+      <div class="s">${p.aguaModo === 'peso' ? '35 ml por kg de peso' : p.aguaModo === 'kcal' ? '1 ml por kcal da meta' : 'valor fixo definido por você'}${num(p.aguaExtra) ? ` + ${n0(p.aguaExtra)} ml de adicional` : ''}</div></div>
+      <div class="v" style="color:var(--agua)">${n1(metaAgua(p) / 1000)} L</div></div>
+    ${num(p.gastoExtra) ? `<div class="row" style="padding-bottom:0"><div class="g"><div class="t">Gasto adicional fixo</div>
+      <div class="s">já somado ao gasto diário acima</div></div>
+      <div class="v" style="color:var(--tre)">+${n0(p.gastoExtra)} kcal</div></div>` : ''}`;
+}
+ACT.pPreview = () => { const b = document.getElementById('p_box'); if (b) b.innerHTML = boxMetas(perfilDosCampos()); };
+ACT.pSexo = e => { DB.perfil.sexo = e.dataset.v; save(); render(); };
+ACT.pObj = e => { DB.perfil.objetivo = e.dataset.v; if (!DB.perfil.ajuste) DB.perfil.ajuste = e.dataset.v === 'perder' ? 400 : e.dataset.v === 'ganhar' ? 350 : 0; save(); render(); };
+ACT.pAgua = e => { DB.perfil.aguaModo = e.dataset.v; save(); render(); };
+ACT.pSalvar = () => {
+  DB.perfil = Object.assign(DB.perfil, perfilDosCampos(), { upd: nowISO() });
+  save(); toast('Perfil salvo ✓'); render();
+};
+
+SCREENS.perfil = () => {
+  const p = DB.perfil;
+  return `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--ac)"></span><h2>Seus dados</h2></div>
+    <div class="f"><label>Nome</label><input class="in" id="p_nome" value="${esc(p.nome)}" placeholder="Como quer ser chamado"></div>
+    <div class="f"><label>Sexo biológico (para a fórmula de TMB)</label>
+      <div class="segs">
+        <button class="${p.sexo === 'M' ? 'on' : ''}" data-a="pSexo" data-v="M">Homem</button>
+        <button class="${p.sexo === 'F' ? 'on' : ''}" data-a="pSexo" data-v="F">Mulher</button>
+      </div></div>
+    <div class="grid3">
+      <div class="f"><label>Peso (kg)</label><input class="in" id="p_peso" type="number" inputmode="decimal" step="0.1" value="${p.peso}" data-inp="pPreview"></div>
+      <div class="f"><label>Altura (cm)</label><input class="in" id="p_altura" type="number" inputmode="numeric" value="${p.altura}" data-inp="pPreview"></div>
+      <div class="f"><label>Idade</label><input class="in" id="p_idade" type="number" inputmode="numeric" value="${p.idade}" data-inp="pPreview"></div>
+    </div>
+    <div class="f"><label>Nível de atividade</label>
+      <select class="in" id="p_ativ" data-inp="pPreview">
+        ${ATIV.map(a => `<option value="${a[0]}" ${String(p.ativ) === a[0] ? 'selected' : ''}>${a[1]}</option>`).join('')}
+      </select></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>Objetivo</h2></div>
+    <div class="segs" style="margin-bottom:11px">
+      ${[['perder', 'Emagrecer'], ['manter', 'Manter'], ['ganhar', 'Ganhar massa']].map(o =>
+    `<button class="${p.objetivo === o[0] ? 'on' : ''}" data-a="pObj" data-v="${o[0]}">${o[1]}</button>`).join('')}
+    </div>
+    <div class="grid3">
+      <div class="f"><label>Ajuste kcal</label><input class="in" id="p_ajuste" type="number" inputmode="numeric" value="${p.ajuste}" data-inp="pPreview"></div>
+      <div class="f"><label>Proteína g/kg</label><input class="in" id="p_prot" type="number" inputmode="decimal" step="0.1" value="${p.protKg}" data-inp="pPreview"></div>
+      <div class="f"><label>Gordura %</label><input class="in" id="p_gord" type="number" inputmode="numeric" value="${p.gordPct}" data-inp="pPreview"></div>
+    </div>
+    <p class="mini">O ajuste é somado (ganhar) ou subtraído (emagrecer) do seu gasto total. Carboidrato é o que sobra depois de proteína e gordura.</p>
+    <hr class="sep">
+    <div class="f" style="margin:0"><label>Gasto calórico adicional (kcal por dia)</label>
+      <input class="in" id="p_gextra" type="number" inputmode="numeric" value="${p.gastoExtra || 0}" data-inp="pPreview" placeholder="0">
+      <p class="mini" style="margin-top:6px">Para rotinas que a fórmula não enxerga — trabalho em pé, bicicleta até o serviço, muita escada.
+      Entra todo dia no gasto. Precisou de mais só hoje? Use “Ajustes de hoje” na tela de Dieta.</p></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--agua)"></span><h2>Água</h2></div>
+    <div class="segs" style="margin-bottom:11px">
+      ${[['peso', '35ml × kg'], ['kcal', '1ml × kcal'], ['fixa', 'Fixo']].map(o =>
+      `<button class="${p.aguaModo === o[0] ? 'on' : ''}" data-a="pAgua" data-v="${o[0]}">${o[1]}</button>`).join('')}
+    </div>
+    ${p.aguaModo === 'fixa' ? `<div class="f"><label>Meta fixa (ml)</label>
+      <input class="in" id="p_aguafixa" type="number" inputmode="numeric" value="${p.aguaFixa}" data-inp="pPreview"></div>` : ''}
+    <div class="f" style="margin:0"><label>Água adicional (ml por dia)</label>
+      <input class="in" id="p_aextra" type="number" inputmode="numeric" value="${p.aguaExtra || 0}" data-inp="pPreview" placeholder="0">
+      <p class="mini" style="margin-top:6px">Somado à meta todo dia. Útil se você sua muito, mora em lugar quente ou usa creatina.</p></div>
+  </div>
+
+  <div class="card" id="p_box">${boxMetas(p)}</div>
+  <div class="sec-title">Fórmula usada</div>
+  <div class="card"><p class="mini">
+    <b>Mifflin-St Jeor</b><br>
+    Homens: TMB = (10 × peso) + (6,25 × altura) − (5 × idade) + 5<br>
+    Mulheres: TMB = (10 × peso) + (6,25 × altura) − (5 × idade) − 161<br>
+    Gasto total = TMB × fator de atividade. Os treinos e esportes lançados no dia entram como gasto extra na tela de Resumo.
+  </p></div>
+  <button class="btn pri full" data-a="pSalvar" style="margin-bottom:14px">Salvar perfil</button>`;
+};
+
+/* ---------- ajustes pontuais do dia ---------- */
+ACT.ajustesHoje = () => {
+  const x = dia(D);
+  sheet(`<h3>Ajustes de ${esc(dLabel(D))}</h3>
+    <p class="hint">Valem só para este dia. Para algo que se repete, use <b>Medidas</b> e preencha os adicionais fixos.</p>
+    <div class="f"><label>Gasto calórico extra (kcal)</label>
+      <input class="in" id="aj_k" type="number" inputmode="numeric" value="${x.ajusteKcal || ''}" placeholder="0" data-inp="ajPrev"></div>
+    <div class="f"><label>Água extra na meta de hoje (ml)</label>
+      <input class="in" id="aj_a" type="number" inputmode="numeric" value="${x.ajusteAgua || ''}" placeholder="0" data-inp="ajPrev"></div>
+    <div class="okbox" id="aj_prev"></div>
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="ajSalvar">Salvar</button></div>`);
+  ACT.ajPrev();
+};
+ACT.ajPrev = () => {
+  const b = document.getElementById('aj_prev'); if (!b) return;
+  const g = gastoDia(D), gk = g.base + g.extra + numOf('aj_k');
+  b.innerHTML = `Gasto do dia: <b>${n0(gk)} kcal</b> · meta de água: <b>${n1((metaAgua() + numOf('aj_a')) / 1000)} L</b>`;
+};
+ACT.ajSalvar = () => {
+  const x = dia(D); x.ajusteKcal = numOf('aj_k'); x.ajusteAgua = numOf('aj_a');
+  tocaDia(D); save(); fechar(); render(); toast('Ajustes salvos ✓');
+};
+
+/* ---------- configurações ---------- */
+/* recusa chaves que não podem viver dentro de um app de navegador */
+function chaveSecreta(k) {
+  if (/^sb_secret_/i.test(k)) return true;
+  const m = /^eyJ[\w-]+\.([\w-]+)\./.exec(k);
+  if (m) {
+    try { return JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'service_role'; }
+    catch (e) { }
+  }
+  return false;
+}
+ACT.cfgSalvar = () => {
+  const url = valOf('c_url').trim().replace(/\/+$/, ''), key = valOf('c_key').trim();
+  if (chaveSecreta(key)) return toast('Essa é uma chave SECRETA — use a publishable/anon');
+  DB.cfg.url = url; DB.cfg.key = key;
+  save(false); toast('Credenciais salvas'); iniciarSupabase(true);
+};
+ACT.cfgPadrao = () => {
+  DB.cfg.url = SB_URL; DB.cfg.key = SB_KEY;
+  save(false); toast('Credenciais do arquivo restauradas'); iniciarSupabase(true); render();
+};
+ACT.cfgAuto = () => { DB.cfg.autoSync = !DB.cfg.autoSync; save(false); render(); };
+ACT.exportar = () => {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `vitta-backup-${today()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+};
+ACT.importar = () => {
+  const i = document.createElement('input'); i.type = 'file'; i.accept = 'application/json';
+  i.onchange = () => {
+    const f = i.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+        if (!d.perfil) throw 0;
+        DB = Object.assign(novoDB(), d); save(); toast('Backup restaurado ✓'); go('hoje');
+      } catch (e) { toast('Arquivo inválido'); }
+    };
+    r.readAsText(f);
+  };
+  i.click();
+};
+ACT.zerar = () => confirmar('Apagar TODOS os dados deste aparelho? Isso não afeta o que já foi enviado ao Supabase.', () => {
+  DB = novoDB(); save(false); toast('Dados apagados'); go('hoje');
+});
+
+SCREENS.config = () => {
+  const c = DB.cfg;
+  const tema = c.tema || 'auto';
+  const contaOk = SB.user && !SB.anon;
+  return `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Aparência</h2>
+      <span class="sub">${tema === 'auto' ? 'seguindo o aparelho' : tema}</span></div>
+    <div class="segs">
+      ${[['auto', 'Automático', 'config'], ['claro', 'Claro', 'manha'], ['escuro', 'Escuro', 'lua']].map(o =>
+        `<button class="${tema === o[0] ? 'on' : ''}" data-a="trocarTema" data-t="${o[0]}">
+          ${ic(o[2], 15)} ${o[1]}</button>`).join('')}
+    </div>
+    <p class="mini" style="margin-top:9px">No automático o app acompanha o tema do celular ou do
+      computador, e muda sozinho de noite se o aparelho mudar. A escolha vale só neste aparelho.</p>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:${contaOk ? 'var(--ac)' : SB.anon ? 'var(--warn)' : 'var(--tx3)'}"></span>
+      <h2>Conta</h2><span class="sub" id="sb_status">${SB.status}</span></div>
+
+    ${contaOk ? `<div class="okbox">Entrando com <b>${esc(SB.email)}</b> em outro aparelho, os dados
+        são os mesmos nos dois. É a mesma conta.</div>
+      <div class="row"><div class="g"><div class="t">${esc(SB.email)}</div>
+        <div class="s" style="word-break:break-all">${esc(SB.user)}</div></div></div>
+      <div class="btnrow" style="margin-top:11px">
+        <button class="btn" data-a="syncAgora">Sincronizar agora</button>
+        <button class="btn gh" data-a="sair">Sair</button>
+      </div>`
+    : SB.anon ? `<div class="warnbox"><b>Este aparelho está em modo anônimo.</b> Nesse modo cada
+        aparelho vira um usuário diferente no banco, e o celular não enxerga o que você lançou no
+        computador. Para juntar os dois, entre com e-mail — o que já está aqui sobe para a conta.</div>
+      <button class="btn pri full" data-a="entrarEmail">Sincronizar entre aparelhos</button>
+      <div class="btnrow" style="margin-top:9px">
+        <button class="btn gh" data-a="syncAgora">Sincronizar agora</button>
+        <button class="btn gh" data-a="sair">Sair do modo anônimo</button>
+      </div>`
+    : `<p class="mini" style="margin-bottom:12px">Entre com seu e-mail para que celular e computador
+        mostrem os mesmos dados. Você recebe um código de 6 dígitos — não existe senha para criar.</p>
+      <button class="btn pri full" data-a="entrarEmail" style="margin-bottom:8px">Entrar com e-mail</button>
+      <button class="btn gh full sm" data-a="entrarAnon">Usar só neste aparelho</button>`}
+
+    <div class="row" style="margin-top:4px"><div class="g"><div class="t">Sincronizar automaticamente</div>
+      <div class="s">Envia as alterações alguns segundos depois de cada lançamento</div></div>
+      <button class="tick ${c.autoSync ? 'on' : ''}" data-a="cfgAuto">${ic('check')}</button></div>
+    <div class="row"><div class="g"><div class="t">Último sync</div>
+      <div class="s">${c.ultimoSync ? new Date(c.ultimoSync).toLocaleString('pt-BR') : 'nunca'}
+        ${(DB.delFila || []).length ? ' · ' + DB.delFila.length + ' exclusão(ões) na fila' : ''}</div></div></div>
+    ${STORAGE_OK ? '' : '<div class="warnbox" style="margin-top:11px">Este navegador está bloqueando o armazenamento local. Os dados só ficam nesta aba.</div>'}
+  </div>
+
+  <div class="sec-title">Projeto no Supabase</div>
+  <div class="card">
+    ${c.url === SB_URL && c.key === SB_KEY
+      ? '<div class="okbox">As credenciais já vêm dentro do arquivo — o app conecta sozinho em qualquer aparelho. Só mexa aqui para apontar para outro projeto.</div>'
+      : '<div class="warnbox">Você está usando credenciais diferentes das que vêm no arquivo.</div>'}
+    <div class="f"><label>Project URL</label>
+      <input class="in" id="c_url" value="${esc(c.url)}" placeholder="https://xxxxx.supabase.co" autocapitalize="off" spellcheck="false"></div>
+    <div class="f"><label>Chave anon / publishable</label>
+      <input class="in" id="c_key" value="${esc(c.key)}" placeholder="sb_publishable_..." autocapitalize="off" spellcheck="false"></div>
+    <button class="btn full sm" data-a="cfgSalvar">Salvar e reconectar</button>
+    ${c.url === SB_URL && c.key === SB_KEY ? '' :
+      '<button class="btn gh full sm" style="margin-top:9px" data-a="cfgPadrao">Voltar às credenciais do arquivo</button>'}
+    <p class="mini" style="margin-top:10px">Use apenas a chave <b>publishable</b> ou <b>anon</b> (públicas).
+      Chaves <code>sb_secret_</code> e <code>service_role</code> são recusadas aqui — elas ignoram a segurança do banco.</p>
+  </div>
+
+  <div class="sec-title">Notificações</div>
+  <div class="card">
+    ${permNotif() === 'granted'
+      ? `<div class="okbox">Ativadas neste aparelho.${swAtivo() ? '' : ' O app ainda não instalou o service worker — publique o <code>sw.js</code> junto do <code>index.html</code> para os avisos aparecerem com o app fechado.'}</div>
+         <button class="btn full sm" data-a="testarNotif">Enviar um aviso de teste</button>`
+      : permNotif() === 'denied'
+      ? `<div class="warnbox">Bloqueadas para este site. Libere em <b>Configurações do site → Notificações</b> no navegador (pelo cadeado ao lado do endereço) e recarregue.</div>`
+      : `<p class="mini" style="margin-bottom:11px">Autorize para receber os lembretes e os hábitos com horário no seu aparelho.</p>
+         <button class="btn pri full sm" data-a="pedirNotif">Ativar notificações</button>`}
+    <p class="mini" style="margin-top:11px">Os avisos disparam no horário marcado, nos dias previstos, e
+      só enquanto o item ainda estiver pendente. No iPhone, é obrigatório ter adicionado o app à Tela de Início.</p>
+  </div>
+
+  <div class="sec-title">Backup local</div>
+  <div class="card">
+    <div class="btnrow" style="margin-bottom:9px">
+      <button class="btn" data-a="exportar">${ic('baixar',15)} Exportar JSON</button>
+      <button class="btn" data-a="importar">${ic('enviar',15)} Importar</button>
+    </div>
+    <button class="btn danger full" data-a="zerar">Apagar dados deste aparelho</button>
+  </div>
+
+  <div class="sec-title">Bibliotecas</div>
+  <div class="card tight">
+    <div class="row" data-a="ir" data-v="alimentos"><div class="g"><div class="t">Alimentos</div>
+      <div class="s">${DB.alimentos.length} cadastrados</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+    <div class="row" data-a="ir" data-v="pratos"><div class="g"><div class="t">Pratos e variações</div>
+      <div class="s">${DB.pratos.length} cadastrados</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+    <div class="row" data-a="ir" data-v="fichas"><div class="g"><div class="t">Fichas de treino</div>
+      <div class="s">${DB.fichas.length} cadastradas</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+  </div>
+  <div class="card"><p class="mini">Vitta — versão <b>${VERSAO}</b>. Funciona offline; adicione à
+    tela de início do celular pelo menu do navegador para abrir como aplicativo.<br>
+    Se esta versão não for a que você acabou de publicar, o navegador está servindo uma cópia
+    guardada: recarregue segurando o botão de atualizar (ou Ctrl+Shift+R no computador).</p></div>`;
+};
+/* =========================================================
+   MÓDULO 1 — EXERCÍCIOS
+   ========================================================= */
+TITULOS.ficha = ['Ficha de treino', 'exercícios, séries e cargas alvo'];
+const GRUPOS = ['Peito', 'Costas', 'Ombro', 'Bíceps', 'Tríceps', 'Quadríceps', 'Posterior', 'Glúteo', 'Abdômen', 'Panturrilha', 'Cardio', 'Outro'];
+const CORES = ['#A9743C', '#5F7346', '#7A6E9E', '#4A7B8A', '#A2657A', '#8A8A3C'];
+
+const volSets = sets => (sets || []).reduce((a, s) => a + num(s.reps) * num(s.carga), 0);
+function volDia(d) {
+  const t = (DB.dias[d] || {}).treino; if (!t) return 0;
+  return (t.itens || []).reduce((a, i) => a + volSets(i.sets), 0);
+}
+function fichaDoDia(d) {
+  const w = parseD(d).getDay();
+  return DB.fichas.find(f => (f.dias || []).includes(w));
+}
+
+/* ---------- registro do dia ---------- */
+ACT.escolherFicha = () => {
+  const fs = DB.fichas;
+  sheet(`<h3>Qual treino de hoje?</h3><p class="hint">Escolha uma ficha montada ou registre um treino livre.</p>
+    ${fs.length ? fs.map(f => `<button class="btn full" style="justify-content:flex-start;margin-bottom:8px"
+        data-a="iniciarTreino" data-f="${f.id}"><span class="dot" style="background:${f.cor}"></span>
+        ${esc(f.nome)} <span style="color:var(--tx3);font-weight:500">· ${(f.exercicios || []).length} ex.</span></button>`).join('')
+      : `<div class="empty"><b>${ic('ficha')}</b>Você ainda não montou nenhuma ficha.</div>`}
+    <button class="btn full" style="margin-bottom:8px" data-a="iniciarTreino" data-f="">${ic('meta',15)} Treino livre (sem ficha)</button>
+    <button class="btn gh full" data-a="irFichas">${ic('mais',15)} Montar uma ficha</button>`);
+};
+ACT.irFichas = () => { fechar(); SUB._back = 'treino'; go('fichas', true); };
+ACT.iniciarTreino = e => {
+  const f = DB.fichas.find(x => x.id === e.dataset.f);
+  const x = dia(D);
+  x.treino = {
+    fichaId: f ? f.id : null, nome: f ? f.nome : 'Treino livre', cor: f ? f.cor : 'var(--tre)',
+    feito: false, duracao: 60, obs: '',
+    itens: f ? (f.exercicios || []).map(ex => ({
+      exId: ex.id, nome: ex.nome, grupo: ex.grupo,
+      alvo: { series: ex.series, reps: ex.reps, carga: ex.carga },
+      feito: false, sets: [], obs: ''
+    })) : []
+  };
+  tocaDia(D); save(); fechar(); render();
+};
+ACT.cancelarTreino = () => confirmar('Remover o registro de treino deste dia?', () => {
+  dia(D).treino = null; tocaDia(D); save(); render();
+});
+ACT.concluirTreino = () => {
+  const t = dia(D).treino; t.feito = !t.feito;
+  t.duracao = numOf('t_dur') || t.duracao; tocaDia(D); save();
+  toast(t.feito ? 'Treino concluído' : 'Treino reaberto'); render();
+};
+ACT.durTreino = e => { dia(D).treino.duracao = num(e.value); tocaDia(D); save(false); };
+ACT.tickEx = e => {
+  const t = dia(D).treino, i = t.itens[+e.dataset.i];
+  i.feito = !i.feito;
+  if (i.feito && !i.sets.length && i.alvo) {
+    const s = Math.max(1, num(i.alvo.series) || 1);
+    for (let k = 0; k < s; k++) i.sets.push({ reps: num(i.alvo.reps), carga: num(i.alvo.carga) });
+  }
+  tocaDia(D); save(); render();
+};
+
+/* --- sheet de lançamento de séries --- */
+ACT.abrirEx = e => { SUB.exI = +e.dataset.i; sheetEx(); };
+function sheetEx() {
+  const t = dia(D).treino, i = t.itens[SUB.exI];
+  const sets = i.sets.length ? i.sets : [{ reps: i.alvo ? i.alvo.reps : '', carga: i.alvo ? i.alvo.carga : '' }];
+  sheet(`<h3>${esc(i.nome)}</h3>
+    <p class="hint">${i.alvo ? `Alvo: ${esc(i.alvo.series || '—')} × ${esc(i.alvo.reps || '—')} · ${esc(i.alvo.carga || 0)} kg` : 'Exercício extra'}</p>
+    <div id="setlist">${sets.map((s, k) => `
+      <div class="row" style="gap:8px">
+        <div style="width:26px;color:var(--tx3);font-size:12px;font-weight:700">${k + 1}ª</div>
+        <input class="in" style="flex:1" type="number" inputmode="numeric" id="s_r${k}" value="${s.reps ?? ''}" placeholder="reps">
+        <input class="in" style="flex:1" type="number" inputmode="decimal" step="0.5" id="s_c${k}" value="${s.carga ?? ''}" placeholder="kg">
+        <button class="btn xs danger" data-a="delSet" data-k="${k}">${ic('x',14)}</button>
+      </div>`).join('')}</div>
+    <button class="btn gh full sm" style="margin:6px 0 12px" data-a="addSet">${ic('mais',15)} Adicionar série</button>
+    <div class="f"><label>Observação</label><input class="in" id="s_obs" value="${esc(i.obs || '')}" placeholder="ex: aumentei 2,5kg, senti o ombro..."></div>
+    <div class="btnrow">
+      <button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarEx" data-n="${sets.length}">Salvar séries</button>
+    </div>
+    ${i.extra ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delEx">Remover exercício</button>` : ''}`);
+}
+function lerSets(n) {
+  const s = [];
+  for (let k = 0; k < n; k++) {
+    const r = valOf('s_r' + k), c = valOf('s_c' + k);
+    if (r !== '' || c !== '') s.push({ reps: num(r), carga: num(c) });
+  }
+  return s;
+}
+ACT.addSet = e => {
+  const t = dia(D).treino, i = t.itens[SUB.exI];
+  const n = document.querySelectorAll('#setlist .row').length;
+  i.sets = lerSets(n); const last = i.sets[i.sets.length - 1];
+  i.sets.push(last ? { reps: last.reps, carga: last.carga } : { reps: '', carga: '' });
+  sheetEx();
+};
+ACT.delSet = e => {
+  const t = dia(D).treino, i = t.itens[SUB.exI];
+  const n = document.querySelectorAll('#setlist .row').length;
+  i.sets = lerSets(n); i.sets.splice(+e.dataset.k, 1); sheetEx();
+};
+ACT.salvarEx = e => {
+  const t = dia(D).treino, i = t.itens[SUB.exI];
+  i.sets = lerSets(+e.dataset.n); i.obs = valOf('s_obs');
+  if (i.sets.length) i.feito = true;
+  tocaDia(D); save(); fechar(); render();
+};
+ACT.delEx = () => {
+  const t = dia(D).treino; t.itens.splice(SUB.exI, 1); tocaDia(D); save(); fechar(); render();
+};
+
+/* --- exercício extra (fora da ficha) --- */
+ACT.addExtra = () => {
+  sheet(`<h3>Exercício extra</h3><p class="hint">Algo que você fez além do que estava na ficha.</p>
+    <div class="f"><label>Nome</label><input class="in" id="e_nome" placeholder="ex: Elevação lateral"></div>
+    <div class="grid3">
+      <div class="f"><label>Séries</label><input class="in" id="e_s" type="number" inputmode="numeric" value="3"></div>
+      <div class="f"><label>Reps</label><input class="in" id="e_r" type="number" inputmode="numeric" value="12"></div>
+      <div class="f"><label>Carga kg</label><input class="in" id="e_c" type="number" inputmode="decimal" step="0.5" value="0"></div>
+    </div>
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+    <button class="btn pri" data-a="salvarExtra">Adicionar</button></div>`);
+};
+ACT.salvarExtra = () => {
+  const nome = valOf('e_nome').trim(); if (!nome) return toast('Dê um nome ao exercício');
+  const x = dia(D);
+  if (!x.treino) ACT.iniciarTreino({ dataset: { f: '' } });
+  const s = numOf('e_s') || 1, r = numOf('e_r'), c = numOf('e_c');
+  const sets = []; for (let k = 0; k < s; k++) sets.push({ reps: r, carga: c });
+  x.treino.itens.push({ exId: uid(), nome, grupo: 'Outro', extra: true, alvo: { series: s, reps: r, carga: c }, feito: true, sets, obs: '' });
+  tocaDia(D); save(); fechar(); render();
+};
+
+/* =========================================================
+   ATIVIDADES E ESPORTES
+   A lista fixa é só um atalho: você pode cadastrar qualquer
+   atividade, com esforço e duração padrão, e dar a ela uma
+   frequência semanal para aparecer sozinha no dia certo.
+   ========================================================= */
+TITULOS.atividades = ['Minhas atividades', 'esportes, duração e frequência'];
+const atvById = id => (DB.atividades || []).find(a => a.id === id);
+const atvDoDia = d => (DB.atividades || []).filter(a => (a.dias || []).includes(parseD(d).getDay()));
+const metDe = nome => MET[nome] || (((DB.atividades || []).find(a => a.nome === nome) || {}).met) || 5;
+const esforcoNome = met => (ESFORCO.find(e => num(e[0]) >= num(met)) || ESFORCO[ESFORCO.length - 1])[1].split(' —')[0];
+
+/* --- lançar uma atividade no dia --- */
+ACT.addEsporte = e => {
+  const pre = e && e.dataset && e.dataset.atv ? atvById(e.dataset.atv) : null;
+  SUB.atv = {
+    nome: pre ? pre.nome : Object.keys(MET)[0],
+    nova: false, met: pre ? pre.met : null,
+    min: pre ? pre.min || 45 : 45, int: pre ? pre.int || 1 : 1,
+    salvar: false, dias: pre ? (pre.dias || []).slice() : [], edita: pre ? pre.id : null
+  };
+  sheetAtv();
+};
+function atvCapturar() {
+  const a = SUB.atv;
+  const g = id => { const el = document.getElementById(id); return el ? el.value : null; };
+  const sel = g('es_n'); if (sel !== null) { a.nova = sel === '__nova'; if (!a.nova) a.nome = sel; }
+  const nome = g('es_nome'); if (nome !== null && a.nova) a.nome = nome;
+  const esf = g('es_esf'); if (esf !== null) a.met = num(esf);
+  const min = g('es_m'); if (min !== null) a.min = num(min);
+  const int = g('es_i'); if (int !== null) a.int = num(int);
+  const obs = g('es_o'); if (obs !== null) a.obs = obs;
+}
+ACT.atvMuda = () => { atvCapturar(); sheetAtv(); };
+/* Só recalcula o gasto. Redesenhar a folha a cada digitação fazia o campo
+   perder o foco e, pior, engolia o toque seguinte no botão ao lado. */
+ACT.atvPrev = () => {
+  atvCapturar();
+  const b = document.getElementById('es_prev'); if (!b) return;
+  const a = SUB.atv, met = a.nova ? (a.met || 5) : metDe(a.nome);
+  const kcal = Math.round(kcalEsporte2(met, a.min) * a.int);
+  b.innerHTML = `Gasto estimado: <b>${n0(kcal)} kcal</b>` + (a.nova ? ` · esforço ${esc(esforcoNome(met))}` : '');
+};
+ACT.atvSalvarTog = () => { atvCapturar(); SUB.atv.salvar = !SUB.atv.salvar; sheetAtv(); };
+ACT.atvDia = e => {
+  atvCapturar(); const d = +e.dataset.d, i = SUB.atv.dias.indexOf(d);
+  i < 0 ? SUB.atv.dias.push(d) : SUB.atv.dias.splice(i, 1); sheetAtv();
+};
+
+function sheetAtv() {
+  const a = SUB.atv, salvas = DB.atividades || [];
+  const met = a.nova ? (a.met || 5) : metDe(a.nome);
+  const kcal = Math.round(kcalEsporte2(met, a.min) * a.int);
+  sheet(`<h3>${a.edita ? 'Registrar' : 'Atividade / esporte'}</h3>
+    <p class="hint">Calculamos o gasto pelo esforço da atividade e pelo seu peso (${n1(DB.perfil.peso)} kg).</p>
+
+    <div class="f"><label>Atividade</label>
+      <select class="in" id="es_n" data-ch="atvMuda">
+        ${salvas.length ? `<optgroup label="Minhas atividades">
+          ${salvas.map(x => `<option ${!a.nova && a.nome === x.nome ? 'selected' : ''}>${esc(x.nome)}</option>`).join('')}
+        </optgroup>` : ''}
+        <optgroup label="Lista pronta">
+          ${Object.keys(MET).map(k => `<option ${!a.nova && a.nome === k ? 'selected' : ''}>${k}</option>`).join('')}
+        </optgroup>
+        <option value="__nova" ${a.nova ? 'selected' : ''}>+ Outra atividade…</option>
+      </select></div>
+
+    ${a.nova ? `<div class="f"><label>Nome da atividade</label>
+        <input class="in" id="es_nome" value="${esc(a.nome === '__nova' ? '' : a.nome || '')}"
+          placeholder="ex: Alongamento, Jiu-jitsu, Surf" data-inp="atvPrev"></div>
+      <div class="f"><label>Esforço</label>
+        <select class="in" id="es_esf" data-ch="atvPrev">
+          ${ESFORCO.map(x => `<option value="${x[0]}" ${String(a.met || 5) === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}
+        </select></div>` : ''}
+
+    <div class="grid2">
+      <div class="f"><label>Duração (min)</label>
+        <input class="in" id="es_m" type="number" inputmode="numeric" value="${a.min}" data-inp="atvPrev"></div>
+      <div class="f"><label>Como foi</label>
+        <select class="in" id="es_i" data-ch="atvPrev">
+          <option value="0.8" ${a.int === 0.8 ? 'selected' : ''}>Mais leve que o normal</option>
+          <option value="1" ${a.int === 1 ? 'selected' : ''}>Normal</option>
+          <option value="1.25" ${a.int === 1.25 ? 'selected' : ''}>Mais forte que o normal</option>
+        </select></div>
+    </div>
+    <div class="okbox" id="es_prev">Gasto estimado: <b>${n0(kcal)} kcal</b>${a.nova ? ` · esforço ${esc(esforcoNome(met))}` : ''}</div>
+    <div class="f"><label>Observação</label>
+      <input class="in" id="es_o" value="${esc(a.obs || '')}" placeholder="opcional" data-inp="atvPrev"></div>
+
+    <div class="row" style="border-top:1px solid var(--line);padding-top:12px">
+      <button class="tick ${a.salvar ? 'on' : ''}" data-a="atvSalvarTog">${ic('check')}</button>
+      <div class="g"><div class="t">Guardar nas minhas atividades</div>
+        <div class="s">para lançar depois com um toque</div></div>
+    </div>
+    ${a.salvar ? `<div class="f" style="margin-top:9px"><label>Repetir nestes dias (opcional)</label>
+      <div class="chiprow">${DOW.map((d, i) =>
+        `<button class="chip ${a.dias.includes(i) ? 'on' : ''}" data-a="atvDia" data-d="${i}">${d}</button>`).join('')}</div>
+      <p class="mini" style="margin-top:6px">Nos dias marcados ela aparece como sugestão na tela de Exercícios, pronta para lançar.</p></div>` : ''}
+
+    <div class="btnrow" style="margin-top:12px"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarEsporte">Lançar no dia</button></div>`);
+}
+const kcalEsporte2 = (met, min, peso = num(DB.perfil.peso)) => Math.round(met * 3.5 * peso / 200 * min);
+
+ACT.salvarEsporte = () => {
+  atvCapturar();
+  const a = SUB.atv;
+  const nome = String(a.nome || '').trim();
+  if (!nome || nome === '__nova') return toast('Escolha ou dê um nome à atividade');
+  if (!a.min) return toast('Informe a duração');
+  const met = a.nova ? (a.met || 5) : metDe(nome);
+  const kcal = Math.round(kcalEsporte2(met, a.min) * a.int);
+
+  if (a.salvar) {
+    const existente = (DB.atividades || []).find(x => x.nome.toLowerCase() === nome.toLowerCase());
+    const o = { nome, met, min: a.min, int: a.int, dias: a.dias, upd: nowISO() };
+    if (existente) Object.assign(existente, o);
+    else (DB.atividades = DB.atividades || []).push(Object.assign({ id: uid() }, o));
+  }
+  dia(D).esportes.push({ id: uid(), nome, min: a.min, int: a.int, met, kcal, obs: a.obs || '' });
+  tocaDia(D); save(); fechar(); render(); toast('Atividade registrada ✓');
+};
+ACT.delEsporte = e => { const x = dia(D); x.esportes.splice(+e.dataset.i, 1); tocaDia(D); save(); render(); };
+
+/* --- lançamento em um toque, a partir da agenda --- */
+ACT.atvRapida = e => {
+  const a = atvById(e.dataset.atv); if (!a) return;
+  const kcal = Math.round(kcalEsporte2(a.met, a.min || 45) * (a.int || 1));
+  dia(D).esportes.push({ id: uid(), nome: a.nome, min: a.min || 45, int: a.int || 1, met: a.met, kcal, obs: '' });
+  tocaDia(D); save(); render(); toast(`${a.nome} registrado ✓`);
+};
+
+/* --- gerenciar minhas atividades --- */
+FAB.atividades = 'novaAtv';
+ACT.irAtividades = () => { SUB._back = 'treino'; go('atividades', true); SUB._back = 'treino'; };
+ACT.novaAtv = () => { SUB.atvEdit = null; sheetAtvEdit(); };
+ACT.editAtv = e => { SUB.atvEdit = e.dataset.atv; sheetAtvEdit(); };
+function sheetAtvEdit() {
+  const a = SUB.atvEdit ? atvById(SUB.atvEdit) : { nome: '', met: 5, min: 45, int: 1, dias: [] };
+  SUB.atvDias = SUB.atvDias || (a.dias || []).slice();
+  sheet(`<h3>${SUB.atvEdit ? 'Editar' : 'Nova'} atividade</h3>
+    <p class="hint">Fica guardada para você lançar com um toque. Com dias marcados, ela vira sugestão automática.</p>
+    <div class="f"><label>Nome</label>
+      <input class="in" id="ae_nome" value="${esc(a.nome)}" placeholder="ex: Alongamento, Futebol, Surf"></div>
+    <div class="f"><label>Esforço</label>
+      <select class="in" id="ae_esf">
+        ${ESFORCO.map(x => `<option value="${x[0]}" ${String(a.met) === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}
+      </select></div>
+    <div class="grid2">
+      <div class="f"><label>Duração padrão (min)</label>
+        <input class="in" id="ae_min" type="number" inputmode="numeric" value="${a.min || 45}"></div>
+      <div class="f"><label>Intensidade padrão</label>
+        <select class="in" id="ae_int">
+          <option value="0.8" ${a.int === 0.8 ? 'selected' : ''}>Leve</option>
+          <option value="1" ${(a.int || 1) === 1 ? 'selected' : ''}>Normal</option>
+          <option value="1.25" ${a.int === 1.25 ? 'selected' : ''}>Forte</option>
+        </select></div>
+    </div>
+    <div class="f"><label>Frequência</label>
+      <div class="chiprow">${DOW.map((d, i) =>
+        `<button class="chip ${SUB.atvDias.includes(i) ? 'on' : ''}" data-a="aeDia" data-d="${i}">${d}</button>`).join('')}</div>
+      <p class="mini" style="margin-top:6px">Sem nenhum dia marcado ela continua na lista, só não vira sugestão.</p></div>
+    <div class="btnrow"><button class="btn" data-a="fecharAtv">Cancelar</button>
+      <button class="btn pri" data-a="salvarAtv">Salvar</button></div>
+    ${SUB.atvEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delAtv" data-atv="${SUB.atvEdit}">Excluir atividade</button>` : ''}`);
+}
+ACT.fecharAtv = () => { SUB.atvDias = null; fechar(); };
+ACT.aeDia = e => {
+  const tmp = { nome: valOf('ae_nome'), esf: valOf('ae_esf'), min: valOf('ae_min'), int: valOf('ae_int') };
+  const d = +e.dataset.d, i = SUB.atvDias.indexOf(d);
+  i < 0 ? SUB.atvDias.push(d) : SUB.atvDias.splice(i, 1);
+  sheetAtvEdit();
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  set('ae_nome', tmp.nome); set('ae_esf', tmp.esf); set('ae_min', tmp.min); set('ae_int', tmp.int);
+};
+ACT.salvarAtv = () => {
+  const nome = valOf('ae_nome').trim(); if (!nome) return toast('Dê um nome à atividade');
+  const o = {
+    nome, met: num(valOf('ae_esf')), min: numOf('ae_min') || 45,
+    int: num(valOf('ae_int')) || 1, dias: SUB.atvDias || [], upd: nowISO()
+  };
+  DB.atividades = DB.atividades || [];
+  if (SUB.atvEdit) Object.assign(atvById(SUB.atvEdit), o);
+  else DB.atividades.push(Object.assign({ id: uid() }, o));
+  SUB.atvDias = null; save(); fechar(); render();
+};
+ACT.delAtv = e => {
+  const id = e.dataset.atv, a = atvById(id);
+  confirmar(`Excluir “${a ? a.nome : 'esta atividade'}” da sua lista? As atividades já registradas nos dias continuam no histórico.`, () => {
+    DB.atividades = DB.atividades.filter(x => x.id !== id);
+    enfileirarDel('atividades', id); SUB.atvDias = null; save(); fechar(); render();
+  });
+};
+
+SCREENS.atividades = () => {
+  const l = DB.atividades || [];
+  return (l.length ? l.map(a => `<div class="card tight">
+      <div class="row" style="border:0;padding:2px 0">
+        <div class="g" data-a="editAtv" data-atv="${a.id}">
+          <div class="t">${esc(a.nome)}</div>
+          <div class="s">${a.min || 45} min · ${esc(esforcoNome(a.met))} · ${n0(kcalEsporte2(a.met, a.min || 45) * (a.int || 1))} kcal
+            ${(a.dias || []).length ? ' · ' + a.dias.map(i => DOW[i]).join(', ') : ' · sem frequência'}</div>
+        </div>
+        <button class="btn xs pri" data-a="atvRapida" data-atv="${a.id}">Lançar</button>
+      </div></div>`).join('')
+    : `<div class="card"><div class="empty"><b>${ic('bola')}</b>Cadastre as atividades que você repete — futebol de quinta,
+        alongamento todo dia, corrida no fim de semana. Marque os dias e elas aparecem sozinhas na tela de
+        Exercícios, prontas para lançar com um toque.</div></div>`)
+    + `<button class="btn pri full" data-a="novaAtv" style="margin-bottom:14px">${ic('mais',15)} Nova atividade</button>`;
+};
+
+/* ---------- tela ---------- */
+FAB.treino = 'fabTreino';
+ACT.fabTreino = () => (dia(D).treino ? ACT.addExtra() : ACT.escolherFicha());
+
+SCREENS.treino = () => {
+  const x = dia(D), t = x.treino, sug = fichaDoDia(D);
+  let h = dateStrip();
+
+  if (!t) {
+    h += `<div class="card">
+      <div class="empty"><b>${ic('treino')}</b>Nenhum treino registrado em ${esc(dLabel(D))}.</div>
+      ${sug ? `<div class="okbox">Sugestão da agenda: <b>${esc(sug.nome)}</b></div>
+        <button class="btn pri full" style="margin-bottom:8px" data-a="iniciarTreino" data-f="${sug.id}">Iniciar ${esc(sug.nome)}</button>` : ''}
+      <button class="btn full" data-a="escolherFicha">Escolher treino</button>
+    </div>`;
+  } else {
+    const feitos = t.itens.filter(i => i.feito).length, tot = t.itens.length;
+    const vol = t.itens.reduce((a, i) => a + volSets(i.sets), 0);
+    h += `<div class="card">
+      <div class="ch"><span class="dot" style="background:${t.cor || 'var(--tre)'}"></span>
+        <h2>${esc(t.nome)}</h2>
+        <span class="pill ${t.feito ? 'ok' : 'mut'}">${t.feito ? 'concluído' : 'em aberto'}</span></div>
+      <div class="kpi" style="margin-bottom:11px">
+        <div><b>${feitos}/${tot}</b><span>exercícios</span></div>
+        <div><b>${n0(vol)}</b><span>kg volume</span></div>
+        <div><b>${n0(t.duracao || 0)}</b><span>minutos</span></div>
+      </div>
+      ${bar(feitos, Math.max(tot, 1), 'var(--tre)')}
+      <div class="grid2" style="margin-top:12px">
+        <div class="f" style="margin:0"><label>Duração (min)</label>
+          <input class="in" id="t_dur" type="number" inputmode="numeric" value="${t.duracao || ''}" data-ch="durTreino"></div>
+        <div class="f" style="margin:0"><label>&nbsp;</label>
+          <button class="btn ${t.feito ? '' : 'pri'} full" data-a="concluirTreino">${t.feito ? 'Reabrir' : 'Concluir treino'}</button></div>
+      </div>
+    </div>`;
+
+    h += tot ? `<div class="card">
+      <div class="ch"><h2>Exercícios</h2><span class="sub">toque para lançar séries</span></div>
+      ${t.itens.map((i, k) => {
+      const done = i.sets.length ? i.sets.map(s => `${s.reps}×${s.carga || 0}`).join(' · ') : '';
+      return `<div class="row">
+          <button class="tick ${i.feito ? 'on' : ''}" data-a="tickEx" data-i="${k}">${ic('check')}</button>
+          <div class="g" data-a="abrirEx" data-i="${k}">
+            <div class="t">${esc(i.nome)} ${i.extra ? '<span class="pill esc">extra</span>' : ''}</div>
+            <div class="s">${done ? esc(done) : i.alvo ? `alvo ${esc(i.alvo.series || '?')}×${esc(i.alvo.reps || '?')} · ${esc(i.alvo.carga || 0)}kg` : '—'}</div>
+          </div>
+          <div class="v" data-a="abrirEx" data-i="${k}">${ic('dir',16,'op')}</div>
+        </div>`;
+    }).join('')}
+      <button class="btn gh full sm" style="margin-top:10px" data-a="addExtra">${ic('mais',15)} Exercício extra</button>
+    </div>` : `<div class="card"><div class="empty"><b>${ic('mais')}</b>Treino livre: adicione os exercícios que você fez.</div>
+      <button class="btn pri full" data-a="addExtra">Adicionar exercício</button></div>`;
+    h += `<button class="btn gh full sm" style="margin-bottom:14px" data-a="cancelarTreino">Remover registro de treino</button>`;
+  }
+
+  /* esportes */
+  const es = x.esportes || [], kes = es.reduce((a, e) => a + e.kcal, 0);
+  const naAgenda = atvDoDia(D).filter(a => !es.some(e => e.nome === a.nome));
+  h += `<div class="sec-title">Esportes e atividades</div>
+  ${naAgenda.length ? `<div class="card tight">
+    <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>Na sua agenda de ${DOW[parseD(D).getDay()]}</h2></div>
+    ${naAgenda.map(a => `<div class="row">
+      <div class="g"><div class="t">${esc(a.nome)}</div>
+        <div class="s">${a.min || 45} min · ${n0(kcalEsporte2(a.met, a.min || 45) * (a.int || 1))} kcal</div></div>
+      <button class="btn xs pri" data-a="atvRapida" data-atv="${a.id}">Registrar</button>
+      <button class="btn xs" data-a="addEsporte" data-atv="${a.id}">Ajustar</button>
+    </div>`).join('')}
+  </div>` : ''}
+  <div class="card">
+    ${es.length ? es.map((e, i) => `<div class="row">
+      <div class="g"><div class="t">${esc(e.nome)}</div>
+        <div class="s">${e.min} min${e.obs ? ' · ' + esc(e.obs) : ''}</div></div>
+      <div class="v">${n0(e.kcal)}<span style="font-size:10px;color:var(--tx2)"> kcal</span></div>
+      <button class="btn xs danger" data-a="delEsporte" data-i="${i}">${ic('x',14)}</button>
+    </div>`).join('') + `<div class="row"><div class="g"><div class="t">Total do dia</div></div>
+      <div class="v" style="color:var(--tre)">${n0(kes)} kcal</div></div>`
+      : `<div class="empty"><b>${ic('bola')}</b>Futebol, caminhada, corrida, natação…</div>`}
+    <button class="btn ${es.length ? 'gh' : 'pri'} full sm" style="margin-top:10px" data-a="addEsporte">${ic('mais',15)} Registrar atividade</button>
+  </div>
+  <div class="card tight">
+    <div class="row" data-a="irFichasTop"><div class="g"><div class="t">Minhas fichas de treino</div>
+      <div class="s">${DB.fichas.length} ficha(s) montada(s)</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+    <div class="row" data-a="irAtividades"><div class="g"><div class="t">Minhas atividades</div>
+      <div class="s">${(DB.atividades || []).length} cadastrada(s)${atvDoDia(D).length ? ' · ' + atvDoDia(D).length + ' hoje' : ''}</div></div>
+      <div class="v">${ic('dir',16,'op')}</div></div>
+  </div>`;
+  return h;
+};
+ACT.irFichasTop = () => { SUB._back = 'treino'; go('fichas', true); SUB._back = 'treino'; };
+
+/* =========================================================
+   Fichas de treino (montagem)
+   ========================================================= */
+FAB.fichas = 'novaFicha';
+ACT.novaFicha = () => {
+  const f = { id: uid(), nome: '', cor: CORES[DB.fichas.length % CORES.length], dias: [], exercicios: [], upd: nowISO() };
+  DB.fichas.push(f); save(); SUB.fichaId = f.id; SUB._back = 'fichas'; go('ficha', true); SUB.fichaId = f.id; SUB._back = 'fichas';
+};
+ACT.abrirFicha = e => { const id = e.dataset.f; SUB = { fichaId: id, _back: 'fichas' }; go('ficha', true); SUB.fichaId = id; SUB._back = 'fichas'; };
+ACT.delFicha = e => {
+  const id = e.dataset.f;
+  confirmar('Excluir esta ficha? Os treinos já registrados não são apagados.', () => {
+    DB.fichas = DB.fichas.filter(f => f.id !== id); enfileirarDel('fichas', id); save(); go('fichas');
+  });
+};
+
+SCREENS.fichas = () => {
+  return DB.fichas.length ? DB.fichas.map(f => `<div class="card">
+      <div class="ch"><span class="dot" style="background:${f.cor}"></span><h2>${esc(f.nome || 'Sem nome')}</h2>
+        <button class="btn xs" data-a="abrirFicha" data-f="${f.id}">Editar</button></div>
+      <div class="mini">${(f.exercicios || []).length} exercícios${(f.dias || []).length ? ' · ' + f.dias.map(d => DOW[d]).join(', ') : ''}</div>
+      <div class="mini" style="color:var(--tx3);margin-top:5px">${esc((f.exercicios || []).map(e => e.nome).slice(0, 4).join(' · ')) || 'vazia'}</div>
+    </div>`).join('') + `<button class="btn pri full" data-a="novaFicha" style="margin-bottom:14px">${ic('mais',15)} Nova ficha</button>`
+    : `<div class="card"><div class="empty"><b>${ic('ficha')}</b>Monte sua primeira ficha: dê um nome (ex: “Treino A — Peito e tríceps”), escolha os dias da semana e liste os exercícios com séries, repetições e carga alvo.</div>
+      <button class="btn pri full" data-a="novaFicha">${ic('mais',15)} Criar ficha</button></div>`;
+};
+
+/* --- editor de ficha --- */
+const fichaAtual = () => DB.fichas.find(f => f.id === SUB.fichaId);
+ACT.fSalvar = () => {
+  const f = fichaAtual(); f.nome = valOf('f_nome').trim() || 'Sem nome'; f.upd = nowISO();
+  save(); toast('Ficha salva ✓'); go('fichas');
+};
+function fCapturar() {
+  const f = fichaAtual(); if (!f) return;
+  if (document.getElementById('f_nome')) f.nome = valOf('f_nome').trim() || f.nome;
+}
+ACT.fDia = e => {
+  const f = fichaAtual(), d = +e.dataset.d; fCapturar();
+  f.dias = f.dias || []; const i = f.dias.indexOf(d);
+  i < 0 ? f.dias.push(d) : f.dias.splice(i, 1); f.upd = nowISO(); save(); render();
+};
+ACT.fCor = e => { const f = fichaAtual(); fCapturar(); f.cor = e.dataset.c; f.upd = nowISO(); save(); render(); };
+ACT.fAddEx = e => {
+  SUB.exEdit = e && e.dataset.i !== undefined ? +e.dataset.i : -1;
+  const f = fichaAtual(); fCapturar();
+  const ex = SUB.exEdit >= 0 ? f.exercicios[SUB.exEdit] : { nome: '', grupo: 'Peito', series: 3, reps: 12, carga: 0, desc: 60, obs: '' };
+  sheet(`<h3>${SUB.exEdit >= 0 ? 'Editar' : 'Novo'} exercício</h3>
+    <div class="f"><label>Nome</label><input class="in" id="x_nome" value="${esc(ex.nome)}" placeholder="ex: Supino reto com barra"></div>
+    <div class="f"><label>Grupo muscular</label><select class="in" id="x_grupo">
+      ${GRUPOS.map(g => `<option ${g === ex.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
+    <div class="grid3">
+      <div class="f"><label>Séries</label><input class="in" id="x_s" type="number" inputmode="numeric" value="${ex.series}"></div>
+      <div class="f"><label>Repetições</label><input class="in" id="x_r" type="number" inputmode="numeric" value="${ex.reps}"></div>
+      <div class="f"><label>Carga (kg)</label><input class="in" id="x_c" type="number" inputmode="decimal" step="0.5" value="${ex.carga}"></div>
+    </div>
+    <div class="grid2">
+      <div class="f"><label>Descanso (s)</label><input class="in" id="x_d" type="number" inputmode="numeric" value="${ex.desc || 60}"></div>
+      <div class="f"><label>Observação</label><input class="in" id="x_o" value="${esc(ex.obs || '')}" placeholder="cadência, técnica…"></div>
+    </div>
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="fSalvarEx">Salvar</button></div>
+    ${SUB.exEdit >= 0 ? `<button class="btn danger full sm" style="margin-top:9px" data-a="fDelEx">Excluir exercício</button>` : ''}`);
+};
+ACT.fSalvarEx = () => {
+  const f = fichaAtual(), nome = valOf('x_nome').trim();
+  if (!nome) return toast('Dê um nome ao exercício');
+  const ex = {
+    id: SUB.exEdit >= 0 ? f.exercicios[SUB.exEdit].id : uid(), nome, grupo: valOf('x_grupo'),
+    series: numOf('x_s'), reps: numOf('x_r'), carga: numOf('x_c'), desc: numOf('x_d'), obs: valOf('x_o')
+  };
+  SUB.exEdit >= 0 ? f.exercicios[SUB.exEdit] = ex : f.exercicios.push(ex);
+  f.upd = nowISO(); save(); fechar(); render();
+};
+ACT.fDelEx = () => { const f = fichaAtual(); f.exercicios.splice(SUB.exEdit, 1); f.upd = nowISO(); save(); fechar(); render(); };
+ACT.fMove = e => {
+  const f = fichaAtual(), i = +e.dataset.i, j = i + (+e.dataset.dir);
+  if (j < 0 || j >= f.exercicios.length) return;
+  const a = f.exercicios; [a[i], a[j]] = [a[j], a[i]]; f.upd = nowISO(); save(); render();
+};
+
+SCREENS.ficha = () => {
+  const f = fichaAtual(); if (!f) return '<div class="empty">Ficha não encontrada.</div>';
+  return `<div class="card">
+    <div class="f"><label>Nome da ficha</label>
+      <input class="in" id="f_nome" value="${esc(f.nome)}" placeholder="Treino A — Peito e tríceps"></div>
+    <div class="f"><label>Cor</label><div class="chiprow">
+      ${CORES.map(c => `<button class="chip" style="background:${c}22;border-color:${f.cor === c ? c : 'var(--line)'}"
+        data-a="fCor" data-c="${c}"><span class="dot" style="background:${c};display:inline-block"></span></button>`).join('')}
+    </div></div>
+    <div class="f" style="margin:0"><label>Dias da semana</label><div class="chiprow">
+      ${DOW.map((d, i) => `<button class="chip ${(f.dias || []).includes(i) ? 'on' : ''}" data-a="fDia" data-d="${i}">${d}</button>`).join('')}
+    </div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><h2>Exercícios</h2><span class="sub">${(f.exercicios || []).length}</span></div>
+    ${(f.exercicios || []).map((ex, i) => `<div class="row">
+      <div class="g" data-a="fAddEx" data-i="${i}"><div class="t">${esc(ex.nome)}</div>
+        <div class="s">${esc(ex.grupo)} · ${ex.series}×${ex.reps} · ${ex.carga}kg · ${ex.desc || 60}s</div></div>
+      <button class="btn xs" data-a="fMove" data-i="${i}" data-dir="-1" aria-label="Subir">${ic('baixo',13,'up')}</button>
+      <button class="btn xs" data-a="fMove" data-i="${i}" data-dir="1" aria-label="Descer">${ic('baixo',13)}</button>
+    </div>`).join('') || `<div class="empty"><b>${ic('treino')}</b>Nenhum exercício ainda.</div>`}
+    <button class="btn gh full sm" style="margin-top:10px" data-a="fAddEx">${ic('mais',15)} Adicionar exercício</button>
+  </div>
+  <div class="btnrow" style="margin-bottom:14px">
+    <button class="btn danger" data-a="delFicha" data-f="${f.id}">Excluir</button>
+    <button class="btn pri" data-a="fSalvar">Salvar ficha</button>
+  </div>`;
+};
+/* =========================================================
+   MÓDULO 2 — DIETA
+   ========================================================= */
+TITULOS.prato = ['Prato', 'monte a combinação'];
+const refNome = k => (REFS.find(r => r[0] === k) || [, k])[1];
+const refIcone = k => (REFS.find(r => r[0] === k) || [, , 'almoco'])[2];
+const alimById = id => DB.alimentos.find(a => a.id === id);
+
+function macrosPrato(p) {
+  const t = Z();
+  (p.itens || []).forEach(it => {
+    const a = alimById(it.alimentoId); if (!a) return;
+    const f = num(it.qtd) / (num(a.porcao) || 1);
+    t.kcal += a.kcal * f; t.c += a.c * f; t.p += a.p * f; t.g += a.g * f; t.liq += (a.liq || 0) * f;
+  });
+  return t;
+}
+
+/* ---------- água ---------- */
+ACT.agua = e => {
+  const x = dia(D); x.agua = Math.max(0, (x.agua || 0) + (+e.dataset.v));
+  tocaDia(D); save(); render();
+};
+ACT.aguaCustom = () => {
+  sheet(`<h3>Registrar água</h3><p class="hint">Informe a quantidade em ml.</p>
+    <div class="f"><input class="in" id="ag_v" type="number" inputmode="numeric" value="250"></div>
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+    <button class="btn pri" data-a="aguaSalvar">Adicionar</button></div>`);
+};
+ACT.aguaSalvar = () => { const x = dia(D); x.agua = Math.max(0, (x.agua || 0) + numOf('ag_v')); tocaDia(D); save(); fechar(); render(); };
+
+/* ---------- lançamento de refeição ---------- */
+ACT.addRef = e => { SUB.ref = e.dataset.r; SUB.aba = SUB.aba || 'plano'; SUB.busca = ''; sheetAdd(); };
+ACT.abaAdd = e => { SUB.aba = e.dataset.t; sheetAdd(); };
+ACT.buscaAlim = e => { SUB.busca = e.value; sheetAdd(true); };
+
+function sheetAdd(keepFocus) {
+  const r = SUB.ref, aba = SUB.aba || 'plano';
+  const pratosRef = DB.pratos.filter(p => p.refeicao === r || p.refeicao === 'qualquer');
+  const q = (SUB.busca || '').toLowerCase();
+  const alims = DB.alimentos.filter(a => !q || a.nome.toLowerCase().includes(q)).slice(0, 40);
+
+  let corpo = '';
+  if (aba === 'plano') {
+    corpo = pratosRef.length ? pratosRef.map(p => {
+      const m = macrosPrato(p);
+      return `<div class="row"><div class="g" data-a="addPrato" data-p="${p.id}">
+        <div class="t">${esc(p.nome)}</div>
+        <div class="s">${n0(m.kcal)} kcal · C${n0(m.c)} P${n0(m.p)} G${n0(m.g)}</div></div>
+        <button class="btn xs pri" data-a="addPrato" data-p="${p.id}">Lançar</button></div>`;
+    }).join('') : `<div class="empty"><b>${ic('almoco')}</b>Nenhum prato cadastrado para ${esc(refNome(r))}.</div>`;
+    corpo += `<button class="btn gh full sm" style="margin-top:10px" data-a="irPratos">${ic('mais',15)} Montar prato</button>`;
+  } else if (aba === 'alimento') {
+    corpo = `<input class="in" id="q_alim" placeholder="Buscar alimento…" value="${esc(SUB.busca || '')}" data-inp="buscaAlim" autocomplete="off">
+      <div style="max-height:38vh;overflow-y:auto;margin-top:8px">
+      ${alims.map(a => `<div class="row"><div class="g" data-a="addAlim" data-i="${a.id}">
+        <div class="t">${esc(a.nome)}</div><div class="s">${n0(a.kcal)} kcal / ${a.porcao}${a.un}</div></div>
+        <button class="btn xs" data-a="addAlim" data-i="${a.id}">${ic('mais',14)}</button></div>`).join('') || '<div class="empty">Nada encontrado.</div>'}
+      </div>
+      <button class="btn gh full sm" style="margin-top:10px" data-a="irAlimentos">Gerenciar alimentos</button>`;
+  } else {
+    corpo = `<div class="f"><label>O que você comeu/bebeu</label><input class="in" id="l_nome" placeholder="ex: Pizza de calabresa 2 fatias"></div>
+      <div class="grid2">
+        <div class="f"><label>Calorias (kcal)</label><input class="in" id="l_k" type="number" inputmode="numeric" placeholder="0"></div>
+        <div class="f"><label>Líquido (ml)</label><input class="in" id="l_l" type="number" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <div class="grid3">
+        <div class="f"><label>Carbo (g)</label><input class="in" id="l_c" type="number" inputmode="decimal" placeholder="0"></div>
+        <div class="f"><label>Prot (g)</label><input class="in" id="l_p" type="number" inputmode="decimal" placeholder="0"></div>
+        <div class="f"><label>Gord (g)</label><input class="in" id="l_g" type="number" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <button class="btn pri full" data-a="addLivre">Lançar</button>`;
+  }
+
+  sheet(`<h3>${ic(refIcone(r), 18)} ${esc(refNome(r))}</h3>
+    <p class="hint">Marque abaixo se for algo fora da dieta — o app contabiliza como escape sem deixar de somar as calorias.</p>
+    <div class="row" style="border:0;padding:0 0 12px">
+      <button class="tick ${SUB.escape ? 'on' : ''}" data-a="togEscape">${ic('check')}</button>
+      <div class="g"><div class="t">Fora da dieta (escape)</div></div>
+    </div>
+    <div class="segs" style="margin-bottom:12px">
+      ${[['plano', 'Do plano'], ['alimento', 'Alimento'], ['livre', 'Livre']].map(t =>
+    `<button class="${aba === t[0] ? 'on' : ''}" data-a="abaAdd" data-t="${t[0]}">${t[1]}</button>`).join('')}
+    </div>${corpo}`);
+  if (keepFocus) { const el = document.getElementById('q_alim'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
+}
+ACT.togEscape = () => { SUB.escape = !SUB.escape; sheetAdd(); };
+ACT.irPratos = () => { fechar(); SUB._back = 'dieta'; go('pratos', true); SUB._back = 'dieta'; };
+ACT.irAlimentos = () => { fechar(); SUB._back = 'dieta'; go('alimentos', true); SUB._back = 'dieta'; };
+
+function lancar(item) {
+  const x = dia(D), r = SUB.ref;
+  x.refeicoes[r] = x.refeicoes[r] || [];
+  x.refeicoes[r].push(Object.assign({ id: uid(), escape: !!SUB.escape }, item));
+  tocaDia(D); save(); fechar(); render(); toast('Lançado ✓');
+}
+ACT.addPrato = e => {
+  const p = DB.pratos.find(x => x.id === e.dataset.p), m = macrosPrato(p);
+  lancar({ nome: p.nome, qtd: 1, un: 'porção', kcal: Math.round(m.kcal), c: +m.c.toFixed(1), p: +m.p.toFixed(1), g: +m.g.toFixed(1), liq: Math.round(m.liq), fonte: 'prato', refId: p.id });
+};
+ACT.addAlim = e => {
+  const a = alimById(e.dataset.i);
+  sheet(`<h3>${esc(a.nome)}</h3><p class="hint">Porção base: ${a.porcao} ${a.un} = ${n0(a.kcal)} kcal</p>
+    <div class="f"><label>Quantidade (${a.un})</label>
+      <input class="in" id="qa_v" type="number" inputmode="decimal" value="${a.porcao}" data-inp="qaPrev"></div>
+    <div class="okbox" id="qa_prev"></div>
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="addAlimOk" data-i="${a.id}">Lançar</button></div>`);
+  SUB.alimId = a.id; ACT.qaPrev();
+};
+ACT.qaPrev = () => {
+  const b = document.getElementById('qa_prev'); if (!b) return;
+  const a = alimById(SUB.alimId), f = numOf('qa_v') / (num(a.porcao) || 1);
+  b.innerHTML = `<b>${n0(a.kcal * f)} kcal</b> · C ${n1(a.c * f)}g · P ${n1(a.p * f)}g · G ${n1(a.g * f)}g`;
+};
+ACT.addAlimOk = e => {
+  const a = alimById(e.dataset.i), q = numOf('qa_v'), f = q / (num(a.porcao) || 1);
+  lancar({
+    nome: a.nome, qtd: q, un: a.un, kcal: Math.round(a.kcal * f), c: +(a.c * f).toFixed(1),
+    p: +(a.p * f).toFixed(1), g: +(a.g * f).toFixed(1), liq: Math.round((a.liq || 0) * f), fonte: 'alimento', refId: a.id
+  });
+};
+ACT.addLivre = () => {
+  const nome = valOf('l_nome').trim(); if (!nome) return toast('Descreva o que você consumiu');
+  lancar({ nome, qtd: 1, un: '', kcal: numOf('l_k'), c: numOf('l_c'), p: numOf('l_p'), g: numOf('l_g'), liq: numOf('l_l'), fonte: 'livre' });
+};
+ACT.delItem = e => {
+  const x = dia(D), l = x.refeicoes[e.dataset.r];
+  l.splice(+e.dataset.i, 1); tocaDia(D); save(); render();
+};
+ACT.togItemEsc = e => {
+  const it = dia(D).refeicoes[e.dataset.r][+e.dataset.i];
+  it.escape = !it.escape; tocaDia(D); save(); render();
+};
+
+/* ---------- tela dieta ---------- */
+FAB.dieta = 'fabDieta';
+ACT.fabDieta = () => {
+  const h = new Date().getHours();
+  SUB.ref = h < 10 ? 'cafe' : h < 12 ? 'lanche1' : h < 15 ? 'almoco' : h < 18 ? 'lanche2' : h < 21 ? 'janta' : 'ceia';
+  SUB.aba = 'plano'; SUB.escape = false; sheetAdd();
+};
+
+SCREENS.dieta = () => {
+  const x = dia(D), m = metas(), t = somaDia(D);
+  const mAgua = metaAguaDia(D), ag = x.agua || 0;
+  let h = dateStrip();
+
+  h += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>${esc(dLabel(D))}</h2>
+      <span class="sub">${n0(t.kcal)} de ${n0(m.kcal)} kcal</span></div>
+    <div style="display:flex;gap:14px;align-items:center">
+      ${ring(t.kcal / m.kcal, t.kcal > m.kcal * 1.05 ? 'var(--warn)' : 'var(--die)', 78, n0(m.kcal - t.kcal))}
+      <div style="flex:1">
+        <div class="macro" style="margin:0;flex-direction:column;gap:9px">
+          ${[['Carbo', t.c, m.c, 'var(--carb)'], ['Proteína', t.p, m.p, 'var(--prot)'], ['Gordura', t.g, m.g, 'var(--gord)']].map(mm =>
+    `<div><div class="mt"><span>${mm[0]}</span><span>${n0(mm[1])} / ${n0(mm[2])} g</span></div>${bar(mm[1], mm[2], mm[3])}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="mini" style="margin-top:10px">${m.kcal - t.kcal >= 0 ? `Faltam <b>${n0(m.kcal - t.kcal)} kcal</b> para a meta.` : `Você passou <b>${n0(t.kcal - m.kcal)} kcal</b> da meta.`}
+      ${t.escape ? ` · <span class="pill esc">escape ${n0(t.escape)} kcal</span>` : ''}</div>
+  </div>`;
+
+  /* água */
+  h += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--agua)"></span><h2>Água</h2>
+      <span class="sub">${n1(ag / 1000)} L de ${n1(mAgua / 1000)} L</span></div>
+    ${bar(ag, mAgua, 'var(--agua)')}
+    <div class="btnrow" style="margin-top:11px">
+      ${[200, 300, 500].map(v => `<button class="btn sm" data-a="agua" data-v="${v}">+${v}ml</button>`).join('')}
+      <button class="btn sm" data-a="aguaCustom">…</button>
+      <button class="btn sm gh" data-a="agua" data-v="-250">−</button>
+    </div>
+    ${t.liq ? `<div class="mini" style="margin-top:9px">Outros líquidos lançados na dieta: <b>${n0(t.liq)} ml</b> (não somam na meta de água).</div>` : ''}
+    <div class="row" data-a="ajustesHoje" style="margin-top:4px"><div class="g"><div class="t">${ic('raio',15)} Ajustes de hoje</div>
+      <div class="s">${x.ajusteAgua || x.ajusteKcal
+        ? `${x.ajusteAgua ? '+' + n0(x.ajusteAgua) + ' ml de água' : ''}${x.ajusteAgua && x.ajusteKcal ? ' · ' : ''}${x.ajusteKcal ? '+' + n0(x.ajusteKcal) + ' kcal de gasto' : ''}`
+        : 'somar água ou gasto calórico extra só neste dia'}</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+  </div>`;
+
+  /* refeições */
+  h += `<div class="sec-title">Refeições</div>`;
+  REFS.forEach(([k, nome, ic_]) => {
+    const itens = x.refeicoes[k] || [], s = somaItens(itens);
+    h += `<div class="card tight">
+      <div class="ch" style="margin-bottom:${itens.length ? 9 : 0}px">
+        <span style="line-height:0;color:var(--tx2)">${ic(ic_, 17)}</span><h2>${nome}</h2>
+        ${itens.length ? `<span class="sub">${n0(s.kcal)} kcal</span>` : ''}
+        <button class="btn xs pri" data-a="addRef" data-r="${k}">${ic('mais',14)}</button></div>
+      ${itens.map((i, idx) => `<div class="row">
+        <div class="g"><div class="t">${esc(i.nome)} ${i.escape ? '<span class="pill esc">escape</span>' : ''}</div>
+          <div class="s">${i.qtd ? esc(i.qtd + ' ' + (i.un || '')) + ' · ' : ''}C${n1(i.c)} P${n1(i.p)} G${n1(i.g)}${i.liq ? ' · ' + n0(i.liq) + 'ml' : ''}</div></div>
+        <div class="v">${n0(i.kcal)}</div>
+        <button class="btn xs" data-a="togItemEsc" data-r="${k}" data-i="${idx}" title="Marcar como escape">${ic('alerta',14)}</button>
+        <button class="btn xs danger" data-a="delItem" data-r="${k}" data-i="${idx}">${ic('x',14)}</button>
+      </div>`).join('')}
+    </div>`;
+  });
+
+  h += `<div class="card tight" style="margin-bottom:14px">
+    <div class="row" data-a="irPratosTop"><div class="g"><div class="t">Meus pratos</div>
+      <div class="s">${DB.pratos.length} cadastrados</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+    <div class="row" data-a="irAlimTop"><div class="g"><div class="t">Alimentos</div>
+      <div class="s">${DB.alimentos.length} na biblioteca</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+  </div>`;
+  return h;
+};
+ACT.irPratosTop = () => { SUB._back = 'dieta'; go('pratos', true); SUB._back = 'dieta'; };
+ACT.irAlimTop = () => { SUB._back = 'dieta'; go('alimentos', true); SUB._back = 'dieta'; };
+
+/* =========================================================
+   Biblioteca de alimentos
+   ========================================================= */
+FAB.alimentos = 'novoAlim';
+ACT.novoAlim = e => {
+  const id = e && e.dataset ? e.dataset.i : null;
+  const a = id ? alimById(id) : { nome: '', porcao: 100, un: 'g', kcal: 0, c: 0, p: 0, g: 0, liq: 0 };
+  sheet(`<h3>${id ? 'Editar' : 'Novo'} alimento</h3>
+    <p class="hint">Informe os valores para a porção de referência (ex.: 100 g, 1 unidade, 200 ml).</p>
+    <div class="f"><label>Nome</label><input class="in" id="a_nome" value="${esc(a.nome)}"></div>
+    <div class="grid2">
+      <div class="f"><label>Porção</label><input class="in" id="a_por" type="number" inputmode="decimal" value="${a.porcao}"></div>
+      <div class="f"><label>Unidade</label><select class="in" id="a_un">
+        ${['g', 'ml', 'un'].map(u => `<option ${u === a.un ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
+    </div>
+    <div class="grid2">
+      <div class="f"><label>Calorias (kcal)</label><input class="in" id="a_k" type="number" inputmode="decimal" value="${a.kcal}"></div>
+      <div class="f"><label>Conta como líquido (ml)</label><input class="in" id="a_l" type="number" inputmode="numeric" value="${a.liq || 0}"></div>
+    </div>
+    <div class="grid3">
+      <div class="f"><label>Carbo g</label><input class="in" id="a_c" type="number" inputmode="decimal" value="${a.c}"></div>
+      <div class="f"><label>Prot g</label><input class="in" id="a_p" type="number" inputmode="decimal" value="${a.p}"></div>
+      <div class="f"><label>Gord g</label><input class="in" id="a_g" type="number" inputmode="decimal" value="${a.g}"></div>
+    </div>
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarAlim" data-i="${id || ''}">Salvar</button></div>
+    ${id ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delAlim" data-i="${id}">Excluir</button>` : ''}`);
+};
+ACT.salvarAlim = e => {
+  const nome = valOf('a_nome').trim(); if (!nome) return toast('Informe o nome');
+  const o = {
+    nome, porcao: numOf('a_por') || 100, un: valOf('a_un'), kcal: numOf('a_k'),
+    c: numOf('a_c'), p: numOf('a_p'), g: numOf('a_g'), liq: numOf('a_l'), upd: nowISO()
+  };
+  if (e.dataset.i) Object.assign(alimById(e.dataset.i), o);
+  else DB.alimentos.push(Object.assign({ id: uid() }, o));
+  save(); fechar(); render();
+};
+ACT.delAlim = e => { DB.alimentos = DB.alimentos.filter(a => a.id !== e.dataset.i); enfileirarDel('alimentos', e.dataset.i); save(); fechar(); render(); };
+ACT.filtroAlim = e => { SUB.q = e.value; const l = document.getElementById('alim_list'); if (l) l.innerHTML = listaAlim(); };
+function listaAlim() {
+  const q = (SUB.q || '').toLowerCase();
+  const l = DB.alimentos.filter(a => !q || a.nome.toLowerCase().includes(q));
+  return l.map(a => `<div class="row"><div class="g" data-a="novoAlim" data-i="${a.id}">
+    <div class="t">${esc(a.nome)}</div>
+    <div class="s">${a.porcao}${a.un} · ${n0(a.kcal)}kcal · C${n1(a.c)} P${n1(a.p)} G${n1(a.g)}</div></div>
+    <div class="v">${ic('dir',16,'op')}</div></div>`).join('') || '<div class="empty">Nada encontrado.</div>';
+}
+SCREENS.alimentos = () => `<div class="card">
+    <input class="in" placeholder="Buscar…" value="${esc(SUB.q || '')}" data-inp="filtroAlim" autocomplete="off">
+    <div id="alim_list" style="margin-top:6px">${listaAlim()}</div>
+  </div>
+  <button class="btn pri full" data-a="novoAlim" style="margin-bottom:14px">${ic('mais',15)} Novo alimento</button>`;
+
+/* =========================================================
+   Pratos e variações
+   ========================================================= */
+FAB.pratos = 'novoPrato';
+const pratoAtual = () => DB.pratos.find(p => p.id === SUB.pratoId);
+ACT.novoPrato = () => {
+  const p = { id: uid(), nome: '', refeicao: 'almoco', itens: [], variacaoDe: null, upd: nowISO() };
+  DB.pratos.push(p); save(); SUB = { pratoId: p.id, _back: 'pratos' }; go('prato', true); SUB.pratoId = p.id; SUB._back = 'pratos';
+};
+ACT.abrirPrato = e => { const id = e.dataset.p; SUB = { pratoId: id, _back: 'pratos' }; go('prato', true); SUB.pratoId = id; SUB._back = 'pratos'; };
+ACT.dupPrato = e => {
+  const o = DB.pratos.find(p => p.id === e.dataset.p);
+  const c = JSON.parse(JSON.stringify(o));
+  c.id = uid(); c.nome = o.nome + ' (variação)'; c.variacaoDe = o.id; c.upd = nowISO();
+  DB.pratos.push(c); save(); SUB = { pratoId: c.id, _back: 'pratos' }; go('prato', true); SUB.pratoId = c.id; SUB._back = 'pratos';
+};
+ACT.delPrato = e => confirmar('Excluir este prato?', () => {
+  DB.pratos = DB.pratos.filter(p => p.id !== e.dataset.p); enfileirarDel('pratos', e.dataset.p); save(); go('pratos');
+});
+ACT.pSalvarPrato = () => {
+  const p = pratoAtual(); p.nome = valOf('pr_nome').trim() || 'Sem nome';
+  p.refeicao = valOf('pr_ref'); p.upd = nowISO(); save(); toast('Prato salvo ✓'); go('pratos');
+};
+function prCapturar() {
+  const p = pratoAtual(); if (!p || !document.getElementById('pr_nome')) return;
+  p.nome = valOf('pr_nome').trim() || p.nome; p.refeicao = valOf('pr_ref');
+}
+ACT.prAddItem = () => {
+  prCapturar(); const q = '';
+  sheet(`<h3>Adicionar alimento ao prato</h3>
+    <input class="in" id="q_alim2" placeholder="Buscar…" data-inp="prBusca" autocomplete="off">
+    <div id="pr_lista" style="max-height:46vh;overflow-y:auto;margin-top:8px">${listaPrAlim(q)}</div>`);
+};
+ACT.prBusca = e => { document.getElementById('pr_lista').innerHTML = listaPrAlim(e.value); };
+function listaPrAlim(q) {
+  q = (q || '').toLowerCase();
+  return DB.alimentos.filter(a => !q || a.nome.toLowerCase().includes(q)).slice(0, 40).map(a =>
+    `<div class="row"><div class="g" data-a="prPickAlim" data-i="${a.id}"><div class="t">${esc(a.nome)}</div>
+      <div class="s">${a.porcao}${a.un} · ${n0(a.kcal)} kcal</div></div>
+      <button class="btn xs" data-a="prPickAlim" data-i="${a.id}">${ic('mais',14)}</button></div>`).join('') || '<div class="empty">Nada encontrado.</div>';
+}
+ACT.prPickAlim = e => {
+  const a = alimById(e.dataset.i); SUB.alimId = a.id;
+  sheet(`<h3>${esc(a.nome)}</h3><p class="hint">Quanto entra neste prato?</p>
+    <div class="f"><label>Quantidade (${a.un})</label><input class="in" id="pi_q" type="number" inputmode="decimal" value="${a.porcao}"></div>
+    <div class="btnrow"><button class="btn" data-a="prAddItem">Voltar</button>
+      <button class="btn pri" data-a="prAddOk">Adicionar</button></div>`);
+};
+ACT.prAddOk = () => {
+  const p = pratoAtual(); p.itens.push({ alimentoId: SUB.alimId, qtd: numOf('pi_q') });
+  p.upd = nowISO(); save(); fechar(); render();
+};
+ACT.prDelItem = e => { const p = pratoAtual(); p.itens.splice(+e.dataset.i, 1); p.upd = nowISO(); save(); render(); };
+
+SCREENS.pratos = () => {
+  const grupos = {};
+  DB.pratos.forEach(p => { (grupos[p.refeicao] = grupos[p.refeicao] || []).push(p); });
+  let h = '';
+  Object.keys(grupos).forEach(k => {
+    h += `<div class="sec-title">${esc(refNome(k))}</div><div class="card tight">
+      ${grupos[k].map(p => {
+      const m = macrosPrato(p);
+      return `<div class="row"><div class="g" data-a="abrirPrato" data-p="${p.id}">
+        <div class="t">${esc(p.nome)} ${p.variacaoDe ? '<span class="pill mut">variação</span>' : ''}</div>
+        <div class="s">${n0(m.kcal)} kcal · C${n0(m.c)} P${n0(m.p)} G${n0(m.g)}</div></div>
+        <button class="btn xs" data-a="dupPrato" data-p="${p.id}">${ic('copiar',13)}</button></div>`;
+    }).join('')}</div>`;
+  });
+  if (!DB.pratos.length) h = `<div class="card"><div class="empty"><b>${ic('almoco')}</b>Monte pratos que você come com frequência (ex.: “Arroz, feijão e frango”). Depois basta um toque para lançar no dia — e você pode criar variações a partir de um prato existente.</div></div>`;
+  return h + `<button class="btn pri full" data-a="novoPrato" style="margin-bottom:14px">${ic('mais',15)} Novo prato</button>`;
+};
+
+SCREENS.prato = () => {
+  const p = pratoAtual(); if (!p) return '<div class="empty">Prato não encontrado.</div>';
+  const m = macrosPrato(p);
+  return `<div class="card">
+    <div class="f"><label>Nome do prato</label><input class="in" id="pr_nome" value="${esc(p.nome)}" placeholder="Arroz, feijão, frango e salada"></div>
+    <div class="f" style="margin:0"><label>Refeição</label><select class="in" id="pr_ref">
+      ${REFS.map(r => `<option value="${r[0]}" ${p.refeicao === r[0] ? 'selected' : ''}>${r[1]}</option>`).join('')}
+      <option value="qualquer" ${p.refeicao === 'qualquer' ? 'selected' : ''}>Qualquer refeição</option></select></div>
+  </div>
+  <div class="card">
+    <div class="ch"><h2>Composição</h2><span class="sub">${n0(m.kcal)} kcal</span></div>
+    ${p.itens.map((it, i) => {
+    const a = alimById(it.alimentoId); if (!a) return '';
+    const f = it.qtd / (a.porcao || 1);
+    return `<div class="row"><div class="g"><div class="t">${esc(a.nome)}</div>
+      <div class="s">${n1(it.qtd)} ${a.un} · ${n0(a.kcal * f)} kcal</div></div>
+      <button class="btn xs danger" data-a="prDelItem" data-i="${i}">${ic('x',14)}</button></div>`;
+  }).join('') || `<div class="empty"><b>${ic('almoco')}</b>Adicione os alimentos que compõem o prato.</div>`}
+    <button class="btn gh full sm" style="margin-top:10px" data-a="prAddItem">${ic('mais',15)} Adicionar alimento</button>
+    <div class="kpi" style="margin-top:12px">
+      <div><b>${n0(m.c)}</b><span>carbo g</span></div>
+      <div><b>${n0(m.p)}</b><span>prot g</span></div>
+      <div><b>${n0(m.g)}</b><span>gord g</span></div>
+    </div>
+  </div>
+  <div class="btnrow" style="margin-bottom:14px">
+    <button class="btn danger" data-a="delPrato" data-p="${p.id}">Excluir</button>
+    <button class="btn pri" data-a="pSalvarPrato">Salvar prato</button>
+  </div>`;
+};
+/* =========================================================
+   MÓDULO 3 — HÁBITOS
+   ========================================================= */
+TITULOS.habito = ['Hábito', 'acompanhamento'];
+const ICONES = ['sono', 'estudo', 'meditar', 'agua', 'parar', 'celular', 'correr', 'manha',
+  'remedio', 'escrever', 'musica', 'treino', 'meta', 'faisca'];
+
+const habById = id => DB.habitos.find(h => h.id === id);
+function habDevidoEm(h, d) {
+  if (d < h.inicio) return false;
+  if (h.fim && d > h.fim) return false;
+  if (h.freqTipo === 'dias') return (h.dias || []).includes(parseD(d).getDay());
+  return true;                       // diário ou x vezes por semana (aparece todo dia)
+}
+function regHab(d, id) { const x = dia(d); return x.habitos[id] || null; }
+function habDias(h, ate = today()) {
+  const out = []; let d = h.inicio;
+  let guard = 0;
+  while (d <= ate && guard++ < 800) { if (habDevidoEm(h, d)) out.push(d); d = addDays(d, 1); }
+  return out;
+}
+function habStats(h) {
+  const ds = habDias(h);
+  const feitos = ds.filter(d => (regHab(d, h.id) || {}).feito).length;
+  let streak = 0;
+  for (let i = ds.length - 1; i >= 0; i--) { if ((regHab(ds[i], h.id) || {}).feito) streak++; else break; }
+  let melhor = 0, cur = 0;
+  ds.forEach(d => { if ((regHab(d, h.id) || {}).feito) { cur++; melhor = Math.max(melhor, cur); } else cur = 0; });
+  const quals = ds.map(d => (regHab(d, h.id) || {}).qual).filter(q => q > 0);
+  const media = quals.length ? quals.reduce((a, b) => a + b, 0) / quals.length : 0;
+  const total = h.fim ? habDias(h, h.fim).length : 0;
+  const pctTempo = h.fim && total ? clamp(ds.length / total, 0, 1) : null;
+  return {
+    dias: ds, previstos: ds.length, feitos, taxa: ds.length ? feitos / ds.length : 0,
+    streak, melhor, media, total, pctTempo,
+    fase: pctTempo === null ? 'contínuo' : pctTempo < .34 ? 'início' : pctTempo < .75 ? 'meio' : 'reta final'
+  };
+}
+
+/* ---------- criar / editar ---------- */
+FAB.habitos = 'novoHabito';
+ACT.novoHabito = () => { SUB.habEdit = null; sheetHab(); };
+ACT.editHabito = e => { SUB.habEdit = e.dataset.h; sheetHab(); };
+function sheetHab() {
+  const h = SUB.habEdit ? habById(SUB.habEdit) : {
+    nome: '', icone: 'meta', motivos: '', inicio: today(), fim: '', freqTipo: 'diario',
+    dias: [1, 2, 3, 4, 5], vezes: 3, medida: 'check', unidade: '', meta: 0, hora: ''
+  };
+  SUB.icone = SUB.icone || h.icone; SUB.freqTipo = SUB.freqTipo || h.freqTipo;
+  SUB.medida = SUB.medida || h.medida; SUB.hdias = SUB.hdias || (h.dias || []).slice();
+  sheet(`<h3>${SUB.habEdit ? 'Editar' : 'Novo'} hábito</h3>
+    <p class="hint">Um hábito precisa de um porquê. Escreva o motivo — ele aparece toda vez que você abrir o hábito.</p>
+    <div class="f"><label>Ícone</label><div class="chiprow">
+      ${ICONES.map(i => `<button class="chip ${SUB.icone === i ? 'on' : ''}" data-a="hIcone" data-i="${i}">${ic(i, 18)}</button>`).join('')}
+    </div></div>
+    <div class="f"><label>Nome</label><input class="in" id="h_nome" value="${esc(h.nome)}" placeholder="ex: Dormir 8 horas"></div>
+    <div class="f"><label>Por que eu quero este hábito?</label>
+      <textarea class="in" id="h_mot" placeholder="ex: acordar disposto, render melhor no trabalho e treinar cedo">${esc(h.motivos)}</textarea></div>
+    <div class="grid2">
+      <div class="f"><label>Início</label><input class="in" id="h_ini" type="date" value="${h.inicio}"></div>
+      <div class="f"><label>Fim (opcional)</label><input class="in" id="h_fim" type="date" value="${h.fim || ''}"></div>
+    </div>
+    <div class="f"><label>Me lembrar às (opcional)</label>
+      <input class="in" id="h_hora" type="time" value="${esc(h.hora || '')}">
+      <p class="mini" style="margin-top:6px">Com horário preenchido, o app manda uma notificação nesse
+      horário nos dias em que o hábito está previsto — e só se você ainda não tiver dado o check.</p></div>
+    <div class="f"><label>Frequência</label>
+      <div class="segs">${[['diario', 'Todo dia'], ['dias', 'Dias fixos'], ['semana', 'X por semana']].map(t =>
+    `<button class="${SUB.freqTipo === t[0] ? 'on' : ''}" data-a="hFreq" data-t="${t[0]}">${t[1]}</button>`).join('')}</div></div>
+    ${SUB.freqTipo === 'dias' ? `<div class="f"><div class="chiprow">
+      ${DOW.map((d, i) => `<button class="chip ${SUB.hdias.includes(i) ? 'on' : ''}" data-a="hDia" data-d="${i}">${d}</button>`).join('')}
+    </div></div>` : ''}
+    ${SUB.freqTipo === 'semana' ? `<div class="f"><label>Vezes por semana</label>
+      <input class="in" id="h_vezes" type="number" inputmode="numeric" value="${h.vezes || 3}"></div>` : ''}
+    <div class="f"><label>Como vou medir</label>
+      <div class="segs">${[['check', 'Fiz / não fiz'], ['escala', 'Qualidade 1–5'], ['numero', 'Número']].map(t =>
+      `<button class="${SUB.medida === t[0] ? 'on' : ''}" data-a="hMed" data-t="${t[0]}">${t[1]}</button>`).join('')}</div></div>
+    ${SUB.medida === 'numero' ? `<div class="grid2">
+      <div class="f"><label>Unidade</label><input class="in" id="h_un" value="${esc(h.unidade || '')}" placeholder="horas, min, páginas"></div>
+      <div class="f"><label>Meta por dia</label><input class="in" id="h_meta" type="number" inputmode="decimal" value="${h.meta || ''}"></div>
+    </div>` : ''}
+    <div class="btnrow"><button class="btn" data-a="fecharHab">Cancelar</button>
+      <button class="btn pri" data-a="salvarHabito">Salvar</button></div>
+    ${SUB.habEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delHabito" data-h="${SUB.habEdit}">Excluir hábito</button>` : ''}`);
+}
+ACT.fecharHab = () => { SUB.icone = SUB.freqTipo = SUB.medida = SUB.hdias = null; fechar(); };
+function hCapturar() {
+  SUB.tmp = SUB.tmp || {};
+  ['h_nome', 'h_mot', 'h_ini', 'h_fim', 'h_hora', 'h_vezes', 'h_un', 'h_meta'].forEach(k => {
+    const e = document.getElementById(k); if (e) SUB.tmp[k] = e.value;
+  });
+}
+ACT.hIcone = e => { hCapturar(); SUB.icone = e.dataset.i; sheetHab(); restaurarHab(); };
+ACT.hFreq = e => { hCapturar(); SUB.freqTipo = e.dataset.t; sheetHab(); restaurarHab(); };
+ACT.hMed = e => { hCapturar(); SUB.medida = e.dataset.t; sheetHab(); restaurarHab(); };
+ACT.hDia = e => {
+  hCapturar(); const d = +e.dataset.d, i = SUB.hdias.indexOf(d);
+  i < 0 ? SUB.hdias.push(d) : SUB.hdias.splice(i, 1); sheetHab(); restaurarHab();
+};
+function restaurarHab() {
+  if (!SUB.tmp) return;
+  Object.keys(SUB.tmp).forEach(k => { const e = document.getElementById(k); if (e && SUB.tmp[k] !== undefined) e.value = SUB.tmp[k]; });
+}
+ACT.salvarHabito = () => {
+  const nome = valOf('h_nome').trim(); if (!nome) return toast('Dê um nome ao hábito');
+  const o = {
+    nome, icone: SUB.icone, motivos: valOf('h_mot'), hora: valOf('h_hora') || '', inicio: valOf('h_ini') || today(),
+    fim: valOf('h_fim') || null, freqTipo: SUB.freqTipo, dias: SUB.hdias, vezes: numOf('h_vezes') || 3,
+    medida: SUB.medida, unidade: valOf('h_un'), meta: numOf('h_meta'), ativo: true, upd: nowISO()
+  };
+  if (SUB.habEdit) Object.assign(habById(SUB.habEdit), o);
+  else DB.habitos.push(Object.assign({ id: uid(), encerrado: null }, o));
+  save(); SUB.tmp = null; ACT.fecharHab(); render();
+};
+ACT.delHabito = e => {
+  const h = habById(e.dataset.h), s = h ? habStats(h) : null;
+  const id = e.dataset.h;
+  confirmar(
+    `Excluir “${h ? h.nome : 'este hábito'}” de vez?` +
+    (s && s.feitos ? ` Os ${s.feitos} check-in(s) registrados somem junto, em todos os aparelhos.` : ' Isso não pode ser desfeito.') +
+    ' Se você só quer parar de acompanhar, use “Encerrar e avaliar objetivo” — aí o histórico fica guardado.',
+    () => {
+      DB.habitos = DB.habitos.filter(x => x.id !== id);
+      Object.values(DB.dias).forEach(d => { if (d.habitos && d.habitos[id]) { delete d.habitos[id]; d.upd = nowISO(); } });
+      enfileirarDel('habitos', id); save(); toast('Hábito excluído'); go('habitos');
+    });
+};
+
+/* ---------- check-in diário ---------- */
+ACT.hTick = e => {
+  const h = habById(e.dataset.h), x = dia(D);
+  const r = x.habitos[h.id] || {};
+  if (r.feito) { delete x.habitos[h.id]; }
+  else if (h.medida === 'check') { x.habitos[h.id] = { feito: true, qual: 0, valor: 0, nota: '' }; }
+  else { return ACT.hCheckin(e); }
+  tocaDia(D); save(); render();
+};
+ACT.hCheckin = e => {
+  const h = habById(e.dataset.h); SUB.habAtual = h.id;
+  const r = regHab(D, h.id) || { feito: false, qual: 0, valor: '', nota: '' };
+  sheet(`<h3>${icOu(h.icone, 18)} ${esc(h.nome)}</h3>
+    <p class="hint">${esc(dLabel(D))}${h.motivos ? ' — <i>' + esc(h.motivos) + '</i>' : ''}</p>
+    ${h.medida === 'numero' ? `<div class="f"><label>Quanto? ${esc(h.unidade || '')}${h.meta ? ' (meta ' + n1(h.meta) + ')' : ''}</label>
+      <input class="in" id="hc_v" type="number" inputmode="decimal" value="${r.valor || ''}"></div>` : ''}
+    <div class="f"><label>Qualidade dessa ação</label>
+      <div class="chiprow">${[1, 2, 3, 4, 5].map(q =>
+      `<button class="chip ${(SUB.hq || r.qual) === q ? 'on' : ''}" data-a="hQual" data-q="${q}" style="flex:1;text-align:center">${estrelas(q, q)}</button>`).join('')}</div></div>
+    <div class="f"><label>Observação</label><input class="in" id="hc_n" value="${esc(r.nota || '')}" placeholder="como foi hoje?"></div>
+    <div class="btnrow"><button class="btn" data-a="hNaoFiz" data-h="${h.id}">Não fiz hoje</button>
+      <button class="btn pri" data-a="hSalvarCheck" data-h="${h.id}">Confirmar ✓</button></div>`);
+};
+ACT.hQual = e => {
+  SUB.hq = +e.dataset.q;
+  const v = document.getElementById('hc_v'), n = document.getElementById('hc_n');
+  SUB.hv = v ? v.value : ''; SUB.hn = n ? n.value : '';
+  ACT.hCheckin({ dataset: { h: SUB.habAtual } });
+  const v2 = document.getElementById('hc_v'), n2 = document.getElementById('hc_n');
+  if (v2) v2.value = SUB.hv; if (n2) n2.value = SUB.hn;
+};
+ACT.hSalvarCheck = e => {
+  const x = dia(D);
+  x.habitos[e.dataset.h] = { feito: true, qual: SUB.hq || 0, valor: numOf('hc_v'), nota: valOf('hc_n') };
+  SUB.hq = null; tocaDia(D); save(); fechar(); render(); toast('Registrado ✓');
+};
+ACT.hNaoFiz = e => {
+  const x = dia(D);
+  x.habitos[e.dataset.h] = { feito: false, qual: 0, valor: 0, nota: valOf('hc_n') };
+  SUB.hq = null; tocaDia(D); save(); fechar(); render();
+};
+
+/* ---------- encerrar ---------- */
+ACT.encerrar = e => {
+  const h = habById(e.dataset.h); const s = habStats(h);
+  sheet(`<h3>Encerrar “${esc(h.nome)}”</h3>
+    <p class="hint">Você cumpriu ${s.feitos} de ${s.previstos} dias previstos (${n0(s.taxa * 100)}%). O objetivo foi alcançado?</p>
+    <div class="f"><label>Reflexão final</label>
+      <textarea class="in" id="en_n" placeholder="o que funcionou, o que atrapalhou, o que fica daqui"></textarea></div>
+    <div class="btnrow"><button class="btn" data-a="encerrarOk" data-h="${h.id}" data-ok="0">Não alcancei</button>
+      <button class="btn pri" data-a="encerrarOk" data-h="${h.id}" data-ok="1">Objetivo alcançado</button></div>`);
+};
+ACT.encerrarOk = e => {
+  const h = habById(e.dataset.h);
+  h.encerrado = { alcancado: e.dataset.ok === '1', nota: valOf('en_n'), data: today() };
+  h.ativo = false; h.upd = nowISO(); save(); fechar(); go('habitos');
+};
+ACT.reabrir = e => { const h = habById(e.dataset.h); h.encerrado = null; h.ativo = true; h.upd = nowISO(); save(); render(); };
+ACT.abrirHabito = e => { const id = e.dataset.h; SUB = { habId: id, _back: 'habitos' }; go('habito', true); SUB.habId = id; SUB._back = 'habitos'; };
+
+/* ---------- telas ---------- */
+SCREENS.habitos = () => {
+  const ativos = DB.habitos.filter(h => h.ativo !== false);
+  const enc = DB.habitos.filter(h => h.ativo === false);
+  const hoje = ativos.filter(h => habDevidoEm(h, D));
+  let html = dateStrip();
+
+  if (!DB.habitos.length) {
+    return html + `<div class="card"><div class="empty"><b>${ic('faisca')}</b>
+      Crie um hábito, escreva <b>por que</b> ele importa para você, defina o período e confirme todo dia.
+      O app acompanha início, meio e fim — e no encerramento você registra se o objetivo foi alcançado.</div>
+      <button class="btn pri full" data-a="novoHabito">${ic('mais',15)} Criar hábito</button></div>`;
+  }
+
+  const feitosHoje = hoje.filter(h => (regHab(D, h.id) || {}).feito).length;
+  html += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--hab)"></span><h2>Check-in de ${esc(dLabel(D))}</h2>
+      <span class="sub">${feitosHoje}/${hoje.length}</span></div>
+    ${bar(feitosHoje, Math.max(hoje.length, 1), 'var(--hab)')}
+  </div>`;
+
+  html += hoje.map(h => {
+    const r = regHab(D, h.id), s = habStats(h);
+    const feito = r && r.feito;
+    return `<div class="card tight">
+      <div class="row" style="border:0;padding:2px 0">
+        <button class="tick ${feito ? 'on' : ''}" data-a="hTick" data-h="${h.id}">${ic('check')}</button>
+        <div class="g" data-a="hCheckin" data-h="${h.id}">
+          <div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
+          <div class="s">${feito
+        ? (h.medida === 'numero' && r.valor ? `${n1(r.valor)} ${esc(h.unidade || '')} · ` : '') + (r.qual ? estrelas(r.qual) + ' · ' : '') + 'feito'
+        : r ? 'não fiz hoje' : `sequência ${s.streak} dia(s) · ${n0(s.taxa * 100)}% de adesão`}</div>
+        </div>
+        <div class="v" data-a="abrirHabito" data-h="${h.id}">${ic('dir',16,'op')}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (ativos.length > hoje.length) {
+    html += `<div class="sec-title">Fora da frequência hoje</div><div class="card tight">
+      ${ativos.filter(h => !habDevidoEm(h, D)).map(h => `<div class="row" data-a="abrirHabito" data-h="${h.id}">
+        <div class="g"><div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
+        <div class="s">${h.fim && D > h.fim ? 'período encerrado' : D < h.inicio ? 'começa em ' + esc(dLabel(h.inicio)) : 'não previsto para hoje'}</div></div>
+        <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
+  }
+  if (enc.length) {
+    html += `<div class="sec-title">Encerrados</div><div class="card tight">
+      ${enc.map(h => `<div class="row" data-a="abrirHabito" data-h="${h.id}">
+        <div class="g"><div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
+        <div class="s">${h.encerrado ? (h.encerrado.alcancado ? ic('festa', 14) + ' objetivo alcançado' : 'não alcançado') + ' · ' + esc(dLabel(h.encerrado.data)) : ''}</div></div>
+        <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
+  }
+  return html + `<button class="btn pri full" data-a="novoHabito" style="margin-bottom:14px">${ic('mais',15)} Novo hábito</button>`;
+};
+
+SCREENS.habito = () => {
+  const h = habById(SUB.habId); if (!h) return '<div class="empty">Hábito não encontrado.</div>';
+  const s = habStats(h);
+  const ult = []; for (let i = 29; i >= 0; i--) ult.push(addDays(today(), -i));
+  return `<div class="card">
+    <div class="ch"><span style="line-height:0">${icOu(h.icone, 22)}</span><h2>${esc(h.nome)}</h2>
+      <button class="btn xs" data-a="editHabito" data-h="${h.id}">Editar</button></div>
+    ${h.motivos ? `<div class="okbox"><b>Por que eu quero isso:</b><br>${esc(h.motivos)}</div>` : ''}
+    <div class="kpi">
+      <div><b>${s.streak}</b><span>sequência</span></div>
+      <div><b>${n0(s.taxa * 100)}%</b><span>adesão</span></div>
+      <div><b>${s.media ? n1(s.media) : '—'}</b><span>qualidade</span></div>
+    </div>
+    <div class="row" style="margin-top:11px"><div class="g"><div class="t">Fase: ${s.fase}</div>
+      <div class="s">${h.inicio ? 'de ' + esc(dLabel(h.inicio)) : ''}${h.fim ? ' até ' + esc(dLabel(h.fim)) : ' — sem data final'}</div></div>
+      <div class="v">${s.pctTempo !== null ? n0(s.pctTempo * 100) + '%' : '∞'}</div></div>
+    ${s.pctTempo !== null ? bar(s.pctTempo * 100, 100, 'var(--hab)') : ''}
+  </div>
+
+  <div class="card">
+    <div class="ch"><h2>Últimos 30 dias</h2><span class="sub">${s.feitos}/${s.previstos} dias</span></div>
+    <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:5px">
+      ${ult.map(d => {
+    const dev = habDevidoEm(h, d), r = regHab(d, h.id);
+    const bg = !dev ? 'var(--bg2)' : r && r.feito ? 'var(--hab)' : r ? 'color-mix(in srgb,var(--bad) 55%,transparent)' : 'var(--line)';
+    return `<div title="${d}" style="aspect-ratio:1;border-radius:6px;background:${bg}"></div>`;
+  }).join('')}
+    </div>
+    <div class="legend"><span><i style="background:var(--hab)"></i>feito</span>
+      <span><i style="background:color-mix(in srgb,var(--bad) 55%,transparent)"></i>falhou</span>
+      <span><i style="background:var(--line)"></i>sem registro</span>
+      <span><i style="background:var(--bg2)"></i>fora da frequência</span></div>
+  </div>
+
+  ${h.encerrado ? `<div class="card">
+      <div class="ch"><h2>Encerramento</h2></div>
+      <div class="${h.encerrado.alcancado ? 'okbox' : 'warnbox'}">
+        <b>${h.encerrado.alcancado ? ic('festa', 15) + ' Objetivo alcançado' : 'Objetivo não alcançado'}</b> — ${esc(dLabel(h.encerrado.data))}
+        ${h.encerrado.nota ? '<br>' + esc(h.encerrado.nota) : ''}</div>
+      <button class="btn full sm" data-a="reabrir" data-h="${h.id}">Reabrir hábito</button>
+    </div>
+    <button class="btn danger full" data-a="delHabito" data-h="${h.id}" style="margin-bottom:14px">Excluir hábito</button>`
+      : `<button class="btn full" data-a="encerrar" data-h="${h.id}" style="margin-bottom:10px">Encerrar e avaliar objetivo</button>`}
+  <button class="btn danger full" data-a="delHabito" data-h="${h.id}" style="margin-bottom:14px">Excluir hábito</button>`;
+};
+/* =========================================================
+   MÓDULO 4 — LEMBRETES
+   Escreva o item, diga quando, e o app avisa.
+   ========================================================= */
+TITULOS.lembretes = ['Lembretes', 'o que não pode escapar'];
+
+function lemInicio(l) { return l.data || l.criado || today(); }
+function lemDevidoEm(l, d) {
+  if (l.ativo === false) return false;
+  if (l.repetir === 'uma') return (l.data || l.criado) === d;
+  if (d < lemInicio(l)) return false;
+  if (l.fim && d > l.fim) return false;
+  if (l.repetir === 'dias') return (l.dias || []).includes(parseD(d).getDay());
+  return true;                                   // diário
+}
+const lemFeito = (l, d) => !!(l.feito || {})[d];
+const minutos = h => { const [a, b] = String(h || '00:00').split(':').map(Number); return a * 60 + b; };
+function lemAtrasado(l, d) {
+  if (d !== today() || lemFeito(l, d)) return false;
+  const agora = new Date();
+  return agora.getHours() * 60 + agora.getMinutes() > minutos(l.hora);
+}
+
+/* =========================================================
+   AVISOS NO SISTEMA
+   Quem exibe a notificação é o service worker (sw.js), e não a
+   página: é assim que o aviso aparece no Android com o app em
+   segundo plano, e é a ÚNICA forma no iPhone. Se o worker não
+   estiver disponível, cai para a notificação da página e, em
+   último caso, para o aviso interno do app.
+   ========================================================= */
+let SW_REG = null;
+async function registrarSW() {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return null;
+  try {
+    SW_REG = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    return SW_REG;
+  } catch (e) { console.warn('[sw] não registrado:', e.message); return null; }
+}
+const podeNotificar = () => typeof Notification !== 'undefined';
+const permNotif = () => podeNotificar() ? Notification.permission : 'indisponível';
+const swAtivo = () => !!(SW_REG && (SW_REG.active || SW_REG.installing || SW_REG.waiting));
+
+ACT.pedirNotif = async () => {
+  if (!podeNotificar()) return toast('Este navegador não suporta notificações');
+  try {
+    const r = await Notification.requestPermission();
+    if (r === 'granted') { await registrarSW(); toast('Notificações ativadas'); }
+    else toast('Permissão negada');
+  } catch (e) { toast('Não foi possível pedir a permissão'); }
+  render();
+};
+ACT.testarNotif = async () => {
+  const ok = await avisar('Vitta', 'Se você está lendo isto, as notificações funcionam.', 'teste');
+  if (!ok) toast('Ainda sem permissão do sistema');
+};
+
+async function avisar(titulo, corpo, tag) {
+  if (permNotif() === 'granted') {
+    try {
+      const reg = SW_REG || (navigator.serviceWorker ? await navigator.serviceWorker.ready.catch(() => null) : null);
+      if (reg && reg.active) {
+        reg.active.postMessage({ tipo: 'aviso', titulo, corpo, tag, icone: logoDataURI() });
+        return true;
+      }
+      if (reg && reg.showNotification) {
+        await reg.showNotification(titulo, { body: corpo, tag, icon: logoDataURI(), badge: logoDataURI() });
+        return true;
+      }
+      new Notification(titulo, { body: corpo, tag, icon: logoDataURI() });
+      return true;
+    } catch (e) { console.warn('[aviso]', e); }
+  }
+  toast(corpo);
+  return false;
+}
+
+/* Percorre lembretes E hábitos com horário, e avisa o que já venceu
+   e ainda não foi marcado. Roda ao abrir o app, ao voltar para ele e
+   a cada 30 segundos enquanto estiver aberto.                        */
+function checarLembretes() {
+  const d = today(), agora = new Date(), mn = agora.getHours() * 60 + agora.getMinutes();
+  let mudou = false;
+
+  (DB.lembretes || []).forEach(l => {
+    if (!lemDevidoEm(l, d) || lemFeito(l, d)) return;
+    if (mn < minutos(l.hora)) return;
+    const marca = d + 'T' + l.hora;
+    if (l.alertado === marca) return;
+    l.alertado = marca; mudou = true;
+    avisar('Lembrete', l.texto, 'lem-' + l.id);
+  });
+
+  (DB.habitos || []).forEach(h => {
+    if (h.ativo === false || !h.hora) return;
+    if (!habDevidoEm(h, d)) return;
+    if ((regHab(d, h.id) || {}).feito) return;
+    if (mn < minutos(h.hora)) return;
+    const marca = d + 'T' + h.hora;
+    if (h.alertado === marca) return;
+    h.alertado = marca; mudou = true;
+    avisar('Hábito de hoje', h.nome + ' — ainda falta o check de hoje.', 'hab-' + h.id);
+  });
+
+  if (mudou) { save(false); if (VIEW === 'lembretes' || VIEW === 'hoje' || VIEW === 'habitos') render(); }
+}
+
+/* ---------- criar / editar ---------- */
+FAB.lembretes = 'novoLembrete';
+ACT.novoLembrete = () => { SUB.lemEdit = null; SUB.lemRep = 'uma'; SUB.lemDias = [1, 2, 3, 4, 5]; sheetLem(); };
+ACT.editLembrete = e => {
+  const l = DB.lembretes.find(x => x.id === e.dataset.l);
+  SUB.lemEdit = l.id; SUB.lemRep = l.repetir; SUB.lemDias = (l.dias || []).slice(); sheetLem();
+};
+function sheetLem() {
+  const l = SUB.lemEdit ? DB.lembretes.find(x => x.id === SUB.lemEdit)
+    : { texto: '', hora: '08:00', data: today(), fim: '', repetir: 'uma', dias: [] };
+  sheet(`<h3>${SUB.lemEdit ? 'Editar' : 'Novo'} lembrete</h3>
+    <p class="hint">Escreva o que precisa lembrar. Na hora marcada o app avisa e o item fica pendente até você dar o check.</p>
+    <div class="f"><label>O que lembrar</label>
+      <textarea class="in" id="lm_t" placeholder="ex: tomar o suplemento antes do treino">${esc(l.texto)}</textarea></div>
+    <div class="grid2">
+      <div class="f"><label>Hora</label><input class="in" id="lm_h" type="time" value="${esc(l.hora || '08:00')}"></div>
+      <div class="f"><label>${SUB.lemRep === 'uma' ? 'Dia' : 'Começa em'}</label>
+        <input class="in" id="lm_d" type="date" value="${esc(l.data || today())}"></div>
+    </div>
+    <div class="f"><label>Repetição</label>
+      <div class="segs">${[['uma', 'Uma vez'], ['diario', 'Todo dia'], ['dias', 'Dias fixos']].map(t =>
+    `<button class="${SUB.lemRep === t[0] ? 'on' : ''}" data-a="lemRep" data-t="${t[0]}">${t[1]}</button>`).join('')}</div></div>
+    ${SUB.lemRep === 'dias' ? `<div class="f"><div class="chiprow">
+      ${DOW.map((d, i) => `<button class="chip ${SUB.lemDias.includes(i) ? 'on' : ''}" data-a="lemDia" data-d="${i}">${d}</button>`).join('')}
+    </div></div>` : ''}
+    ${SUB.lemRep !== 'uma' ? `<div class="f"><label>Parar em (opcional)</label>
+      <input class="in" id="lm_f" type="date" value="${esc(l.fim || '')}"></div>` : ''}
+    ${permNotif() === 'granted' ? '' : `<div class="warnbox">As notificações do sistema estão
+      ${permNotif() === 'denied' ? 'bloqueadas nas permissões deste site' : 'desligadas'}.
+      O lembrete continua aparecendo na tela Hoje.</div>`}
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarLembrete">Salvar</button></div>
+    ${SUB.lemEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delLembrete" data-l="${SUB.lemEdit}">Excluir</button>` : ''}`);
+}
+function lemCapturar() {
+  SUB.lemTmp = SUB.lemTmp || {};
+  ['lm_t', 'lm_h', 'lm_d', 'lm_f'].forEach(k => { const e = document.getElementById(k); if (e) SUB.lemTmp[k] = e.value; });
+}
+function lemRestaurar() {
+  if (!SUB.lemTmp) return;
+  Object.keys(SUB.lemTmp).forEach(k => { const e = document.getElementById(k); if (e) e.value = SUB.lemTmp[k]; });
+}
+ACT.lemRep = e => { lemCapturar(); SUB.lemRep = e.dataset.t; sheetLem(); lemRestaurar(); };
+ACT.lemDia = e => {
+  lemCapturar(); const d = +e.dataset.d, i = SUB.lemDias.indexOf(d);
+  i < 0 ? SUB.lemDias.push(d) : SUB.lemDias.splice(i, 1); sheetLem(); lemRestaurar();
+};
+ACT.salvarLembrete = () => {
+  const texto = valOf('lm_t').trim(); if (!texto) return toast('Escreva o lembrete');
+  if (SUB.lemRep === 'dias' && !SUB.lemDias.length) return toast('Escolha ao menos um dia');
+  const o = {
+    texto, hora: valOf('lm_h') || '08:00', data: valOf('lm_d') || today(),
+    fim: valOf('lm_f') || null, repetir: SUB.lemRep, dias: SUB.lemDias, ativo: true, upd: nowISO()
+  };
+  if (SUB.lemEdit) Object.assign(DB.lembretes.find(x => x.id === SUB.lemEdit), o);
+  else DB.lembretes.push(Object.assign({ id: uid(), criado: today(), feito: {}, alertado: '' }, o));
+  SUB.lemTmp = null; save(); fechar(); render();
+  if (permNotif() === 'default') ACT.pedirNotif();
+};
+ACT.delLembrete = e => confirmar('Excluir este lembrete?', () => {
+  DB.lembretes = DB.lembretes.filter(l => l.id !== e.dataset.l); enfileirarDel('lembretes', e.dataset.l); save(); fechar(); render();
+});
+ACT.lemTick = e => {
+  const l = DB.lembretes.find(x => x.id === e.dataset.l);
+  l.feito = l.feito || {};
+  if (l.feito[D]) delete l.feito[D]; else l.feito[D] = nowISO();
+  if (l.repetir === 'uma' && l.feito[D]) l.ativo = true;
+  l.upd = nowISO(); save(); render();
+};
+ACT.lemPausa = e => {
+  const l = DB.lembretes.find(x => x.id === e.dataset.l);
+  l.ativo = l.ativo === false; l.upd = nowISO(); save(); render();
+  toast(l.ativo === false ? 'Lembrete pausado' : 'Lembrete reativado');
+};
+
+/* ---------- tela ---------- */
+function linhaLem(l, d, compacto) {
+  const feito = lemFeito(l, d), atrasado = lemAtrasado(l, d);
+  const rep = l.repetir === 'diario' ? 'todo dia'
+    : l.repetir === 'dias' ? (l.dias || []).map(i => DOW[i]).join(', ') : 'uma vez';
+  return `<div class="row">
+    <button class="tick ${feito ? 'on' : ''}" data-a="lemTick" data-l="${l.id}">${ic('check')}</button>
+    <div class="g" ${compacto ? '' : `data-a="editLembrete" data-l="${l.id}"`}>
+      <div class="t wrap">${esc(l.texto)}</div>
+      <div class="s">${esc(l.hora)} · ${esc(rep)}
+        ${atrasado ? '<span class="pill bad">atrasado</span>' : ''}
+        ${l.ativo === false ? '<span class="pill mut">pausado</span>' : ''}</div>
+    </div>
+    ${compacto ? '' : `<button class="btn xs" data-a="lemPausa" data-l="${l.id}">${l.ativo === false ? ic('play', 13) : ic('pausa', 13)}</button>`}
+  </div>`;
+}
+
+SCREENS.lembretes = () => {
+  const L = DB.lembretes || [];
+  const doDia = L.filter(l => lemDevidoEm(l, D)).sort((a, b) => minutos(a.hora) - minutos(b.hora));
+  const pend = doDia.filter(l => !lemFeito(l, D));
+  const prox = L.filter(l => l.repetir === 'uma' && l.ativo !== false && (l.data || l.criado) > D)
+    .sort((a, b) => (a.data > b.data ? 1 : -1));
+  const outros = L.filter(l => !doDia.includes(l) && !prox.includes(l));
+
+  let h = dateStrip();
+
+  if (!L.length) {
+    return h + `<div class="card"><div class="empty"><b>${ic('lembretes')}</b>
+      Escreva qualquer coisa que você não quer esquecer — tomar o suplemento, marcar a consulta,
+      levar a roupa de treino. Escolha a hora e o app te avisa.</div>
+      <button class="btn pri full" data-a="novoLembrete">${ic('mais',15)} Criar lembrete</button></div>`;
+  }
+
+  h += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--lem)"></span><h2>${esc(dLabel(D))}</h2>
+      <span class="sub">${doDia.length - pend.length}/${doDia.length}</span></div>
+    ${bar(doDia.length - pend.length, Math.max(doDia.length, 1), 'var(--lem)')}
+    ${permNotif() !== 'granted' ? `<div class="${permNotif() === 'denied' ? 'warnbox' : 'okbox'}" style="margin:12px 0 0">
+      ${permNotif() === 'denied'
+      ? 'As notificações estão bloqueadas para este site. Libere nas permissões do navegador para receber os avisos com o app fechado.'
+      : 'Ative as notificações para ser avisado na hora marcada.'}
+      ${permNotif() === 'default' ? '<br><button class="btn sm pri" style="margin-top:9px" data-a="pedirNotif">Ativar notificações</button>' : ''}
+    </div>` : ''}
+  </div>`;
+
+  h += doDia.length ? `<div class="card">
+    <div class="ch"><h2>Hoje</h2><span class="sub">toque no texto para editar</span></div>
+    ${doDia.map(l => linhaLem(l, D)).join('')}
+  </div>` : `<div class="card"><div class="empty"><b>${ic('manha')}</b>Nada marcado para ${esc(dLabel(D))}.</div></div>`;
+
+  if (prox.length) {
+    h += `<div class="sec-title">Próximos</div><div class="card tight">
+      ${prox.map(l => `<div class="row" data-a="editLembrete" data-l="${l.id}">
+        <div class="g"><div class="t wrap">${esc(l.texto)}</div>
+          <div class="s">${esc(dLabel(l.data))} às ${esc(l.hora)}</div></div>
+        <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
+  }
+  if (outros.length) {
+    h += `<div class="sec-title">Outros</div><div class="card tight">
+      ${outros.map(l => `<div class="row" data-a="editLembrete" data-l="${l.id}">
+        <div class="g"><div class="t wrap">${esc(l.texto)}</div>
+          <div class="s">${l.ativo === false ? 'pausado' : 'fora da frequência de hoje'} · ${esc(l.hora)}</div></div>
+        <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
+  }
+  return h + `<button class="btn pri full" data-a="novoLembrete" style="margin-bottom:14px">${ic('mais',15)} Novo lembrete</button>`;
+};
+/* =========================================================
+   RESUMO — relatórios diário e mensal
+   ========================================================= */
+const W = 320;
+
+function chartBar(vals, o = {}) {
+  const h = o.h || 118, pad = 16, n = vals.length || 1;
+  const max = Math.max(o.max || 0, ...vals.map(v => v || 0), 1);
+  const bw = (W - pad * 2) / n, bar = Math.max(2, bw * .62);
+  let g = '';
+  vals.forEach((v, i) => {
+    const hh = (v || 0) / max * (h - 24);
+    const x = pad + i * bw + (bw - bar) / 2, y = h - 14 - hh;
+    g += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bar.toFixed(1)}" height="${Math.max(hh, v ? 2 : 0).toFixed(1)}"
+      rx="${Math.min(3, bar / 2)}" fill="${o.cor || 'var(--res)'}" opacity="${v ? .95 : .18}"/>`;
+  });
+  if (o.meta) {
+    const y = h - 14 - o.meta / max * (h - 24);
+    g += `<line x1="${pad}" x2="${W - pad}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--tx3)" stroke-width="1" stroke-dasharray="4 4"/>
+      <text x="${W - pad}" y="${(y - 4).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--tx3)">meta ${n0(o.meta)}</text>`;
+  }
+  let lab = '';
+  (o.labels || []).forEach((t, i) => {
+    if (!t) return;
+    lab += `<text x="${(pad + i * bw + bw / 2).toFixed(1)}" y="${h - 3}" text-anchor="middle" font-size="8.5" fill="var(--tx3)">${esc(t)}</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${h}">${g}${lab}</svg>`;
+}
+
+function chartLine(pts, o = {}) {
+  // pts: [{i, v}] apenas pontos com valor
+  const h = o.h || 118, pad = 18, n = o.n || pts.length || 1;
+  if (pts.length < 1) return `<div class="empty">Sem dados suficientes.</div>`;
+  const vs = pts.map(p => p.v);
+  let mn = Math.min(...vs), mx = Math.max(...vs);
+  if (mx - mn < (o.minRange || 1)) { const c = (mx + mn) / 2, r = (o.minRange || 1) / 2; mn = c - r; mx = c + r; }
+  const X = i => pad + (n <= 1 ? 0 : i / (n - 1) * (W - pad * 2));
+  const Y = v => h - 16 - (v - mn) / (mx - mn) * (h - 30);
+  const d = pts.map((p, k) => `${k ? 'L' : 'M'}${X(p.i).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(' ');
+  const area = `${d} L${X(pts[pts.length - 1].i).toFixed(1)} ${h - 16} L${X(pts[0].i).toFixed(1)} ${h - 16} Z`;
+  const cor = o.cor || 'var(--res)';
+  return `<svg class="chart" viewBox="0 0 ${W} ${h}" >
+    <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="${cor}" stop-opacity=".28"/><stop offset="1" stop-color="${cor}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#g1)"/>
+    <path d="${d}" fill="none" stroke="${cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts.map(p => `<circle cx="${X(p.i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="2.6" fill="${cor}"/>`).join('')}
+    <text x="2" y="12" font-size="9" fill="var(--tx3)">${n1(mx)}</text>
+    <text x="2" y="${h - 18}" font-size="9" fill="var(--tx3)">${n1(mn)}</text>
+  </svg>`;
+}
+
+function tendencia(vals, inverso, lim) {
+  const v = vals.filter(x => x != null && x > 0);
+  if (v.length < 4) return { txt: 'sem tendência', cls: 'flat', pct: 0 };
+  const m = Math.floor(v.length / 2);
+  const a = v.slice(0, m).reduce((x, y) => x + y, 0) / m;
+  const b = v.slice(m).reduce((x, y) => x + y, 0) / (v.length - m);
+  const pct = a ? (b - a) / a * 100 : 0;
+  const bom = inverso ? pct < 0 : pct > 0;
+  if (Math.abs(pct) < (lim || 2)) return { txt: 'estável', cls: 'flat', pct };
+  return { txt: `${pct > 0 ? '▲' : '▼'} ${n1(Math.abs(pct))}%`, cls: bom ? 'up' : 'down', pct };
+}
+
+/* ---------- coleta do mês ---------- */
+function diasDoMes(ano, mes) {
+  const n = new Date(ano, mes + 1, 0).getDate(), out = [];
+  for (let i = 1; i <= n; i++) out.push(`${ano}-${pad(mes + 1)}-${pad(i)}`);
+  return out;
+}
+function serieMes(ds) {
+  const m = metas();
+  return ds.map(d => {
+    const x = DB.dias[d];
+    const s = x ? somaDia(d) : Z();
+    const habs = DB.habitos.filter(h => habDevidoEm(h, d));
+    const hf = habs.filter(h => ((x && x.habitos[h.id]) || {}).feito).length;
+    return {
+      d, kcal: s.kcal, c: s.c, p: s.p, g: s.g, escape: s.escape || 0,
+      agua: x ? x.agua || 0 : 0, peso: x && x.peso ? num(x.peso) : null,
+      treino: !!(x && x.treino && x.treino.feito), vol: volDia(d),
+      esporte: x ? (x.esportes || []).reduce((a, e) => a + e.kcal, 0) : 0,
+      habPrev: habs.length, habFeito: hf, temDado: !!x
+    };
+  });
+}
+
+/* ---------- tela ---------- */
+ACT.resAba = e => { SUB.res = e.dataset.t; render(); };
+ACT.mesNav = e => {
+  const cur = SUB.mes ? parseD(SUB.mes + '-01') : new Date();
+  cur.setMonth(cur.getMonth() + (+e.dataset.v));
+  SUB.mes = cur.getFullYear() + '-' + pad(cur.getMonth() + 1); SUB.res = 'mes'; render();
+};
+
+SCREENS.resumo = () => {
+  const aba = SUB.res || 'dia';
+  let h = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:13px">
+    <div class="segs" style="flex:1;margin:0">
+      <button class="${aba === 'dia' ? 'on' : ''}" data-a="resAba" data-t="dia">Diário</button>
+      <button class="${aba === 'mes' ? 'on' : ''}" data-a="resAba" data-t="mes">Mensal</button>
+    </div>
+    <button class="iconbtn" data-a="planilha" title="Exportar planilha">${ic('baixar')}</button>
+  </div>`;
+  return h + (aba === 'dia' ? resumoDia() : resumoMes())
+    + `<button class="btn full" data-a="planilha" style="margin-bottom:14px">${ic('baixar',15)} Exportar planilha</button>`;
+};
+
+function resumoDia() {
+  const x = dia(D), m = metas(), t = somaDia(D), gd = gastoDia(D);
+  const habs = DB.habitos.filter(hh => hh.ativo !== false && habDevidoEm(hh, D));
+  const hf = habs.filter(hh => (x.habitos[hh.id] || {}).feito).length;
+  const treinoOk = !!(x.treino && x.treino.feito);
+  const bal = t.kcal - gd.total;
+
+  return dateStrip() + `<div class="card">
+    <div class="ch"><h2>${esc(dLabel(D))}</h2><span class="sub">visão geral</span></div>
+    <div style="display:flex;justify-content:space-around;text-align:center">
+      <div>${ring(treinoOk ? 1 : (x.treino ? .4 : 0), 'var(--tre)', 62, treinoOk ? '✓' : '—')}
+        <div class="mini" style="margin-top:4px">Treino</div></div>
+      <div>${ring(t.kcal / m.kcal, 'var(--die)', 62, n0(t.kcal / m.kcal * 100) + '%')}
+        <div class="mini" style="margin-top:4px">Dieta</div></div>
+      <div>${ring((x.agua || 0) / metaAguaDia(D), 'var(--agua)', 62, n1((x.agua || 0) / 1000) + 'L')}
+        <div class="mini" style="margin-top:4px">Água</div></div>
+      <div>${ring(habs.length ? hf / habs.length : 0, 'var(--hab)', 62, `${hf}/${habs.length}`)}
+        <div class="mini" style="margin-top:4px">Hábitos</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><h2>Balanço energético</h2>
+      <span class="pill ${bal < -50 ? 'ok' : bal > 50 ? 'esc' : 'mut'}">${bal > 0 ? '+' : ''}${n0(bal)} kcal</span></div>
+    <div class="kpi">
+      <div><b style="color:var(--die)">${n0(t.kcal)}</b><span>consumido</span></div>
+      <div><b style="color:var(--tre)">${n0(gd.total)}</b><span>gasto est.</span></div>
+      <div><b>${n0(gd.extra)}</b><span>exercício</span></div>
+    </div>
+    <p class="mini" style="margin-top:9px">Gasto = TMB × atividade${num(DB.perfil.gastoExtra) ? ' + adicional fixo' : ''} (${n0(gd.base)} kcal) + treino e esportes lançados (${n0(gd.extra)} kcal)${gd.ajuste ? ` + ajuste de hoje (${n0(gd.ajuste)} kcal)` : ''}.
+      ${bal < 0 ? 'Você está em déficit hoje.' : bal > 0 ? 'Você está em superávit hoje.' : 'Você está no equilíbrio.'}</p>
+    <button class="btn gh full sm" style="margin-top:10px" data-a="ajustesHoje">${ic('raio',15)} Ajustes de hoje</button>
+  </div>
+
+  <div class="card">
+    <div class="ch"><h2>Macronutrientes</h2><span class="sub">${n0(t.kcal)} / ${n0(m.kcal)} kcal</span></div>
+    <div class="macro" style="flex-direction:column;gap:10px">
+      ${[['Carboidrato', t.c, m.c, 'var(--carb)'], ['Proteína', t.p, m.p, 'var(--prot)'], ['Gordura', t.g, m.g, 'var(--gord)']].map(r =>
+    `<div><div class="mt"><span>${r[0]}</span><span>${n1(r[1])} / ${n0(r[2])} g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}
+    </div>
+    ${t.escape ? `<div class="warnbox" style="margin:11px 0 0">Escapes hoje: <b>${n0(t.escape)} kcal</b> (${n0(t.kcal ? t.escape / t.kcal * 100 : 0)}% do total).</div>` : ''}
+  </div>
+
+  ${x.treino ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>${esc(x.treino.nome)}</h2>
+      <span class="sub">${x.treino.duracao || 0} min</span></div>
+    <div class="kpi">
+      <div><b>${x.treino.itens.filter(i => i.feito).length}/${x.treino.itens.length}</b><span>exercícios</span></div>
+      <div><b>${n0(volDia(D))}</b><span>kg volume</span></div>
+      <div><b>${n0(x.treino.itens.reduce((a, i) => a + i.sets.length, 0))}</b><span>séries</span></div>
+    </div></div>` : ''}
+
+  <div class="card">
+    <div class="ch"><h2>Registro do dia</h2></div>
+    <div class="grid2">
+      <div class="f" style="margin:0"><label>Peso (kg)</label>
+        <input class="in" id="d_peso" type="number" inputmode="decimal" step="0.1" value="${x.peso || ''}" data-ch="salvarPeso" placeholder="—"></div>
+      <div class="f" style="margin:0"><label>Como foi o dia</label>
+        <input class="in" id="d_nota" value="${esc(x.nota || '')}" data-ch="salvarNota" placeholder="anotação livre"></div>
+    </div>
+  </div>`;
+}
+ACT.salvarPeso = e => { const x = dia(D); x.peso = num(e.value) || null; tocaDia(D); save(); toast('Peso registrado'); };
+ACT.salvarNota = e => { const x = dia(D); x.nota = e.value; tocaDia(D); save(); };
+
+function resumoMes() {
+  const ref = SUB.mes ? parseD(SUB.mes + '-01') : parseD(D);
+  const ano = ref.getFullYear(), mes = ref.getMonth();
+  const ds = diasDoMes(ano, mes), S = serieMes(ds), m = metas();
+  const hoje = today();
+  const passados = S.filter(s => s.d <= hoje);
+  const comDado = passados.filter(s => s.temDado);
+  const labels = ds.map((d, i) => (i % 5 === 0 || i === ds.length - 1) ? String(i + 1) : '');
+
+  const kcalDias = passados.filter(s => s.kcal > 0).map(s => s.kcal);
+  const mediaKcal = kcalDias.length ? kcalDias.reduce((a, b) => a + b, 0) / kcalDias.length : 0;
+  const treinos = passados.filter(s => s.treino).length;
+  const volTot = passados.reduce((a, s) => a + s.vol, 0);
+  const aguaDias = passados.filter(s => s.agua > 0).map(s => s.agua);
+  const mediaAgua = aguaDias.length ? aguaDias.reduce((a, b) => a + b, 0) / aguaDias.length : 0;
+  const habPrev = passados.reduce((a, s) => a + s.habPrev, 0);
+  const habFeito = passados.reduce((a, s) => a + s.habFeito, 0);
+  const escapes = passados.reduce((a, s) => a + s.escape, 0);
+  const pesos = S.map((s, i) => s.peso ? { i, v: s.peso } : null).filter(Boolean);
+
+  const tKcal = tendencia(kcalDias, DB.perfil.objetivo === 'perder');
+  const tVol = tendencia(passados.map(s => s.vol));
+  const tPeso = tendencia(pesos.map(p => p.v), DB.perfil.objetivo === 'perder', 0.4);
+  const tAgua = tendencia(passados.map(s => s.agua));
+  const tHab = tendencia(passados.map(s => s.habPrev ? s.habFeito / s.habPrev * 100 : null));
+
+  const linha = (nome, val, t) => `<div class="row"><div class="g"><div class="t">${nome}</div><div class="s">${val}</div></div>
+    <div class="v trend ${t.cls}">${t.txt}</div></div>`;
+
+  return `<div class="card">
+    <div class="ch">
+      <button class="btn xs" data-a="mesNav" data-v="-1">${ic('esq',16)}</button>
+      <h2 style="text-align:center">${MESL[mes]} ${ano}</h2>
+      <button class="btn xs" data-a="mesNav" data-v="1">${ic('dir',16)}</button></div>
+    <div class="kpi" style="margin-bottom:9px">
+      <div><b style="color:var(--tre)">${treinos}</b><span>treinos</span></div>
+      <div><b style="color:var(--die)">${n0(mediaKcal)}</b><span>kcal/dia</span></div>
+      <div><b style="color:var(--agua)">${n1(mediaAgua / 1000)}</b><span>água L</span></div>
+      <div><b style="color:var(--hab)">${habPrev ? n0(habFeito / habPrev * 100) : 0}%</b><span>hábitos</span></div>
+    </div>
+    <p class="mini">${comDado.length} de ${passados.length} dias com registro · volume total ${n0(volTot)} kg · escapes ${n0(escapes)} kcal</p>
+  </div>
+
+  <div class="sec-title">Tendências do mês</div>
+  <div class="card tight">
+    ${linha('Calorias consumidas', `média ${n0(mediaKcal)} kcal · meta ${n0(m.kcal)}`, tKcal)}
+    ${linha('Volume de treino', `${n0(volTot)} kg no mês`, tVol)}
+    ${linha('Peso', pesos.length ? `${n1(pesos[pesos.length - 1].v)} kg no último registro` : 'sem registros', tPeso)}
+    ${linha('Água', `média ${n1(mediaAgua / 1000)} L de ${n1(m.agua / 1000)} L`, tAgua)}
+    ${linha('Adesão a hábitos', `${habFeito} de ${habPrev} check-ins`, tHab)}
+    <p class="mini" style="margin-top:8px">A tendência compara a média da 2ª metade do período com a da 1ª metade. Verde = evoluindo na direção do seu objetivo.</p>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>Calorias por dia</h2>
+      <span class="sub trend ${tKcal.cls}">${tKcal.txt}</span></div>
+    ${chartBar(S.map(s => s.kcal), { cor: 'var(--die)', meta: m.kcal, labels })}
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>Volume de treino (kg)</h2>
+      <span class="sub trend ${tVol.cls}">${tVol.txt}</span></div>
+    ${chartBar(S.map(s => s.vol), { cor: 'var(--tre)', labels })}
+    <div class="legend"><span>${treinos} treino${treinos===1?'':'s'} concluído${treinos===1?'':'s'} no mês</span></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Peso (kg)</h2>
+      <span class="sub trend ${tPeso.cls}">${tPeso.txt}</span></div>
+    ${pesos.length ? chartLine(pesos, { cor: 'var(--res)', n: ds.length, minRange: 2 })
+      : '<div class="empty">Registre seu peso no Resumo diário para ver a curva.</div>'}
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--agua)"></span><h2>Água (ml)</h2>
+      <span class="sub trend ${tAgua.cls}">${tAgua.txt}</span></div>
+    ${chartBar(S.map(s => s.agua), { cor: 'var(--agua)', meta: m.agua, labels })}
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--hab)"></span><h2>Adesão a hábitos (%)</h2>
+      <span class="sub trend ${tHab.cls}">${tHab.txt}</span></div>
+    ${chartBar(S.map(s => s.habPrev ? s.habFeito / s.habPrev * 100 : 0), { cor: 'var(--hab)', max: 100, meta: 100, labels })}
+    ${DB.habitos.filter(h => h.ativo !== false).map(h => {
+        const prev = passados.filter(s => habDevidoEm(h, s.d)).length;
+        const fez = passados.filter(s => ((DB.dias[s.d] || { habitos: {} }).habitos[h.id] || {}).feito).length;
+        return `<div class="row"><div class="g"><div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
+        <div class="s">${fez} de ${prev} dias</div></div>
+        <div class="v">${prev ? n0(fez / prev * 100) : 0}%</div></div>`;
+      }).join('')}
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch"><h2>Macros médios do mês</h2></div>
+    ${(() => {
+        const dd = passados.filter(s => s.kcal > 0), k = dd.length || 1;
+        const mc = dd.reduce((a, s) => a + s.c, 0) / k, mp = dd.reduce((a, s) => a + s.p, 0) / k, mg = dd.reduce((a, s) => a + s.g, 0) / k;
+        return `<div class="macro" style="flex-direction:column;gap:10px">
+        ${[['Carboidrato', mc, m.c, 'var(--carb)'], ['Proteína', mp, m.p, 'var(--prot)'], ['Gordura', mg, m.g, 'var(--gord)']].map(r =>
+          `<div><div class="mt"><span>${r[0]}</span><span>${n0(r[1])} / ${n0(r[2])} g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}</div>`;
+      })()}
+  </div>`;
+}
+
+/* =========================================================
+   EXPORTAR PLANILHA
+   Gera um CSV com uma linha por dia. CSV abre no Excel, no
+   Google Sheets e no Numbers sem nada instalado.
+   Separador ";" e vírgula decimal, que é como o Excel em
+   português espera; BOM no começo para os acentos saírem certos.
+   ========================================================= */
+const csvNum = v => (v == null || v === '' ? '' : String(v).replace('.', ','));
+const csvTxt = v => {
+  const t = String(v == null ? '' : v);
+  return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+};
+
+function planilhaDias(ds) {
+  const m = metas();
+  const cab = ['Data', 'Dia da semana', 'Treino', 'Exercícios feitos', 'Volume (kg)', 'Duração (min)',
+    'Atividades', 'Kcal atividades', 'Kcal consumidas', 'Meta kcal', 'Carboidrato (g)', 'Proteína (g)',
+    'Gordura (g)', 'Escapes (kcal)', 'Água (ml)', 'Meta água (ml)', 'Gasto estimado (kcal)',
+    'Balanço (kcal)', 'Peso (kg)', 'Hábitos feitos', 'Hábitos previstos', 'Anotação'];
+  const linhas = [cab.join(';')];
+  ds.forEach(d => {
+    const x = DB.dias[d]; if (!x || diaVazio(x)) return;
+    const t = somaDia(d), g = gastoDia(d);
+    const habs = DB.habitos.filter(h => habDevidoEm(h, d));
+    const hf = habs.filter(h => (x.habitos[h.id] || {}).feito).length;
+    const tr = x.treino;
+    linhas.push([
+      d, DOW[parseD(d).getDay()],
+      csvTxt(tr ? tr.nome + (tr.feito ? '' : ' (em aberto)') : ''),
+      tr ? tr.itens.filter(i => i.feito).length + '/' + tr.itens.length : '',
+      csvNum(volDia(d) || ''), tr ? tr.duracao || '' : '',
+      csvTxt((x.esportes || []).map(e => e.nome + ' ' + e.min + 'min').join(' | ')),
+      (x.esportes || []).reduce((a, e) => a + e.kcal, 0) || '',
+      Math.round(t.kcal) || '', Math.round(m.kcal),
+      csvNum(+t.c.toFixed(1)), csvNum(+t.p.toFixed(1)), csvNum(+t.g.toFixed(1)),
+      Math.round(t.escape || 0) || '', x.agua || '', metaAguaDia(d),
+      Math.round(g.total), Math.round(t.kcal - g.total),
+      csvNum(x.peso || ''), habs.length ? hf : '', habs.length || '',
+      csvTxt(x.nota || '')
+    ].join(';'));
+  });
+  return linhas.join('\r\n');
+}
+
+function periodoDias(tipo) {
+  if (tipo === 'mes') {
+    const ref = SUB.mes ? parseD(SUB.mes + '-01') : parseD(D);
+    return diasDoMes(ref.getFullYear(), ref.getMonth());
+  }
+  if (tipo === '30') { const o = []; for (let i = 29; i >= 0; i--) o.push(addDays(today(), -i)); return o; }
+  return Object.keys(DB.dias).sort();
+}
+
+ACT.planilha = () => {
+  SUB.expTipo = SUB.expTipo || 'mes';
+  sheetPlanilha();
+};
+function sheetPlanilha() {
+  const tipo = SUB.expTipo;
+  const ds = periodoDias(tipo).filter(d => DB.dias[d] && !diaVazio(DB.dias[d]));
+  const ref = SUB.mes ? parseD(SUB.mes + '-01') : parseD(D);
+  sheet(`<h3>Exportar planilha</h3>
+    <p class="hint">Um arquivo com uma linha por dia: treino, calorias, macros, água, peso e
+    hábitos. Abre no Excel, no Google Sheets e no Numbers.</p>
+    <div class="f"><label>Período</label>
+      <div class="segs">
+        ${[['mes', MESL[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2)],
+          ['30', 'Últimos 30 dias'], ['tudo', 'Tudo']].map(o =>
+          `<button class="${tipo === o[0] ? 'on' : ''}" data-a="expTipo" data-t="${o[0]}">${o[1]}</button>`).join('')}
+      </div></div>
+    <div class="${ds.length ? 'okbox' : 'warnbox'}">${ds.length
+      ? `<b>${ds.length}</b> dia(s) com registro entram na planilha.`
+      : 'Nenhum dia com registro neste período.'}</div>
+    ${ds.length ? `<div class="btnrow">
+        <button class="btn pri" data-a="planilhaEnviar">Compartilhar</button>
+        <button class="btn" data-a="planilhaBaixar">Baixar</button>
+      </div>
+      <p class="mini" style="margin-top:10px"><b>Compartilhar</b> abre a lista de aplicativos do
+      celular — escolha o e-mail e a planilha vai já anexada. No computador, use
+      <b>Baixar</b> e anexe o arquivo você mesmo: e-mail não deixa um site anexar arquivo sozinho.</p>`
+      : '<button class="btn full" data-a="fechar">Fechar</button>'}`);
+}
+ACT.expTipo = e => { SUB.expTipo = e.dataset.t; sheetPlanilha(); };
+
+function arquivoPlanilha() {
+  const ds = periodoDias(SUB.expTipo);
+  const nome = 'vitta-' + (SUB.expTipo === 'tudo' ? 'historico' :
+    SUB.expTipo === '30' ? 'ultimos-30-dias' : (SUB.mes || today().slice(0, 7))) + '.csv';
+  return { nome, texto: '\ufeff' + planilhaDias(ds) };
+}
+ACT.planilhaBaixar = () => {
+  const { nome, texto } = arquivoPlanilha();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' }));
+  a.download = nome; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  fechar(); toast('Planilha gerada ✓');
+};
+ACT.planilhaEnviar = async () => {
+  const { nome, texto } = arquivoPlanilha();
+  try {
+    const arq = new File([texto], nome, { type: 'text/csv' });
+    if (navigator.canShare && navigator.canShare({ files: [arq] })) {
+      await navigator.share({ files: [arq], title: 'Vitta — acompanhamento', text: 'Segue minha planilha do Vitta.' });
+      fechar(); return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  ACT.planilhaBaixar();
+  toast('Este navegador não compartilha arquivos — a planilha foi baixada');
+};
+/* =========================================================
+   HOJE — painel de lançamento rápido
+   ========================================================= */
+function saudacao() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+}
+SCREENS.hoje = () => {
+  const x = dia(D), m = metas(), t = somaDia(D);
+  const nome = DB.perfil.nome ? ', ' + DB.perfil.nome.split(' ')[0] : '';
+  const habs = DB.habitos.filter(h => h.ativo !== false && habDevidoEm(h, D));
+  const pend = habs.filter(h => !(x.habitos[h.id] || {}).feito);
+  const sug = fichaDoDia(D);
+  const rest = m.kcal - t.kcal, mAgua = metaAguaDia(D);
+
+  let h = `<div class="card hero">
+    <div class="ch" style="margin-bottom:6px"><h2 style="font-size:16px">${saudacao()}${esc(nome)}</h2></div>
+    <p class="mini">${esc(dLabel(D))} — ${D === today() ? 'lance seus dados do dia em poucos toques.' : 'você está editando um dia anterior.'}</p>
+  </div>` + dateStrip();
+
+  /* treino */
+  h += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>Exercícios</h2>
+      <span class="sub">${x.treino ? (x.treino.feito ? 'concluído' : 'em aberto') : 'não iniciado'}</span></div>
+    ${x.treino ? `<div class="row" style="border:0;padding:0" data-a="ir" data-v="treino">
+        <div class="g"><div class="t">${esc(x.treino.nome)}</div>
+          <div class="s">${x.treino.itens.filter(i => i.feito).length} de ${x.treino.itens.length} exercícios · ${n0(volDia(D))} kg</div></div>
+        <div class="v">${ic('dir',16,'op')}</div></div>
+      ${bar(x.treino.itens.filter(i => i.feito).length, Math.max(x.treino.itens.length, 1), 'var(--tre)')}`
+      : `<div class="row" style="border:0;padding:0 0 10px"><div class="g">
+          <div class="t">${sug ? 'Hoje na agenda: ' + esc(sug.nome) : 'Nenhum treino registrado'}</div>
+          <div class="s">${sug ? (sug.exercicios || []).length + ' exercícios' : 'escolha uma ficha ou registre livre'}</div></div></div>
+        <button class="btn pri full sm" data-a="escolherFicha">Iniciar treino</button>`}
+    ${(x.esportes || []).length ? `<div class="mini" style="margin-top:9px">Atividades: ${x.esportes.map(e => esc(e.nome) + ' ' + e.min + 'min').join(' · ')}</div>` : ''}
+  </div>`;
+
+  /* dieta */
+  h += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>Dieta</h2>
+      <span class="sub">${n0(t.kcal)} / ${n0(m.kcal)} kcal</span></div>
+    <div style="display:flex;gap:13px;align-items:center">
+      ${ring(t.kcal / m.kcal, rest < -m.kcal * .05 ? 'var(--warn)' : 'var(--die)', 66, n0(Math.abs(rest)))}
+      <div style="flex:1">
+        <div class="mini" style="margin-bottom:7px">${rest >= 0 ? 'kcal restantes hoje' : 'kcal acima da meta'}</div>
+        <div class="macro" style="margin:0;flex-direction:column;gap:7px">
+          ${[['C', t.c, m.c, 'var(--carb)'], ['P', t.p, m.p, 'var(--prot)'], ['G', t.g, m.g, 'var(--gord)']].map(r =>
+      `<div><div class="mt"><span>${r[0]}</span><span>${n0(r[1])}/${n0(r[2])}g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="btnrow" style="margin-top:12px">
+      <button class="btn sm pri" data-a="fabDieta">${ic('mais',15)} Lançar refeição</button>
+      <button class="btn sm" data-a="ir" data-v="dieta">Ver dieta</button>
+    </div>
+  </div>`;
+
+  /* água */
+  h += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--agua)"></span><h2>Água</h2>
+      <span class="sub">${n1((x.agua || 0) / 1000)} / ${n1(mAgua / 1000)} L</span></div>
+    ${bar(x.agua || 0, mAgua, 'var(--agua)')}
+    <div class="btnrow" style="margin-top:11px">
+      ${[200, 300, 500].map(v => `<button class="btn sm" data-a="agua" data-v="${v}">+${v}</button>`).join('')}
+      <button class="btn sm gh" data-a="aguaCustom">…</button>
+    </div>
+  </div>`;
+
+  /* lembretes do dia */
+  const lems = (DB.lembretes || []).filter(l => lemDevidoEm(l, D))
+    .sort((a, b) => minutos(a.hora) - minutos(b.hora));
+  const lemPend = lems.filter(l => !lemFeito(l, D));
+  if (lems.length) {
+    h += `<div class="card">
+      <div class="ch"><span class="dot" style="background:var(--lem)"></span><h2>Lembretes</h2>
+        <span class="sub">${lems.length - lemPend.length}/${lems.length}</span></div>
+      ${lems.map(l => linhaLem(l, D, true)).join('')}
+    </div>`;
+  }
+
+  /* hábitos */
+  h += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--hab)"></span><h2>Hábitos</h2>
+      <span class="sub">${habs.length - pend.length}/${habs.length}</span></div>
+    ${habs.length ? habs.map(hh => {
+        const r = x.habitos[hh.id];
+        return `<div class="row">
+        <button class="tick ${r && r.feito ? 'on' : ''}" data-a="hTick" data-h="${hh.id}">${ic('check')}</button>
+        <div class="g" data-a="hCheckin" data-h="${hh.id}"><div class="t">${icOu(hh.icone, 15)} ${esc(hh.nome)}</div>
+          <div class="s">${r ? (r.feito ? (r.qual ? estrelas(r.qual) + ' · ' : '') + 'feito hoje' : 'não fiz hoje') : 'aguardando check-in'}</div></div>
+      </div>`;
+      }).join('') : `<div class="empty" style="padding:14px"><b>${ic('faisca')}</b>Nenhum hábito ativo.</div>
+        <button class="btn pri full sm" data-a="ir" data-v="habitos">Criar hábito</button>`}
+  </div>
+
+  <div class="card tight" style="margin-bottom:14px">
+    <div class="row" data-a="ir" data-v="resumo"><div class="g"><div class="t">${ic('resumo',15)} Ver resumo e evolução</div>
+      <div class="s">relatórios diário e mensal</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+    <div class="row" data-a="ir" data-v="perfil"><div class="g"><div class="t">${ic('medidas',15)} Minhas medidas e metas</div>
+      <div class="s">TMB ${n0(tmb())} · gasto ${n0(get())} kcal</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+  </div>`;
+  return h;
+};
+/* =========================================================
+   SUPABASE — conta e sincronização
+
+   IDENTIDADE
+   Cada linha do banco tem um dono (user_id) e o RLS só devolve
+   as linhas de quem está pedindo. Por isso a conta precisa ser
+   A MESMA em todos os aparelhos: entrar com e-mail resolve.
+   A sessão anônima cria um usuário novo por aparelho — serve
+   para uso em um aparelho só, nunca para sincronizar.
+
+   CONFLITOS
+   Last-write-wins por registro, comparando o campo "upd".
+   Registros sem "upd" (dia aberto mas nunca lançado, perfil
+   nunca editado) NUNCA são enviados: eram eles que apagavam
+   os dados bons do servidor.
+   ========================================================= */
+const SB = { client: null, user: null, email: null, anon: false, status: 'desconectado' };
+function syncBadge() {
+  const e = document.getElementById('sb_status'); if (e) e.textContent = SB.status;
+}
+const logado = () => !!(SB.client && SB.user);
+
+async function iniciarSupabase(manual) {
+  const { url, key } = DB.cfg;
+  if (!url || !key) { SB.status = 'não configurado'; syncBadge(); return; }
+  if (!window.supabase) { SB.status = 'sem conexão'; syncBadge(); return; }
+  try {
+    SB.status = 'conectando…'; syncBadge();
+    if (!SB.client) {
+      SB.client = window.supabase.createClient(url, key, {
+        auth: {
+          persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+          // implicit: o link do e-mail funciona mesmo aberto pelo navegador
+          // interno do app de e-mail, que não compartilha dados com o Chrome/Safari
+          flowType: 'implicit', storageKey: 'vitta_auth'
+        }
+      });
+      SB.client.auth.onAuthStateChange((evento, sessao) => {
+        if (evento === 'SIGNED_IN' && sessao) {
+          limparURL(); aplicarSessao(sessao); fechar(); syncAll(true);
+        }
+        if (evento === 'SIGNED_OUT') { SB.user = SB.email = null; SB.anon = false; SB.status = 'sem conta'; syncBadge(); }
+      });
+    }
+    const { data: { session } } = await SB.client.auth.getSession();
+    if (!session) { SB.user = null; SB.status = 'sem conta'; syncBadge(); render(); return; }
+    limparURL(); aplicarSessao(session);
+    await syncAll(manual);
+  } catch (e) {
+    SB.status = 'erro: ' + (e.message || e); syncBadge();
+    if (manual) toast('Falha ao conectar. Confira URL/chave.');
+    console.error('[supabase]', e);
+  }
+}
+/* tira os tokens do endereço depois que o link do e-mail é usado */
+function limparURL() {
+  if (location.hash && /access_token|error_description/.test(location.hash)) {
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { }
+  }
+}
+function aplicarSessao(session) {
+  SB.user = session.user.id;
+  SB.email = session.user.email || null;
+  SB.anon = !!session.user.is_anonymous || !session.user.email;
+  SB.status = 'conectado'; syncBadge();
+}
+
+/* ---------- entrar com e-mail ----------
+   Dois caminhos, e o app aceita os dois:
+   1. tocar no link que chega no e-mail (funciona sem configurar nada);
+   2. digitar o código de 6 dígitos (só aparece se o modelo de e-mail do
+      Supabase tiver a variável do token — o que exige SMTP próprio nos
+      projetos gratuitos novos).                                          */
+const URL_APP = () => location.origin + location.pathname;
+
+ACT.entrarEmail = () => {
+  sheet(`<h3>Sincronizar entre aparelhos</h3>
+    <p class="hint">Informe seu e-mail e abra a mensagem <b>neste mesmo aparelho</b>: tocar no
+    link já entra. Use o mesmo e-mail no celular e no computador e os dados passam a ser os mesmos.</p>
+    <div class="f"><label>E-mail</label>
+      <input class="in" id="au_mail" type="email" inputmode="email" autocapitalize="off"
+        spellcheck="false" placeholder="voce@exemplo.com" value="${esc(DB.cfg.ultimoEmail || '')}"></div>
+    <div class="warnbox">Use o <b>mesmo e-mail da sua conta do Supabase</b>. Sem um servidor de
+    e-mail próprio configurado, o Supabase só entrega mensagem para os endereços da organização
+    do projeto — para qualquer outro, o e-mail simplesmente não chega.</div>
+    ${SB.anon ? '<div class="okbox">Tudo o que já está neste aparelho sobe para a conta assim que você entrar.</div>' : ''}
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="enviarCodigo">Enviar acesso</button></div>`);
+};
+ACT.enviarCodigo = async e => {
+  const email = valOf('au_mail').trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('E-mail inválido');
+  if (!SB.client) await iniciarSupabase(false);
+  e.textContent = 'Enviando…';
+  const { error } = await SB.client.auth.signInWithOtp({
+    email, options: { shouldCreateUser: true, emailRedirectTo: URL_APP() }
+  });
+  if (error) { e.textContent = 'Enviar acesso'; return toast('Erro: ' + error.message); }
+  DB.cfg.ultimoEmail = email; save(false);
+  sheetCodigo(email);
+};
+function sheetCodigo(email) {
+  const local = location.protocol === 'file:';
+  sheet(`<h3>Verifique seu e-mail</h3>
+    <p class="hint">Enviamos para <b>${esc(email)}</b>. Chega em alguns segundos — confira o spam.</p>
+    <div class="okbox"><b>Caminho mais simples:</b> abra o e-mail neste aparelho e toque no link
+    (<i>Log In</i> / <i>Confirm your mail</i>). Você volta para cá já conectado.</div>
+    ${local ? '<div class="warnbox">Este arquivo está aberto direto do disco. O link do e-mail só consegue devolver você para o app se ele estiver publicado num endereço da internet — use o código abaixo, ou abra o app pelo endereço publicado.</div>' : ''}
+    <div class="f"><label>Ou, se o e-mail trouxer um código de 6 dígitos</label>
+      <input class="in" id="au_cod" inputmode="numeric" autocomplete="one-time-code"
+        placeholder="000000" style="font-size:22px;letter-spacing:6px;text-align:center"></div>
+    <div class="btnrow"><button class="btn" data-a="entrarEmail">Voltar</button>
+      <button class="btn pri" data-a="confirmarCodigo" data-m="${esc(email)}">Entrar com o código</button></div>
+    <p class="mini" style="margin-top:10px">Não chegou? Espere 60 segundos antes de pedir de novo —
+    é o limite do Supabase. E confirme que o endereço é o mesmo da sua conta do Supabase.</p>`);
+}
+ACT.confirmarCodigo = async e => {
+  const token = valOf('au_cod').replace(/\D/g, ''), email = e.dataset.m;
+  if (token.length < 6) return toast('O código tem 6 dígitos — ou use o link do e-mail');
+  e.textContent = 'Entrando…';
+  // e-mail novo chega pelo modelo "Confirm signup" (type signup);
+  // e-mail que já existe chega pelo "Magic Link" (type email). Tenta os dois.
+  let sessao = null, ultimo = null;
+  for (const tipo of ['email', 'signup', 'magiclink']) {
+    const r = await SB.client.auth.verifyOtp({ email, token, type: tipo });
+    if (!r.error && r.data && r.data.session) { sessao = r.data.session; break; }
+    ultimo = r.error;
+  }
+  if (!sessao) {
+    e.textContent = 'Entrar com o código';
+    console.error('[auth]', ultimo);
+    return toast('Código inválido ou expirado');
+  }
+  aplicarSessao(sessao);
+  fechar(); toast('Conectado como ' + email);
+  await syncAll(true);
+};
+
+/* ---------- usar só neste aparelho ---------- */
+ACT.entrarAnon = () => confirmar(
+  'Sem e-mail, os dados ficam só neste aparelho: cada aparelho vira um usuário diferente e eles não se enxergam. Continuar?',
+  async () => {
+    if (!SB.client) await iniciarSupabase(false);
+    const { data, error } = await SB.client.auth.signInAnonymously();
+    if (error) return toast('Erro: ' + error.message);
+    aplicarSessao(data.session); await syncAll(true);
+  });
+
+ACT.sair = () => confirmar(
+  'Sair da conta neste aparelho? Os lançamentos continuam guardados aqui e voltam a subir quando você entrar de novo.',
+  async () => {
+    await SB.client.auth.signOut();
+    SB.user = SB.email = null; SB.anon = false;
+    SB.status = 'sem conta'; syncBadge(); render();
+  });
+
+/* =========================================================
+   mapeamento local <-> tabela
+   ========================================================= */
+const TABELAS = [
+  {
+    n: 'fichas', get: () => DB.fichas, set: a => DB.fichas = a,
+    up: f => ({ id: f.id, user_id: SB.user, nome: f.nome, cor: f.cor, dias: f.dias || [], exercicios: f.exercicios || [], upd: f.upd }),
+    down: r => ({ id: r.id, nome: r.nome, cor: r.cor, dias: r.dias || [], exercicios: r.exercicios || [], upd: r.upd })
+  },
+  {
+    n: 'alimentos', get: () => DB.alimentos, set: a => DB.alimentos = a,
+    up: a => ({ id: a.id, user_id: SB.user, nome: a.nome, porcao: a.porcao, un: a.un, kcal: a.kcal, c: a.c, p: a.p, g: a.g, liq: a.liq || 0, upd: a.upd }),
+    down: r => ({ id: r.id, nome: r.nome, porcao: +r.porcao, un: r.un, kcal: +r.kcal, c: +r.c, p: +r.p, g: +r.g, liq: +r.liq || 0, upd: r.upd })
+  },
+  {
+    n: 'pratos', get: () => DB.pratos, set: a => DB.pratos = a,
+    up: p => ({ id: p.id, user_id: SB.user, nome: p.nome, refeicao: p.refeicao, itens: p.itens || [], variacao_de: p.variacaoDe, upd: p.upd }),
+    down: r => ({ id: r.id, nome: r.nome, refeicao: r.refeicao, itens: r.itens || [], variacaoDe: r.variacao_de, upd: r.upd })
+  },
+  {
+    n: 'lembretes', get: () => DB.lembretes, set: a => DB.lembretes = a,
+    up: l => ({
+      id: l.id, user_id: SB.user, texto: l.texto, hora: l.hora, data: l.data || null, fim: l.fim || null,
+      repetir: l.repetir, dias: l.dias || [], ativo: l.ativo !== false, feito: l.feito || {},
+      criado: l.criado || null, upd: l.upd
+    }),
+    down: r => ({
+      id: r.id, texto: r.texto, hora: r.hora, data: r.data, fim: r.fim, repetir: r.repetir,
+      dias: r.dias || [], ativo: r.ativo, feito: r.feito || {}, criado: r.criado, alertado: '', upd: r.upd
+    })
+  },
+  {
+    n: 'atividades', get: () => DB.atividades, set: a => DB.atividades = a,
+    up: a => ({ id: a.id, user_id: SB.user, nome: a.nome, met: a.met, min: a.min, intens: a.int || 1, dias: a.dias || [], upd: a.upd }),
+    down: r => ({ id: r.id, nome: r.nome, met: +r.met, min: +r.min, int: +r.intens || 1, dias: r.dias || [], upd: r.upd })
+  },
+  {
+    n: 'habitos', get: () => DB.habitos, set: a => DB.habitos = a,
+    up: h => ({
+      id: h.id, user_id: SB.user, nome: h.nome, icone: h.icone, motivos: h.motivos, inicio: h.inicio, fim: h.fim || null,
+      freq_tipo: h.freqTipo, dias: h.dias || [], vezes: h.vezes || 0, medida: h.medida, unidade: h.unidade || '',
+      meta: h.meta || 0, hora: h.hora || null, ativo: h.ativo !== false, encerrado: h.encerrado, upd: h.upd
+    }),
+    down: r => ({
+      id: r.id, nome: r.nome, icone: r.icone, motivos: r.motivos, inicio: r.inicio, fim: r.fim,
+      freqTipo: r.freq_tipo, dias: r.dias || [], vezes: r.vezes, medida: r.medida, unidade: r.unidade,
+      meta: +r.meta || 0, hora: r.hora || '', ativo: r.ativo, encerrado: r.encerrado, upd: r.upd
+    })
+  }
+];
+
+async function syncAll(avisar) {
+  if (!logado()) { if (avisar) toast('Entre com seu e-mail primeiro'); return; }
+  SB.status = 'sincronizando…'; syncBadge();
+  try {
+    await aplicarExclusoes();
+    for (const t of TABELAS) await syncTabela(t);
+    await syncPerfil();
+    await syncDias();
+    DB.cfg.ultimoSync = nowISO(); DIRTY = false;
+    save(false);
+    SB.status = SEM_TABELA.size
+      ? 'sincronizado (falta a tabela ' + [...SEM_TABELA].join(', ') + ' — rode o schema.sql)'
+      : 'sincronizado';
+    syncBadge();
+    if (avisar) toast('Sincronizado ✓');
+    render();
+  } catch (e) {
+    console.error('[sync]', e);
+    SB.status = explicarErro(e); syncBadge();
+    if (avisar) toast(SB.status);
+    render();
+  }
+}
+
+/* Traduz os erros que o Supabase devolve para o que fazer a respeito. */
+function explicarErro(e) {
+  const m = String((e && e.message) || e || '');
+  if (/no unique or exclusion constraint/i.test(m))
+    return 'Banco na versão antiga — rode o schema.sql de novo no SQL Editor';
+  if (/USING expression/i.test(m))
+    return 'Identificador em conflito entre contas — rode o schema.sql de novo (parte 8)';
+  if (/row-level security/i.test(m))
+    return 'Regras de segurança faltando — rode o schema.sql de novo (parte 9)';
+  if (/does not exist|schema cache/i.test(m))
+    return 'Falta tabela ou coluna — rode o schema.sql inteiro no SQL Editor';
+  if (/Failed to fetch|NetworkError/i.test(m))
+    return 'Sem conexão com o servidor';
+  return 'Erro no sync: ' + m.slice(0, 80);
+}
+
+/* exclusões feitas offline ou em outro momento */
+async function aplicarExclusoes() {
+  const fila = DB.delFila || []; if (!fila.length) return;
+  const porTabela = {};
+  fila.forEach(d => (porTabela[d.t] = porTabela[d.t] || []).push(d.id));
+  for (const t of Object.keys(porTabela)) {
+    const { error } = await SB.client.from(t).delete().eq('user_id', SB.user).in('id', porTabela[t]);
+    if (error && !tabelaAusente(error)) throw error;
+  }
+  DB.delFila = [];
+}
+
+/* Tabela que ainda não existe no banco (schema desatualizado) não derruba o
+   sync inteiro: o app avisa uma vez e segue sincronizando o resto.            */
+const SEM_TABELA = new Set();
+const tabelaAusente = e => /does not exist|schema cache|PGRST205/i.test(String((e && e.message) || e));
+
+async function syncTabela(t) {
+  if (SEM_TABELA.has(t.n)) return;
+  const locais = t.get();
+  const { data, error } = await SB.client.from(t.n).select('*').eq('user_id', SB.user);
+  if (error && tabelaAusente(error)) {
+    SEM_TABELA.add(t.n);
+    console.warn('[sync] tabela ausente:', t.n, '— rode o schema.sql de novo');
+    return;
+  }
+  if (error) throw error;
+  const remotos = (data || []).map(t.down);
+  const mapL = new Map(locais.map(x => [x.id, x])), mapR = new Map(remotos.map(x => [x.id, x]));
+  const enviar = [], resultado = [];
+  new Set([...mapL.keys(), ...mapR.keys()]).forEach(id => {
+    const l = mapL.get(id), r = mapR.get(id);
+    if (l && r) { const vence = (l.upd || '') >= (r.upd || '') ? l : r; resultado.push(vence); if (vence === l) enviar.push(l); }
+    else if (l) { resultado.push(l); enviar.push(l); }
+    else resultado.push(r);
+  });
+  t.set(resultado);
+  if (enviar.length) await upsertCompat(t.n, enviar.map(t.up));
+}
+
+/* Bancos criados com a versão antiga do schema.sql ainda têm a chave
+   primária só no id. Tenta a chave nova e cai para a antiga se preciso. */
+async function upsertCompat(tabela, linhas) {
+  let r = await SB.client.from(tabela).upsert(linhas, { onConflict: 'user_id,id' });
+  if (r.error && /no unique or exclusion constraint/i.test(r.error.message || '')) {
+    r = await SB.client.from(tabela).upsert(linhas, { onConflict: 'id' });
+  }
+  if (r.error && tabelaAusente(r.error)) { SEM_TABELA.add(tabela); return; }
+  if (r.error) throw r.error;
+}
+
+async function syncPerfil() {
+  const { data, error } = await SB.client.from('perfil').select('*').eq('user_id', SB.user).maybeSingle();
+  if (error) throw error;
+  const meu = DB.perfil.upd;                     // null = nunca editei neste aparelho
+  if (data && (!meu || (data.upd || '') > meu)) {
+    DB.perfil = Object.assign(DB.perfil, data.dados, { upd: data.upd });
+    return;
+  }
+  if (!meu) return;                              // nada meu para enviar: não sobrescreve o servidor
+  const { error: e2 } = await SB.client.from('perfil')
+    .upsert({ user_id: SB.user, dados: DB.perfil, upd: meu }, { onConflict: 'user_id' });
+  if (e2) throw e2;
+}
+
+const baixaDia = r => ({
+  treino: r.treino, esportes: r.esportes || [], refeicoes: r.refeicoes || {}, agua: r.agua || 0,
+  habitos: r.habitos || {}, peso: r.peso, nota: r.nota || '',
+  ajusteKcal: +r.ajuste_kcal || 0, ajusteAgua: +r.ajuste_agua || 0, upd: r.upd
+});
+const diaEnviavel = x => !!(x && x.upd && !diaVazio(x));
+
+async function syncDias() {
+  const limite = addDays(today(), -400);
+  const { data, error } = await SB.client.from('dias').select('*').eq('user_id', SB.user).gte('data', limite);
+  if (error) throw error;
+  const mapR = new Map((data || []).map(r => [r.data, r]));
+  const enviar = [];
+  new Set([...Object.keys(DB.dias), ...mapR.keys()]).forEach(k => {
+    const l = DB.dias[k], r = mapR.get(k);
+    if (l && r) {
+      // só disputo o dia se eu tiver conteúdo de verdade e for mais recente
+      if (diaEnviavel(l) && l.upd >= r.upd) enviar.push(k);
+      else DB.dias[k] = baixaDia(r);
+    } else if (l) { if (diaEnviavel(l)) enviar.push(k); }
+    else DB.dias[k] = baixaDia(r);
+  });
+  if (!enviar.length) return;
+  const rows = enviar.map(k => {
+    const x = DB.dias[k];
+    return {
+      user_id: SB.user, data: k, treino: x.treino, esportes: x.esportes || [], refeicoes: x.refeicoes || {},
+      agua: x.agua || 0, habitos: x.habitos || {}, peso: x.peso, nota: x.nota || '',
+      ajuste_kcal: x.ajusteKcal || 0, ajuste_agua: x.ajusteAgua || 0, upd: x.upd
+    };
+  });
+  for (let i = 0; i < rows.length; i += 200) {
+    const { error: e2 } = await SB.client.from('dias').upsert(rows.slice(i, i + 200), { onConflict: 'user_id,data' });
+    if (e2) throw e2;
+  }
+}
+
+let SYNC_T;
+function agendarSync() {
+  if (!DB.cfg.autoSync || !logado()) return;
+  clearTimeout(SYNC_T); SYNC_T = setTimeout(() => syncAll(false), 4000);
+}
+ACT.syncAgora = () => { logado() ? syncAll(true) : iniciarSupabase(true); };
+window.addEventListener('online', () => { if (DIRTY) agendarSync(); });
+/* ========================= INIT ========================= */
+window.addEventListener('error', e => console.error('[vitta]', e.message));
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    if (D !== today() && !SUB._back) { D = today(); render(); }
+    if (DIRTY) agendarSync();
+    checarLembretes();
+  }
+});
+/* logo como ícone da aba e da tela de início */
+(() => {
+  const uri = logoDataURI();
+  document.querySelectorAll("link[rel='icon'],link[rel='apple-touch-icon']").forEach(l => l.href = uri);
+})();
+
+aplicarTema();
+if (window.matchMedia) {
+  // no modo automático, acompanha o aparelho mudando de tema em tempo real
+  matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => { if ((DB.cfg.tema || 'auto') === 'auto') aplicarTema(); });
+}
+
+render();
+iniciarSupabase(false);
+
+/* Notificações: registra o service worker (quem mostra o aviso) e
+   confere o que venceu — ao abrir, ao voltar ao app e a cada 30s. */
+registrarSW().then(() => checarLembretes());
+setInterval(checarLembretes, 30000);
+</script>
+</body>
+</html>
