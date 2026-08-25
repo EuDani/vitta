@@ -30,6 +30,8 @@
   --ff:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif;
 }
 /* Mesma identidade, versão noturna — para quem usa o app no escuro. */
+/* Tokens do modo escuro em um lugar só. Valem quando o sistema está no
+   escuro E você não pediu claro, ou quando você escolheu escuro na mão. */
 @media (prefers-color-scheme:dark){
   :root:not([data-tema="claro"]){
     --bg:#181D14; --bg2:#1F2619; --card:#242C1D; --card2:#2E3826;
@@ -42,6 +44,16 @@
     --sombra:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
   }
 }
+:root[data-tema="escuro"]{
+  --bg:#181D14; --bg2:#1F2619; --card:#242C1D; --card2:#2E3826;
+  --line:#333E29; --line2:#455235;
+  --tx:#E7EEDA; --tx2:#A3B191; --tx3:#7A8869;
+  --ac:#8FA96C; --ac-d:#71894F; --ac-tx:#16200F;
+  --tre:#C9955C; --die:#8FA96C; --hab:#A99AD1; --res:#6FA6B8; --agua:#5CB4C6; --lem:#C98CA0;
+  --warn:#C79B45; --bad:#C97676;
+  --carb:#6FA6B8; --prot:#A99AD1; --gord:#C9955C;
+  --sombra:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
+}
 html,body{height:100%}
 body{
   font-family:var(--ff); background:var(--bg); color:var(--tx);
@@ -52,6 +64,8 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(900px 460px at 15% -10%,rgba(95,115,70,.10),transparent 62%),
              radial-gradient(700px 380px at 92% 6%,rgba(74,123,138,.07),transparent 64%)}
 #app{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:calc(var(--sat) + 8px) 14px calc(96px + var(--sab));min-height:100%}
+body.solo #app{padding-bottom:calc(20px + var(--sab))}
+body.solo .nav{display:none}
 button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
 button{background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 a{color:var(--res)}
@@ -64,6 +78,21 @@ a{color:var(--res)}
 .ic.st{opacity:.35}
 .ic.st.on{opacity:1}
 .emo{line-height:1;display:inline-block;vertical-align:-.1em}
+
+/* ---------- boas-vindas ---------- */
+.bv{min-height:calc(100vh - 40px);display:flex;flex-direction:column;gap:4px;padding-bottom:20px}
+.bv-arte{position:relative;flex:1;min-height:180px;display:grid;place-items:center;
+  border-radius:26px;background:linear-gradient(160deg,var(--card2),var(--bg2));
+  border:1px solid var(--line);color:var(--ac);overflow:hidden;margin-bottom:22px}
+.bv-glow{position:absolute;width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--ac) 26%,transparent),transparent 66%)}
+.bv-arte .logo{position:relative;z-index:1}
+.bv-txt h1{font-size:27px;font-weight:750;letter-spacing:-.6px;line-height:1.2;margin-bottom:10px}
+.bv-txt p{font-size:14.5px;color:var(--tx2);line-height:1.55;margin-bottom:22px}
+.bv-acoes{display:flex;flex-direction:column;gap:0}
+.bv-nota{font-size:11.5px;color:var(--tx3);line-height:1.5;margin:8px 2px 16px}
+.bv-pular{align-self:center;margin-top:4px;padding:8px 14px;font-size:12.5px;font-weight:600;
+  color:var(--tx3);text-decoration:underline;text-underline-offset:3px}
 
 /* ---------- header ---------- */
 .hd{display:flex;align-items:center;gap:10px;padding:6px 2px 14px}
@@ -379,7 +408,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-25f';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-25i';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -500,7 +529,7 @@ function novoDB() {
     },
     fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], dias: {},
     delFila: [],
-    cfg: { url: SB_URL, key: SB_KEY, autoSync: true, ultimoSync: null }
+    cfg: { url: SB_URL, key: SB_KEY, autoSync: true, ultimoSync: null, tema: 'auto', temConta: false, pularBoasVindas: false }
   };
 }
 const SEMENTES = () => novoDB().alimentos;
@@ -583,6 +612,44 @@ function dia(d) {
 }
 const temDia = d => !!DB.dias[d];
 function tocaDia(d) { if (DB.dias[d]) DB.dias[d].upd = nowISO(); }
+
+/* ---------- aparência ----------
+   'auto' segue o sistema; 'claro' e 'escuro' mandam nele.
+   Fica só neste aparelho: é preferência de tela, não dado seu. */
+function aplicarTema() {
+  const t = (DB.cfg && DB.cfg.tema) || 'auto';
+  const r = document.documentElement;
+  if (t === 'auto') delete r.dataset.tema; else r.dataset.tema = t;
+  // a barra do navegador acompanha
+  const escuro = t === 'escuro' ||
+    (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelectorAll("meta[name='theme-color']").forEach(m => m.remove());
+  const m = document.createElement('meta');
+  m.name = 'theme-color'; m.content = escuro ? '#181D14' : '#E8EFD7';
+  document.head.appendChild(m);
+}
+ACT.trocarTema = e => { DB.cfg.tema = e.dataset.t; save(false); aplicarTema(); render(); };
+
+/* ---------- estado do treino no dia ----------
+   Três situações diferentes, e o app trata cada uma como tal:
+   'feito'      treinou (registro concluído)
+   'aberto'     começou o registro e não concluiu
+   'falta'      disse que não ia treinar, com motivo
+   'sem'        não registrou nada — o que, num dia que já passou,
+                também significa que não treinou
+   A falta mora dentro da própria coluna treino ({falta:true, motivo}),
+   por isso nada muda no banco.                                        */
+function estadoTreino(d) {
+  const t = (DB.dias[d] || {}).treino;
+  if (t && t.falta) return 'falta';
+  if (t && t.feito) return 'feito';
+  if (t) return 'aberto';
+  return 'sem';
+}
+const treinoDoDia = d => { const t = (DB.dias[d] || {}).treino; return t && !t.falta ? t : null; };
+const faltaDoDia = d => { const t = (DB.dias[d] || {}).treino; return t && t.falta ? t : null; };
+/* um dia que já passou e não tem registro conta como não treinado */
+const naoTreinou = d => d < today() ? estadoTreino(d) !== 'feito' : estadoTreino(d) === 'falta';
 
 /* ---------- cálculos ---------- */
 function tmb(p = DB.perfil) {
@@ -772,10 +839,12 @@ function dateStrip() {
 }
 
 function render() {
-  APP.innerHTML = header() + (SCREENS[VIEW] ? SCREENS[VIEW]() : '<div class="empty">…</div>');
-  $('#nav').innerHTML = NAVITENS.map(([v, i, t]) =>
+  const solo = VIEW === 'boasVindas';          // tela cheia, sem navegação
+  document.body.classList.toggle('solo', solo);
+  APP.innerHTML = (solo ? '' : header()) + (SCREENS[VIEW] ? SCREENS[VIEW]() : '<div class="empty">…</div>');
+  $('#nav').innerHTML = solo ? '' : NAVITENS.map(([v, i, t]) =>
     `<button class="${VIEW === v ? 'on' : ''}" data-a="ir" data-v="${v}"><i>${ic(i, 19)}</i><span>${t}</span></button>`).join('');
-  $('#fab').innerHTML = FAB[VIEW] ? `<button class="fab" data-a="${FAB[VIEW]}" aria-label="Adicionar">${ic('mais', 26)}</button>` : '';
+  $('#fab').innerHTML = (!solo && FAB[VIEW]) ? `<button class="fab" data-a="${FAB[VIEW]}" aria-label="Adicionar">${ic('mais', 26)}</button>` : '';
   const ds = APP.querySelector('.dstrip'), on = ds && ds.querySelector('.dchip.on');
   if (on) ds.scrollLeft = on.offsetLeft - ds.clientWidth / 2 + on.offsetWidth / 2;
   syncBadge();
@@ -826,6 +895,63 @@ document.addEventListener('input', ev => {
   const b = ev.target.closest('[data-inp]');
   if (b && ACT[b.dataset.inp]) ACT[b.dataset.inp](b, ev);
 });
+/* =========================================================
+   BOAS-VINDAS
+   Aparece enquanto a pessoa não tem conta de verdade. O objetivo
+   é um só: oferecer o e-mail, que é o que faz os dados existirem
+   fora deste aparelho. Quem escolhe seguir sem conta entra na
+   mesma hora — e pode dizer para não perguntar mais.
+   Depois do login por e-mail, esta tela nunca mais aparece.
+   ========================================================= */
+TITULOS.boasVindas = ['', ''];
+
+const precisaBoasVindas = () =>
+  !(DB.cfg.temConta || DB.cfg.pularBoasVindas);
+
+SCREENS.boasVindas = () => `
+  <div class="bv">
+    <div class="bv-arte">
+      <div class="bv-glow"></div>
+      ${logo(86)}
+    </div>
+    <div class="bv-txt">
+      <h1>Onde você estiver,<br>a saúde vem primeiro</h1>
+      <p>Treino, dieta, hábitos e lembretes no mesmo lugar — e um resumo
+      que mostra se você está indo para onde queria ir.</p>
+    </div>
+
+    <div class="bv-acoes">
+      <button class="btn pri full" data-a="bvEntrar">${ic('conta', 16)} Entrar com e-mail</button>
+      <p class="bv-nota">Seus dados passam a existir fora deste aparelho: você abre no celular
+      e no computador e encontra a mesma coisa. Sem senha para criar — chega um link no e-mail.</p>
+
+      <button class="btn gh full" data-a="bvSemConta">Continuar sem conta</button>
+      <p class="bv-nota">Tudo funciona igual, mas os lançamentos ficam só neste aparelho.
+      Trocou de celular ou limpou o navegador, o histórico vai junto.</p>
+
+      <button class="bv-pular" data-a="bvNaoPerguntar">Não perguntar de novo</button>
+    </div>
+  </div>`;
+
+ACT.bvEntrar = () => ACT.entrarEmail();
+ACT.bvSemConta = async () => {
+  DB.cfg.pularBoasVindas = false; save(false);
+  go('hoje');
+  /* tenta uma sessão anônima para o que for lançado já subir; se o projeto
+     não permitir, tudo bem — o app segue funcionando só com o aparelho. */
+  try {
+    if (SB.client && !SB.user) {
+      const r = await SB.client.auth.signInAnonymously();
+      if (!r.error && r.data && r.data.session) { aplicarSessao(r.data.session); syncAll(false); }
+    }
+  } catch (e) { /* segue local */ }
+};
+ACT.bvNaoPerguntar = () => {
+  DB.cfg.pularBoasVindas = true; save(false);
+  toast('Você pode entrar quando quiser, em Configurações');
+  go('hoje');
+};
+ACT.verBoasVindas = () => { DB.cfg.pularBoasVindas = false; save(false); go('boasVindas'); };
 /* =========================================================
    Perfil, metas e configurações
    ========================================================= */
@@ -1005,8 +1131,21 @@ ACT.zerar = () => confirmar('Apagar TODOS os dados deste aparelho? Isso não afe
 
 SCREENS.config = () => {
   const c = DB.cfg;
+  const tema = c.tema || 'auto';
   const contaOk = SB.user && !SB.anon;
   return `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Aparência</h2>
+      <span class="sub">${tema === 'auto' ? 'seguindo o aparelho' : tema}</span></div>
+    <div class="segs">
+      ${[['auto', 'Automático', 'config'], ['claro', 'Claro', 'manha'], ['escuro', 'Escuro', 'lua']].map(o =>
+        `<button class="${tema === o[0] ? 'on' : ''}" data-a="trocarTema" data-t="${o[0]}">
+          ${ic(o[2], 15)} ${o[1]}</button>`).join('')}
+    </div>
+    <p class="mini" style="margin-top:9px">No automático o app acompanha o tema do celular ou do
+      computador, e muda sozinho de noite se o aparelho mudar. A escolha vale só neste aparelho.</p>
+  </div>
+
+  <div class="card">
     <div class="ch"><span class="dot" style="background:${contaOk ? 'var(--ac)' : SB.anon ? 'var(--warn)' : 'var(--tx3)'}"></span>
       <h2>Conta</h2><span class="sub" id="sb_status">${SB.status}</span></div>
 
@@ -1031,7 +1170,11 @@ SCREENS.config = () => {
       <button class="btn pri full" data-a="entrarEmail" style="margin-bottom:8px">Entrar com e-mail</button>
       <button class="btn gh full sm" data-a="entrarAnon">Usar só neste aparelho</button>`}
 
-    <div class="row" style="margin-top:4px"><div class="g"><div class="t">Sincronizar automaticamente</div>
+    ${contaOk ? '' : `<div class="row" style="margin-top:4px" data-a="verBoasVindas"><div class="g">
+      <div class="t">Ver a tela de boas-vindas</div>
+      <div class="s">as opções de entrar ou seguir sem conta</div></div>
+      <div class="v">${ic('dir', 16, 'op')}</div></div>`}
+    <div class="row"><div class="g"><div class="t">Sincronizar automaticamente</div>
       <div class="s">Envia as alterações alguns segundos depois de cada lançamento</div></div>
       <button class="tick ${c.autoSync ? 'on' : ''}" data-a="cfgAuto">${ic('check')}</button></div>
     <div class="row"><div class="g"><div class="t">Último sync</div>
@@ -1108,6 +1251,52 @@ function fichaDoDia(d) {
   const w = parseD(d).getDay();
   return DB.fichas.find(f => (f.dias || []).includes(w));
 }
+
+/* ---------- faltar hoje, com motivo ---------- */
+const MOTIVOS = ['Sem tempo', 'Cansaço', 'Dor ou lesão', 'Doente', 'Trabalho',
+  'Viagem', 'Descanso planejado', 'Sem vontade'];
+
+ACT.marcarFalta = () => {
+  const f = faltaDoDia(D);
+  SUB.motivos = f && f.motivo ? f.motivo.split(' · ').filter(m => MOTIVOS.includes(m)) : [];
+  SUB.motivoTxt = f ? (f.obs || '') : '';
+  sheetFalta();
+};
+function sheetFalta() {
+  const temTreino = !!treinoDoDia(D);
+  sheet(`<h3>Não vou treinar em ${esc(dLabel(D))}</h3>
+    <p class="hint">Registrar a falta com o motivo vale mais do que deixar o dia em branco:
+    é assim que o resumo do mês consegue te mostrar o que mais atrapalha seus treinos.</p>
+    ${temTreino ? '<div class="warnbox">Já existe um treino registrado neste dia. Marcar a falta apaga esse registro.</div>' : ''}
+    <div class="f"><label>Por quê? Escolha ou escreva</label>
+      <div class="chiprow">${MOTIVOS.map(m =>
+        `<button class="chip ${SUB.motivos.includes(m) ? 'on' : ''}" data-a="faltaMotivo" data-m="${esc(m)}">${esc(m)}</button>`).join('')}</div>
+    </div>
+    <div class="f"><label>Quer detalhar? (opcional)</label>
+      <textarea class="in" id="fa_obs" placeholder="ex: dormi 4h e acordei quebrado">${esc(SUB.motivoTxt || '')}</textarea></div>
+    <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarFalta">Registrar falta</button></div>`);
+}
+ACT.faltaMotivo = e => {
+  const el = document.getElementById('fa_obs'); if (el) SUB.motivoTxt = el.value;
+  const m = e.dataset.m, i = SUB.motivos.indexOf(m);
+  i < 0 ? SUB.motivos.push(m) : SUB.motivos.splice(i, 1);
+  sheetFalta();
+};
+ACT.salvarFalta = () => {
+  const obs = valOf('fa_obs').trim();
+  if (!SUB.motivos.length && !obs) return toast('Escolha um motivo ou escreva o seu');
+  const x = dia(D);
+  x.treino = {
+    falta: true, feito: false,
+    motivo: SUB.motivos.join(' · ') || obs.slice(0, 60),
+    obs, em: nowISO()
+  };
+  tocaDia(D); save(); fechar(); render(); toast('Falta registrada');
+};
+ACT.desfazerFalta = () => confirmar('Apagar a falta deste dia? O dia volta a ficar sem registro.', () => {
+  dia(D).treino = null; tocaDia(D); save(); render();
+});
 
 /* ---------- registro do dia ---------- */
 ACT.escolherFicha = () => {
@@ -1444,15 +1633,31 @@ FAB.treino = 'fabTreino';
 ACT.fabTreino = () => (dia(D).treino ? ACT.addExtra() : ACT.escolherFicha());
 
 SCREENS.treino = () => {
-  const x = dia(D), t = x.treino, sug = fichaDoDia(D);
+  const x = dia(D), t = treinoDoDia(D), falta = faltaDoDia(D), sug = fichaDoDia(D);
+  const passado = D < today();
   let h = dateStrip();
 
-  if (!t) {
+  if (falta) {
+    h += `<div class="card">
+      <div class="ch"><span class="dot" style="background:var(--bad)"></span><h2>Sem treino em ${esc(dLabel(D))}</h2>
+        <span class="pill bad">falta</span></div>
+      <div class="row" style="border:0;padding:0"><div class="g">
+        <div class="t wrap">${esc(falta.motivo)}</div>
+        ${falta.obs && falta.obs !== falta.motivo ? `<div class="s">${esc(falta.obs)}</div>` : ''}</div></div>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="btn" data-a="marcarFalta">Editar motivo</button>
+        <button class="btn gh" data-a="desfazerFalta">Desfazer</button>
+      </div>
+      <button class="btn pri full sm" style="margin-top:8px" data-a="escolherFicha">Mudei de ideia, vou treinar</button>
+    </div>`;
+  } else if (!t) {
     h += `<div class="card">
       <div class="empty"><b>${ic('treino')}</b>Nenhum treino registrado em ${esc(dLabel(D))}.</div>
+      ${passado ? '<div class="warnbox">Este dia já passou e não tem registro — para o resumo, ele conta como dia sem treino. Se você faltou, vale registrar o motivo.</div>' : ''}
       ${sug ? `<div class="okbox">Sugestão da agenda: <b>${esc(sug.nome)}</b></div>
         <button class="btn pri full" style="margin-bottom:8px" data-a="iniciarTreino" data-f="${sug.id}">Iniciar ${esc(sug.nome)}</button>` : ''}
-      <button class="btn full" data-a="escolherFicha">Escolher treino</button>
+      <button class="btn full" style="margin-bottom:8px" data-a="escolherFicha">Escolher treino</button>
+      <button class="btn gh full" data-a="marcarFalta">${ic('x', 15)} Não vou treinar ${passado ? 'neste dia' : 'hoje'}</button>
     </div>`;
   } else {
     const feitos = t.itens.filter(i => i.feito).length, tot = t.itens.length;
@@ -1491,7 +1696,10 @@ SCREENS.treino = () => {
       <button class="btn gh full sm" style="margin-top:10px" data-a="addExtra">${ic('mais',15)} Exercício extra</button>
     </div>` : `<div class="card"><div class="empty"><b>${ic('mais')}</b>Treino livre: adicione os exercícios que você fez.</div>
       <button class="btn pri full" data-a="addExtra">Adicionar exercício</button></div>`;
-    h += `<button class="btn gh full sm" style="margin-bottom:14px" data-a="cancelarTreino">Remover registro de treino</button>`;
+    h += `<div class="btnrow" style="margin-bottom:14px">
+      <button class="btn gh sm" data-a="cancelarTreino">Remover registro</button>
+      <button class="btn gh sm" data-a="marcarFalta">${ic('x', 14)} Não vou treinar</button>
+    </div>`;
   }
 
   /* esportes */
@@ -2623,7 +2831,8 @@ function serieMes(ds) {
     return {
       d, kcal: s.kcal, c: s.c, p: s.p, g: s.g, escape: s.escape || 0,
       agua: x ? x.agua || 0 : 0, peso: x && x.peso ? num(x.peso) : null,
-      treino: !!(x && x.treino && x.treino.feito), vol: volDia(d),
+      treino: estadoTreino(d) === 'feito', falta: estadoTreino(d) === 'falta',
+      motivo: (faltaDoDia(d) || {}).motivo || '', vol: volDia(d),
       esporte: x ? (x.esportes || []).reduce((a, e) => a + e.kcal, 0) : 0,
       habPrev: habs.length, habFeito: hf, temDado: !!x
     };
@@ -2655,14 +2864,15 @@ function resumoDia() {
   const x = dia(D), m = metas(), t = somaDia(D), gd = gastoDia(D);
   const habs = DB.habitos.filter(hh => hh.ativo !== false && habDevidoEm(hh, D));
   const hf = habs.filter(hh => (x.habitos[hh.id] || {}).feito).length;
-  const treinoOk = !!(x.treino && x.treino.feito);
+  const estT = estadoTreino(D), treinoOk = estT === 'feito';
   const bal = t.kcal - gd.total;
 
   return dateStrip() + `<div class="card">
     <div class="ch"><h2>${esc(dLabel(D))}</h2><span class="sub">visão geral</span></div>
     <div style="display:flex;justify-content:space-around;text-align:center">
-      <div>${ring(treinoOk ? 1 : (x.treino ? .4 : 0), 'var(--tre)', 62, treinoOk ? '✓' : '—')}
-        <div class="mini" style="margin-top:4px">Treino</div></div>
+      <div>${ring(treinoOk ? 1 : estT === 'aberto' ? .4 : estT === 'falta' ? 1 : 0,
+        estT === 'falta' ? 'var(--bad)' : 'var(--tre)', 62, treinoOk ? '✓' : estT === 'falta' ? '✕' : '—')}
+        <div class="mini" style="margin-top:4px">${estT === 'falta' ? 'Falta' : 'Treino'}</div></div>
       <div>${ring(t.kcal / m.kcal, 'var(--die)', 62, n0(t.kcal / m.kcal * 100) + '%')}
         <div class="mini" style="margin-top:4px">Dieta</div></div>
       <div>${ring((x.agua || 0) / metaAguaDia(D), 'var(--agua)', 62, n1((x.agua || 0) / 1000) + 'L')}
@@ -2694,7 +2904,12 @@ function resumoDia() {
     ${t.escape ? `<div class="warnbox" style="margin:11px 0 0">Escapes hoje: <b>${n0(t.escape)} kcal</b> (${n0(t.kcal ? t.escape / t.kcal * 100 : 0)}% do total).</div>` : ''}
   </div>
 
-  ${x.treino ? `<div class="card">
+  ${faltaDoDia(D) ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--bad)"></span><h2>Sem treino</h2>
+      <span class="pill bad">falta</span></div>
+    <p class="mini">${esc(faltaDoDia(D).motivo)}${faltaDoDia(D).obs && faltaDoDia(D).obs !== faltaDoDia(D).motivo ? ' — ' + esc(faltaDoDia(D).obs) : ''}</p>
+  </div>` : ''}
+  ${treinoDoDia(D) ? `<div class="card">
     <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>${esc(x.treino.nome)}</h2>
       <span class="sub">${x.treino.duracao || 0} min</span></div>
     <div class="kpi">
@@ -2728,6 +2943,12 @@ function resumoMes() {
   const kcalDias = passados.filter(s => s.kcal > 0).map(s => s.kcal);
   const mediaKcal = kcalDias.length ? kcalDias.reduce((a, b) => a + b, 0) / kcalDias.length : 0;
   const treinos = passados.filter(s => s.treino).length;
+  const faltas = passados.filter(s => s.falta).length;
+  const semReg = passados.filter(s => !s.treino && !s.falta && !s.temDado).length;
+  const motivos = {};
+  passados.filter(s => s.falta && s.motivo).forEach(s =>
+    s.motivo.split(' · ').forEach(m => motivos[m] = (motivos[m] || 0) + 1));
+  const topMotivos = Object.entries(motivos).sort((a, b) => b[1] - a[1]);
   const volTot = passados.reduce((a, s) => a + s.vol, 0);
   const aguaDias = passados.filter(s => s.agua > 0).map(s => s.agua);
   const mediaAgua = aguaDias.length ? aguaDias.reduce((a, b) => a + b, 0) / aguaDias.length : 0;
@@ -2757,6 +2978,22 @@ function resumoMes() {
       <div><b style="color:var(--hab)">${habPrev ? n0(habFeito / habPrev * 100) : 0}%</b><span>hábitos</span></div>
     </div>
     <p class="mini">${comDado.length} de ${passados.length} dias com registro · volume total ${n0(volTot)} kg · escapes ${n0(escapes)} kcal</p>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>Presença nos treinos</h2>
+      <span class="sub">${passados.length ? n0(treinos / passados.length * 100) : 0}% dos dias</span></div>
+    <div class="kpi">
+      <div><b style="color:var(--die)">${treinos}</b><span>treinou</span></div>
+      <div><b style="color:var(--bad)">${faltas}</b><span>faltou</span></div>
+      <div><b style="color:var(--tx3)">${semReg}</b><span>sem registro</span></div>
+    </div>
+    ${topMotivos.length ? `<div class="sec-title" style="margin:16px 4px 8px">Por que você faltou</div>
+      ${topMotivos.map(([m, n]) => `<div class="row">
+        <div class="g"><div class="t">${esc(m)}</div></div>
+        <div class="v">${n}×</div></div>`).join('')}`
+      : `<p class="mini" style="margin-top:10px">${faltas ? 'Faltas sem motivo anotado.'
+        : 'Nenhuma falta registrada. Dias sem registro contam como dias sem treino — marcar a falta com o motivo deixa o resumo mais honesto.'}</p>`}
   </div>
 
   <div class="sec-title">Tendências do mês</div>
@@ -2836,6 +3073,7 @@ const csvTxt = v => {
 function planilhaDias(ds) {
   const m = metas();
   const cab = ['Data', 'Dia da semana', 'Treino', 'Exercícios feitos', 'Volume (kg)', 'Duração (min)',
+    'Faltou', 'Motivo da falta',
     'Atividades', 'Kcal atividades', 'Kcal consumidas', 'Meta kcal', 'Carboidrato (g)', 'Proteína (g)',
     'Gordura (g)', 'Escapes (kcal)', 'Água (ml)', 'Meta água (ml)', 'Gasto estimado (kcal)',
     'Balanço (kcal)', 'Peso (kg)', 'Hábitos feitos', 'Hábitos previstos', 'Anotação'];
@@ -2845,12 +3083,13 @@ function planilhaDias(ds) {
     const t = somaDia(d), g = gastoDia(d);
     const habs = DB.habitos.filter(h => habDevidoEm(h, d));
     const hf = habs.filter(h => (x.habitos[h.id] || {}).feito).length;
-    const tr = x.treino;
+    const tr = treinoDoDia(d), fa = faltaDoDia(d);
     linhas.push([
       d, DOW[parseD(d).getDay()],
-      csvTxt(tr ? tr.nome + (tr.feito ? '' : ' (em aberto)') : ''),
+      csvTxt(tr ? tr.nome + (tr.feito ? '' : ' (em aberto)') : fa ? 'Falta' : ''),
       tr ? tr.itens.filter(i => i.feito).length + '/' + tr.itens.length : '',
       csvNum(volDia(d) || ''), tr ? tr.duracao || '' : '',
+      fa ? 'sim' : '', csvTxt(fa ? (fa.obs || fa.motivo) : ''),
       csvTxt((x.esportes || []).map(e => e.nome + ' ' + e.min + 'min').join(' | ')),
       (x.esportes || []).reduce((a, e) => a + e.kcal, 0) || '',
       Math.round(t.kcal) || '', Math.round(m.kcal),
@@ -2951,18 +3190,26 @@ SCREENS.hoje = () => {
   </div>` + dateStrip();
 
   /* treino */
+  const tr = treinoDoDia(D), falta = faltaDoDia(D);
   h += `<div class="card">
-    <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>Exercícios</h2>
-      <span class="sub">${x.treino ? (x.treino.feito ? 'concluído' : 'em aberto') : 'não iniciado'}</span></div>
-    ${x.treino ? `<div class="row" style="border:0;padding:0" data-a="ir" data-v="treino">
-        <div class="g"><div class="t">${esc(x.treino.nome)}</div>
-          <div class="s">${x.treino.itens.filter(i => i.feito).length} de ${x.treino.itens.length} exercícios · ${n0(volDia(D))} kg</div></div>
+    <div class="ch"><span class="dot" style="background:${falta ? 'var(--bad)' : 'var(--tre)'}"></span><h2>Exercícios</h2>
+      <span class="sub">${falta ? 'falta registrada' : tr ? (tr.feito ? 'concluído' : 'em aberto') : 'não iniciado'}</span></div>
+    ${falta ? `<div class="row" style="border:0;padding:0" data-a="ir" data-v="treino">
+        <div class="g"><div class="t wrap">${esc(falta.motivo)}</div>
+          <div class="s">você marcou que não ia treinar hoje</div></div>
+        <div class="v">${ic('dir', 16, 'op')}</div></div>`
+      : tr ? `<div class="row" style="border:0;padding:0" data-a="ir" data-v="treino">
+        <div class="g"><div class="t">${esc(tr.nome)}</div>
+          <div class="s">${tr.itens.filter(i => i.feito).length} de ${tr.itens.length} exercícios · ${n0(volDia(D))} kg</div></div>
         <div class="v">${ic('dir',16,'op')}</div></div>
-      ${bar(x.treino.itens.filter(i => i.feito).length, Math.max(x.treino.itens.length, 1), 'var(--tre)')}`
+      ${bar(tr.itens.filter(i => i.feito).length, Math.max(tr.itens.length, 1), 'var(--tre)')}`
       : `<div class="row" style="border:0;padding:0 0 10px"><div class="g">
           <div class="t">${sug ? 'Hoje na agenda: ' + esc(sug.nome) : 'Nenhum treino registrado'}</div>
           <div class="s">${sug ? (sug.exercicios || []).length + ' exercícios' : 'escolha uma ficha ou registre livre'}</div></div></div>
-        <button class="btn pri full sm" data-a="escolherFicha">Iniciar treino</button>`}
+        <div class="btnrow">
+          <button class="btn pri sm" data-a="escolherFicha">Iniciar treino</button>
+          <button class="btn gh sm" data-a="marcarFalta">Não vou treinar</button>
+        </div>`}
     ${(x.esportes || []).length ? `<div class="mini" style="margin-top:9px">Atividades: ${x.esportes.map(e => esc(e.nome) + ' ' + e.min + 'min').join(' · ')}</div>` : ''}
   </div>`;
 
@@ -3073,7 +3320,10 @@ async function iniciarSupabase(manual) {
         if (evento === 'SIGNED_IN' && sessao) {
           limparURL(); aplicarSessao(sessao); fechar(); syncAll(true);
         }
-        if (evento === 'SIGNED_OUT') { SB.user = SB.email = null; SB.anon = false; SB.status = 'sem conta'; syncBadge(); }
+        if (evento === 'SIGNED_OUT') {
+          SB.user = SB.email = null; SB.anon = false; SB.status = 'sem conta';
+          DB.cfg.temConta = false; save(false); syncBadge();
+        }
       });
     }
     const { data: { session } } = await SB.client.auth.getSession();
@@ -3097,6 +3347,11 @@ function aplicarSessao(session) {
   SB.email = session.user.email || null;
   SB.anon = !!session.user.is_anonymous || !session.user.email;
   SB.status = 'conectado'; syncBadge();
+  /* conta de verdade: guarda a marca para as boas-vindas não voltarem */
+  const tinha = DB.cfg.temConta;
+  DB.cfg.temConta = !SB.anon;
+  if (DB.cfg.temConta !== tinha) save(false);
+  if (DB.cfg.temConta && VIEW === 'boasVindas') go('hoje');
 }
 
 /* ---------- entrar com e-mail ----------
@@ -3185,7 +3440,9 @@ ACT.sair = () => confirmar(
   async () => {
     await SB.client.auth.signOut();
     SB.user = SB.email = null; SB.anon = false;
-    SB.status = 'sem conta'; syncBadge(); render();
+    SB.status = 'sem conta'; syncBadge();
+    DB.cfg.temConta = false; DB.cfg.pularBoasVindas = false; save(false);
+    go('boasVindas');
   });
 
 /* =========================================================
@@ -3403,6 +3660,14 @@ document.addEventListener('visibilitychange', () => {
   document.querySelectorAll("link[rel='icon'],link[rel='apple-touch-icon']").forEach(l => l.href = uri);
 })();
 
+aplicarTema();
+if (window.matchMedia) {
+  // no modo automático, acompanha o aparelho mudando de tema em tempo real
+  matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => { if ((DB.cfg.tema || 'auto') === 'auto') aplicarTema(); });
+}
+
+if (precisaBoasVindas()) VIEW = 'boasVindas';
 render();
 iniciarSupabase(false);
 
