@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-<meta name="theme-color" content="#0b0f16">
+<meta name="theme-color" content="#E8EFD7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#181D14" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Vitta">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230b0f16'/%3E%3Cpath d='M90 138c-30-20-46-38-46-58a26 26 0 0 1 46-17 26 26 0 0 1 46 17c0 20-16 38-46 58z' fill='%234ade80'/%3E%3C/svg%3E">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%85%3C/text%3E%3C/svg%3E">
@@ -14,15 +15,32 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0b0f16; --bg2:#111826; --card:#151d2b; --card2:#1b2537;
-  --line:#243049; --line2:#2f3d5c;
-  --tx:#e8eefc; --tx2:#9aa8c4; --tx3:#65748f;
-  --ac:#4ade80; --ac-d:#16a34a;
-  --tre:#fb923c; --die:#4ade80; --hab:#a78bfa; --res:#38bdf8; --agua:#22d3ee; --lem:#f472b6;
-  --warn:#fbbf24; --bad:#f87171;
-  --r:18px; --r2:12px;
+  /* Paleta sálvia — fundo claro, verdes de oliveira, texto verde-escuro.
+     Tudo passa por variável: trocar o tema é trocar este bloco.        */
+  --bg:#E8EFD7; --bg2:#F3F7E6; --card:#FBFDF2; --card2:#E2EAC9;
+  --line:#D7E0BF; --line2:#C2CFA4;
+  --tx:#2B3623; --tx2:#6C7B59; --tx3:#93A181;
+  --ac:#5F7346; --ac-d:#4C5D37; --ac-tx:#FBFDF2;
+  --tre:#A9743C; --die:#5F7346; --hab:#7A6E9E; --res:#4A7B8A; --agua:#3E8C9E; --lem:#A2657A;
+  --warn:#9A6F1E; --bad:#A44A4A;
+  --carb:#4A7B8A; --prot:#7A6E9E; --gord:#A9743C;
+  --sombra:0 1px 2px rgba(43,54,35,.05), 0 10px 26px -16px rgba(43,54,35,.22);
+  --r:20px; --r2:14px;
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
   --ff:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+/* Mesma identidade, versão noturna — para quem usa o app no escuro. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-tema="claro"]){
+    --bg:#181D14; --bg2:#1F2619; --card:#242C1D; --card2:#2E3826;
+    --line:#333E29; --line2:#455235;
+    --tx:#E7EEDA; --tx2:#A3B191; --tx3:#7A8869;
+    --ac:#8FA96C; --ac-d:#71894F; --ac-tx:#16200F;
+    --tre:#C9955C; --die:#8FA96C; --hab:#A99AD1; --res:#6FA6B8; --agua:#5CB4C6; --lem:#C98CA0;
+    --warn:#C79B45; --bad:#C97676;
+    --carb:#6FA6B8; --prot:#A99AD1; --gord:#C9955C;
+    --sombra:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
+  }
 }
 html,body{height:100%}
 body{
@@ -31,19 +49,29 @@ body{
   font-size:15px; line-height:1.45;
 }
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:radial-gradient(900px 420px at 12% -8%,rgba(74,222,128,.10),transparent 60%),
-             radial-gradient(760px 400px at 92% 4%,rgba(56,189,248,.09),transparent 62%)}
+  background:radial-gradient(900px 460px at 15% -10%,rgba(95,115,70,.10),transparent 62%),
+             radial-gradient(700px 380px at 92% 6%,rgba(74,123,138,.07),transparent 64%)}
 #app{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:calc(var(--sat) + 8px) 14px calc(96px + var(--sab));min-height:100%}
 button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
 button{background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 a{color:var(--res)}
+
+/* ---------- ícones ---------- */
+.ic{display:inline-block;vertical-align:-.18em;flex:none}
+.ic.op{opacity:.6}
+.ic.up{transform:rotate(180deg)}
+.stars{display:inline-flex;gap:1px;vertical-align:-.15em;color:var(--warn)}
+.ic.st{opacity:.35}
+.ic.st.on{opacity:1}
+.emo{line-height:1;display:inline-block;vertical-align:-.1em}
 
 /* ---------- header ---------- */
 .hd{display:flex;align-items:center;gap:10px;padding:6px 2px 14px}
 .hd h1{font-size:20px;font-weight:750;letter-spacing:-.4px;flex:1}
 .hd h1 small{display:block;font-size:11.5px;font-weight:500;color:var(--tx2);letter-spacing:0}
 .iconbtn{width:38px;height:38px;border-radius:12px;background:var(--card);border:1px solid var(--line);
-  display:grid;place-items:center;font-size:17px;flex:none}
+  display:grid;place-items:center;font-size:17px;flex:none;color:var(--tx2)}
+.iconbtn:hover{color:var(--tx)}
 .iconbtn:active{transform:scale(.94)}
 
 /* ---------- date strip ---------- */
@@ -52,13 +80,17 @@ a{color:var(--res)}
 .dchip{flex:none;width:50px;padding:8px 0;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:center}
 .dchip b{display:block;font-size:17px;font-weight:700;line-height:1.1}
 .dchip span{font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px}
-.dchip.on{background:linear-gradient(160deg,#1f6f45,#134e30);border-color:#2ea36a}
-.dchip.on span{color:#bff4d4}
+.dchip.on{background:var(--ac);border-color:var(--ac);color:var(--ac-tx)}
+.dchip.on span{color:var(--ac-tx);opacity:.85}
 .dchip.fut{opacity:.45}
 
 /* ---------- cards ---------- */
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px;margin-bottom:12px;box-shadow:var(--sombra)}
 .card.tight{padding:11px 12px}
+/* cartão de destaque: fundo verde cheio, então o texto inteiro clareia */
+.card.hero{background:linear-gradient(150deg,var(--ac),var(--ac-d));border-color:transparent;color:var(--ac-tx)}
+.card.hero h2,.card.hero .mini,.card.hero .sub{color:var(--ac-tx)}
+.card.hero .mini,.card.hero .sub{opacity:.82}
 .ch{display:flex;align-items:center;gap:9px;margin-bottom:11px}
 .ch h2{font-size:14.5px;font-weight:700;letter-spacing:-.2px;flex:1}
 .ch .sub{font-size:11.5px;color:var(--tx2);font-weight:500}
@@ -69,12 +101,13 @@ a{color:var(--res)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 15px;border-radius:13px;
   background:var(--card2);border:1px solid var(--line2);font-size:14px;font-weight:600;color:var(--tx)}
 .btn:active{transform:scale(.97)}
-.btn.pri{background:linear-gradient(160deg,var(--ac),var(--ac-d));border-color:transparent;color:#052e16;font-weight:750}
+.btn.pri{background:var(--ac);border-color:transparent;color:var(--ac-tx);font-weight:700}
+.btn.pri:hover{background:var(--ac-d)}
 .btn.gh{background:transparent}
 .btn.sm{padding:8px 12px;font-size:13px;border-radius:11px}
 .btn.xs{padding:5px 9px;font-size:12px;border-radius:9px}
 .btn.full{width:100%}
-.btn.danger{color:var(--bad);border-color:#4a2530;background:#2a1620}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,transparent);background:color-mix(in srgb,var(--bad) 9%,transparent)}
 .btnrow{display:flex;gap:8px}
 .btnrow .btn{flex:1}
 
@@ -83,7 +116,7 @@ a{color:var(--res)}
 .f label{display:block;font-size:11.5px;color:var(--tx2);font-weight:600;margin-bottom:5px;letter-spacing:.2px}
 .in{width:100%;padding:11px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);
   color:var(--tx);outline:none;font-size:16px}
-.in:focus{border-color:var(--ac);background:#0e1622}
+.in:focus{border-color:var(--ac);background:var(--card)}
 textarea.in{min-height:76px;resize:vertical;line-height:1.5}
 select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239aa8c4' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
@@ -91,10 +124,10 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
 .segs{display:flex;gap:6px;background:var(--bg2);padding:4px;border-radius:13px;border:1px solid var(--line)}
 .segs button{flex:1;padding:8px 4px;border-radius:10px;font-size:13px;font-weight:600;color:var(--tx2)}
-.segs button.on{background:var(--card2);color:var(--tx);box-shadow:0 1px 6px rgba(0,0,0,.3)}
+.segs button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 5px rgba(43,54,35,.12)}
 .chiprow{display:flex;flex-wrap:wrap;gap:7px}
 .chip{padding:7px 12px;border-radius:11px;background:var(--bg2);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--tx2)}
-.chip.on{background:rgba(74,222,128,.14);border-color:var(--ac);color:var(--ac)}
+.chip.on{background:color-mix(in srgb,var(--ac) 16%,transparent);border-color:var(--ac);color:var(--ac-d)}
 
 /* ---------- lists ---------- */
 .row{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
@@ -106,9 +139,11 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .row .v{font-size:14px;font-weight:700;text-align:right;flex:none}
 .tick{width:27px;height:27px;border-radius:9px;border:2px solid var(--line2);flex:none;display:grid;place-items:center;
   font-size:14px;color:transparent;transition:.12s}
-.tick.on{background:var(--ac);border-color:var(--ac);color:#052e16}
+.tick .ic{width:16px;height:16px;stroke-width:2.6}
+.tick.on{background:var(--ac);border-color:var(--ac);color:var(--ac-tx)}
 .empty{text-align:center;padding:26px 14px;color:var(--tx3);font-size:13px}
-.empty b{display:block;font-size:26px;margin-bottom:8px;opacity:.6}
+.empty b{display:block;font-size:26px;margin-bottom:9px;opacity:.5;line-height:0}
+.empty b .ic{width:30px;height:30px}
 
 /* ---------- progress ---------- */
 .bar{height:7px;border-radius:99px;background:var(--bg2);overflow:hidden;border:1px solid var(--line)}
@@ -122,38 +157,53 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .macro>div{flex:1}
 .macro .mt{display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:4px;font-weight:600}
 .pill{display:inline-block;padding:3px 8px;border-radius:8px;font-size:10.5px;font-weight:700;letter-spacing:.3px}
-.pill.esc{background:rgba(251,146,60,.15);color:var(--tre)}
-.pill.ok{background:rgba(74,222,128,.14);color:var(--ac)}
+.pill.esc{background:color-mix(in srgb,var(--tre) 16%,transparent);color:var(--tre)}
+.pill.ok{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac-d)}
 .pill.mut{background:var(--bg2);color:var(--tx2)}
-.pill.bad{background:rgba(248,113,113,.14);color:var(--bad)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
 
 /* ---------- bottom nav ---------- */
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:0 10px calc(8px + var(--sab));
-  background:linear-gradient(to top,var(--bg) 62%,rgba(11,15,22,0));pointer-events:none}
-.navin{max-width:560px;margin:0 auto;display:flex;background:rgba(21,29,43,.92);backdrop-filter:blur(16px);
-  border:1px solid var(--line);border-radius:19px;padding:6px;pointer-events:auto;box-shadow:0 8px 28px rgba(0,0,0,.45)}
-.navin button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 1px;border-radius:13px;color:var(--tx3)}
-.navin button i{font-style:normal;font-size:17px;line-height:1}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:0 12px calc(10px + var(--sab));
+  background:linear-gradient(to top,var(--bg) 55%,transparent);pointer-events:none}
+.navin{max-width:560px;margin:0 auto;display:flex;background:var(--ac);
+  border:1px solid var(--ac);border-radius:22px;padding:6px;pointer-events:auto;
+  box-shadow:0 10px 28px -10px rgba(43,54,35,.5)}
+.navin button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 1px;border-radius:16px;color:color-mix(in srgb,var(--ac-tx) 72%,transparent)}
+.navin button i{font-style:normal;font-size:17px;line-height:0;display:block}
 .navin button span{font-size:9px;font-weight:700;letter-spacing:0;white-space:nowrap}
-.navin button.on{color:var(--tx);background:var(--card2)}
+.navin button.on{color:var(--ac);background:var(--ac-tx)}
 
 /* ---------- sheet / modal ---------- */
-.ov{position:fixed;inset:0;z-index:60;background:rgba(4,7,12,.68);backdrop-filter:blur(3px);
+.ov{position:fixed;inset:0;z-index:60;background:rgba(30,40,24,.5);backdrop-filter:blur(3px);
   display:flex;align-items:flex-end;justify-content:center;animation:fade .18s}
 @keyframes fade{from{opacity:0}}
 @keyframes up{from{transform:translateY(24px);opacity:.4}}
 .sheet{width:100%;max-width:560px;max-height:92vh;overflow-y:auto;background:var(--bg2);
   border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;
   padding:8px 14px calc(20px + var(--sab));animation:up .22s ease-out}
-.sheet .grab{width:40px;height:4px;border-radius:99px;background:var(--line2);margin:4px auto 12px}
+.sheet .grab{width:42px;height:4px;border-radius:99px;background:var(--line2);margin:5px auto 13px}
 .sheet h3{font-size:17px;font-weight:750;margin-bottom:3px;letter-spacing:-.3px}
 .sheet .hint{font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.5}
-.toast{position:fixed;left:50%;bottom:calc(104px + var(--sab));transform:translateX(-50%);z-index:90;
-  background:var(--card2);border:1px solid var(--line2);padding:10px 16px;border-radius:13px;font-size:13px;
-  font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:up .2s}
-.fab{position:fixed;right:calc(50% - 280px + 16px);bottom:calc(104px + var(--sab));z-index:45;width:52px;height:52px;border-radius:17px;
-  background:linear-gradient(160deg,var(--ac),var(--ac-d));color:#052e16;font-size:25px;font-weight:400;
-  display:grid;place-items:center;box-shadow:0 8px 22px rgba(22,163,74,.38)}
+/* botão de fechar da folha */
+.sheet{position:relative}
+.sheet-x{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:10px;
+  display:grid;place-items:center;color:var(--tx2);background:var(--card);border:1px solid var(--line);z-index:2}
+.sheet-x:active{transform:scale(.94)}
+.sheet h3{padding-right:40px}
+
+/* pergunta curta, desenhada por cima da folha */
+.ov2{z-index:70;align-items:center;padding:20px;background:rgba(30,40,24,.42)}
+.ask{width:100%;max-width:400px;background:var(--bg2);border:1px solid var(--line2);
+  border-radius:20px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.6);animation:up .18s ease-out}
+.ask h4{font-size:16.5px;font-weight:750;letter-spacing:-.2px;margin-bottom:7px}
+.ask p{font-size:13.5px;color:var(--tx2);line-height:1.55;margin-bottom:16px}
+
+.toast{position:fixed;left:50%;bottom:calc(108px + var(--sab));transform:translateX(-50%);z-index:90;
+  background:var(--tx);color:var(--bg2);padding:11px 17px;border-radius:14px;font-size:13px;
+  font-weight:600;box-shadow:0 10px 26px -8px rgba(43,54,35,.5);animation:up .2s;max-width:88vw}
+.fab{position:fixed;right:calc(50% - 280px + 16px);bottom:calc(104px + var(--sab));z-index:45;width:54px;height:54px;border-radius:18px;
+  background:var(--ac);color:var(--ac-tx);display:grid;place-items:center;
+  box-shadow:0 10px 24px -6px rgba(76,93,55,.5)}
 @media(max-width:592px){.fab{right:16px}}
 
 /* ---------- charts ---------- */
@@ -166,9 +216,9 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .scroll-x::-webkit-scrollbar{display:none}
 hr.sep{border:0;border-top:1px solid var(--line);margin:13px 0}
 .mini{font-size:11.5px;color:var(--tx2);line-height:1.55}
-.warnbox{background:rgba(251,191,36,.09);border:1px solid rgba(251,191,36,.28);color:#fde68a;
+.warnbox{background:color-mix(in srgb,var(--warn) 10%,transparent);border:1px solid color-mix(in srgb,var(--warn) 32%,transparent);color:var(--warn);
   padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.5;margin-bottom:12px}
-.okbox{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.26);color:#bbf7d0;
+.okbox{background:color-mix(in srgb,var(--ac) 11%,transparent);border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);color:var(--ac-d);
   padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.5;margin-bottom:12px}
 code{background:var(--bg2);padding:1px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
 </style>
@@ -178,14 +228,158 @@ code{background:var(--bg2);padding:1px 6px;border-radius:6px;font-size:12px;font
 <div class="nav"><div class="navin" id="nav"></div></div>
 <div id="fab"></div>
 <div id="modal"></div>
+<div id="modal2"></div>
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <script>
 /* =========================================================
+   ÍCONES
+   Conjunto traçado no estilo Lucide/Feather, desenhado aqui
+   dentro. Nada de fonte de ícone nem CDN: o app continua um
+   arquivo só, funciona offline, e o ícone herda a cor e o
+   tamanho de onde está (currentColor).
+   Uso: ic('agua')  ·  ic('agua', 24)  ·  ic('agua', 18, 'op')
+   ========================================================= */
+const ICONS = {
+  /* navegação */
+  hoje: 'M3 10.6 12 3l9 7.6V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  treino: 'M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11',
+  dieta: 'M4 3v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V3M6 11v10M17.5 3c-1.3 1.8-2 3.7-2 5.6 0 1.6.7 2.7 2 3.2v9.2',
+  habitos: 'M17 2.5 21 6l-4 3.5M3 11v-.5A4.5 4.5 0 0 1 7.5 6H21M7 21.5 3 18l4-3.5M21 13v.5a4.5 4.5 0 0 1-4.5 4.5H3',
+  lembretes: 'M18 8.5a6 6 0 1 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 15 18 8.5M13.7 20.5a2 2 0 0 1-3.4 0',
+  resumo: 'M22 7.5 14 15.5l-4-4L2 19.5M15.5 7.5H22V14',
+
+  /* topo e configurações */
+  config: 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z@M19.6 14.4a1.5 1.5 0 0 0 .3 1.7l.1.1a1.9 1.9 0 1 1-2.7 2.7l-.1-.1a1.5 1.5 0 0 0-1.7-.3 1.5 1.5 0 0 0-.9 1.4V20a1.9 1.9 0 1 1-3.8 0v-.1a1.5 1.5 0 0 0-1-1.4 1.5 1.5 0 0 0-1.7.3l-.1.1a1.9 1.9 0 1 1-2.7-2.7l.1-.1a1.5 1.5 0 0 0 .3-1.7 1.5 1.5 0 0 0-1.4-.9H4a1.9 1.9 0 1 1 0-3.8h.1a1.5 1.5 0 0 0 1.4-1 1.5 1.5 0 0 0-.3-1.7l-.1-.1a1.9 1.9 0 1 1 2.7-2.7l.1.1a1.5 1.5 0 0 0 1.7.3H9.7a1.5 1.5 0 0 0 .9-1.4V4a1.9 1.9 0 1 1 3.8 0v.1a1.5 1.5 0 0 0 .9 1.4 1.5 1.5 0 0 0 1.7-.3l.1-.1a1.9 1.9 0 1 1 2.7 2.7l-.1.1a1.5 1.5 0 0 0-.3 1.7v.1a1.5 1.5 0 0 0 1.4.9H20a1.9 1.9 0 1 1 0 3.8h-.1a1.5 1.5 0 0 0-1.4.9z',
+  perfil: 'M20 21v-1.8a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4V21@M12 11.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2z',
+  medidas: 'M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4z@M7.3 10.7l2 2M10.3 7.7l2 2M13.3 4.7l2 2',
+  raio: 'M13 2.5 3.8 13.6a.6.6 0 0 0 .5 1H11l-.9 6.9 9.1-11.1a.6.6 0 0 0-.5-1H12z',
+  conta: 'M3 7.5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z@M3.5 8.2 12 14l8.5-5.8',
+  sair: 'M14.5 3.5H19a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-4.5M10 16.5 5.5 12 10 7.5M5.5 12h10',
+  nuvem: 'M17.5 19a4.5 4.5 0 0 0 .3-9A6.5 6.5 0 0 0 5.2 11.4 3.8 3.8 0 0 0 6 19z',
+
+  /* refeições */
+  cafe: 'M4.5 8.5h12v5.5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z@M16.5 9.5h1.6a2.6 2.6 0 0 1 0 5.2h-1.6M7 2.5v2.2M10.5 2.5v2.2M14 2.5v2.2',
+  fruta: 'M12 7.4c-2.6-2.7-7.5-1-7.5 3.8 0 3.9 2.9 9.6 5.2 9.6.9 0 1.5-.5 2.3-.5s1.4.5 2.3.5c2.3 0 5.2-5.7 5.2-9.6 0-4.8-4.9-6.5-7.5-3.8z@M12 7.4c0-2 1-3.9 2.9-3.9',
+  almoco: 'M4 3v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V3M6 11v10M17.5 3c-1.3 1.8-2 3.7-2 5.6 0 1.6.7 2.7 2 3.2v9.2',
+  copo: 'M6 3.5h12l-1.4 15.6a2 2 0 0 1-2 1.9h-5.2a2 2 0 0 1-2-1.9z@M6.7 10h10.6',
+  lua: 'M20.8 13.4A8.8 8.8 0 1 1 10.6 3.2a6.9 6.9 0 0 0 10.2 10.2z',
+  ceia: 'M20.8 13.4A8.8 8.8 0 1 1 10.6 3.2a6.9 6.9 0 0 0 10.2 10.2z@M17.5 2.5v3.4M15.8 4.2h3.4',
+  pizza: 'M12 21 3.2 6.2c5-2.9 12.6-2.9 17.6 0z@M9.5 10.5h.01M13 13.5h.01',
+
+  /* hábitos e atividades */
+  sono: 'M20.8 13.4A8.8 8.8 0 1 1 10.6 3.2a6.9 6.9 0 0 0 10.2 10.2z',
+  estudo: 'M4.5 4.5A2 2 0 0 1 6.5 2.5H19v17H6.5a2 2 0 0 0-2 2z@M8.5 7.5h6.5M8.5 11h6.5',
+  meditar: 'M20.8 5.9a4.9 4.9 0 0 0-7 0L12 7.6l-1.8-1.7a4.9 4.9 0 1 0-7 7L12 21.5l8.8-8.6a4.9 4.9 0 0 0 0-7z',
+  agua: 'M12 21.5a7 7 0 0 0 7-7c0-5-7-12.5-7-12.5S5 9.5 5 14.5a7 7 0 0 0 7 7z',
+  parar: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M5.6 5.6l12.8 12.8',
+  celular: 'M7.5 2.5h9a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1z@M10.8 18.8h2.4',
+  correr: 'M22 12h-4l-3 8.5L9 3.5l-3 8.5H2',
+  manha: 'M12 3v3.5M5.5 12a6.5 6.5 0 0 1 13 0@M2.5 17.5h19M4.6 6.6l1.4 1.4M18 8l1.4-1.4M8.5 12 12 8.5l3.5 3.5',
+  remedio: 'M10.4 20.6a5 5 0 0 1-7-7l6.2-6.2a5 5 0 0 1 7 7z@M8.4 8.4l7 7',
+  meta: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M12 16.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z@M12 13.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4z',
+  musica: 'M9 17.5V5l11.5-2v12.5@M6.5 20.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z@M18 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  escrever: 'M12 19.5h8.5M4 20l1-4.5 10-10 3.5 3.5-10 10z',
+  casa2: 'M3.5 9.5h17M6.5 9.5v11M17.5 9.5v11M3.5 20.5h17M12 3 20.5 9.5h-17z',
+  bola: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M12 7.4l3.7 2.7-1.4 4.4H9.7L8.3 10.1z@M12 3v4.4M4.3 9.5l4 .6M8.3 20l1.4-5.5M19.7 9.5l-4 .6M15.7 20l-1.4-5.5',
+
+  /* ações */
+  check: 'M20 6.5 9.2 17.3 4 12.1',
+  x: 'M18 6 6 18M6 6l12 12',
+  mais: 'M12 5.5v13M5.5 12h13',
+  menos: 'M5.5 12h13',
+  dir: 'M9.5 18.5 16 12 9.5 5.5',
+  esq: 'M14.5 5.5 8 12l6.5 6.5',
+  baixo: 'M6 9.5 12 15.5l6-6',
+  baixar: 'M12 3.5v12M7.5 11 12 15.5 16.5 11M4.5 20.5h15',
+  enviar: 'M4 12.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6.5M12 15V3.5M8 7.5 12 3.5l4 4',
+  lixo: 'M4 7h16M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l.9 12.6a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4L18.5 7M10 11v6M14 11v6',
+  lapis: 'M12 19.5h8.5M4 20l1-4.5 10-10 3.5 3.5-10 10z',
+  play: 'M7.5 4.8 19 12 7.5 19.2z',
+  pausa: 'M9.5 4.5v15M14.5 4.5v15',
+  estrela: 'M12 3.2l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z',
+  alerta: 'M12 3.2 2.4 20h19.2z@M12 10v4.2M12 17.2v.01',
+  info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M12 11.5v5M12 7.8v.01',
+  lista: 'M8.5 6h12M8.5 12h12M8.5 18h12M4 6h.01M4 12h.01M4 18h.01',
+  ficha: 'M9.5 4.5h5v1.6a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1z@M9.5 5.5h-2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-12a2 2 0 0 0-2-2h-2M9 11.5h6M9 15h6',
+  balanca: 'M12 3.2a2.8 2.8 0 0 0-2.6 1.8H6.2a2 2 0 0 0-2 1.8l-1 12.2a2 2 0 0 0 2 2.2h13.6a2 2 0 0 0 2-2.2l-1-12.2a2 2 0 0 0-2-1.8h-3.2A2.8 2.8 0 0 0 12 3.2z@M9.5 12.5 12 9l2.5 3.5',
+  fogo: 'M12 21.5c3.9 0 6.9-2.7 6.9-6.4 0-3-2-5.5-3.5-7.4-.5 1.5-1.4 2.4-2.4 2.4 0-3-1.5-5.9-3.9-7.9.5 4-3 5.4-3 10.9 0 4.4 2.9 8.4 5.9 8.4z',
+  relogio: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M12 7v5.2l3.2 2',
+  calendario: 'M3.5 6.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z@M3.5 10.5h17M8.5 2.5v4M15.5 2.5v4',
+  copiar: 'M9.5 9h9.5a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1H9.5a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z@M5 15H4.5a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1H14a1 1 0 0 1 1 1V5',
+  planilha: 'M4.5 4.5h15v15h-15z@M4.5 9.5h15M4.5 14.5h15M9.5 4.5v15M14.5 4.5v15',
+  faisca: 'M12 3.5l1.7 4.4 4.4 1.7-4.4 1.7L12 15.7l-1.7-4.4L5.9 9.6l4.4-1.7z@M18.5 15l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z',
+  vazio: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M8.5 14.5s1.3 1.5 3.5 1.5 3.5-1.5 3.5-1.5M9.5 9.5h.01M14.5 9.5h.01',
+  festa: 'M4 20.5l4.5-12 7.5 7.5z@M14 3.5c1.5 0 1.5 2 3 2M17.5 8c1 0 1.5.8 1.5 1.8M20.5 4.5h.01M12.5 6.5h.01M20.5 13.5h.01'
+};
+
+/* Um ícone pode ter mais de um traço; separo com @ para não repetir o <svg>. */
+function ic(nome, tam = 20, cls = '') {
+  const d = ICONS[nome];
+  if (!d) return '';
+  const partes = d.split('@').map(p => `<path d="${p}"/>`).join('');
+  return `<svg class="ic ${cls}" width="${tam}" height="${tam}" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true">${partes}</svg>`;
+}
+
+/* Ícones antigos vieram como emoji dentro dos dados do usuário.
+   Se for um nome conhecido, desenha; se não, mostra o emoji como estava. */
+function icOu(valor, tam = 20) {
+  return ICONS[valor] ? ic(valor, tam) : `<span class="emo" style="font-size:${tam}px">${esc(valor || '')}</span>`;
+}
+
+/* estrelas de qualidade: cheias até n, vazias depois */
+function estrelas(n, total = 5, tam = 13) {
+  let h = '';
+  for (let i = 1; i <= total; i++) {
+    h += `<svg class="ic st ${i <= n ? 'on' : ''}" width="${tam}" height="${tam}" viewBox="0 0 24 24"
+      fill="${i <= n ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.6"
+      stroke-linejoin="round" aria-hidden="true"><path d="${ICONS.estrela}"/></svg>`;
+  }
+  return `<span class="stars">${h}</span>`;
+}
+
+
+/* =========================================================
+   LOGO
+   Marca do app: folha/lótus dentro de um círculo — a ideia de
+   cuidado e crescimento, no mesmo traço dos ícones.
+
+   PARA TROCAR PELO SVG QUE VOCÊ BAIXOU: substitua o conteúdo de
+   LOGO_PATHS pelos <path>/<circle> do arquivo, mantendo o
+   viewBox em 24 24 (ou ajuste LOGO_VB junto).
+   ========================================================= */
+const LOGO_VB = '0 0 24 24';
+const LOGO_PATHS = `
+  <path d="M12 21.5c0-4.6 0-7.3 0-8.4" />
+  <path d="M12 13.1c-3.4 0-6.2-2.6-6.2-5.9 0-1 .2-2 .6-2.8 3.3.2 5.9 2.9 5.9 6.2" />
+  <path d="M12 13.1c3.4 0 6.2-2.6 6.2-5.9 0-1-.2-2-.6-2.8-3.3.2-5.9 2.9-5.9 6.2" />
+  <path d="M4.6 16.2c1.9-1.1 4.3-.7 5.7.9M19.4 16.2c-1.9-1.1-4.3-.7-5.7.9" />`;
+
+function logo(tam = 28, cls = '') {
+  return `<svg class="ic logo ${cls}" width="${tam}" height="${tam}" viewBox="${LOGO_VB}" fill="none"
+    stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true">${LOGO_PATHS}</svg>`;
+}
+/* mesma marca como imagem, para favicon e ícone da tela de início */
+function logoDataURI(cor = '%235F7346', fundo = '%23FBFDF2') {
+  const p = LOGO_PATHS.replace(/\s+/g, ' ').replace(/"/g, "'").trim();
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>` +
+    `<rect width='24' height='24' rx='6' fill='${decodeURIComponent(fundo)}'/>` +
+    `<g fill='none' stroke='${decodeURIComponent(cor)}' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'>${p}</g></svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+/* =========================================================
    VITTA — núcleo: estado, storage, utilidades, render
    ========================================================= */
+/* ACT e SCREENS nascem aqui porque as folhas (mais abaixo) já
+   registram ações, e este arquivo carrega antes do shell. */
+const ACT = {};
+const SCREENS = {};
+
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-25d';   // conferível em ⚙ — serve para saber se o navegador
+const VERSAO = '2026-08-25f';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -264,9 +458,9 @@ const ATIV = [
   ['1.9', 'Muito intenso — atleta / trabalho físico']
 ];
 const REFS = [
-  ['cafe', 'Café da manhã', '🌅'], ['lanche1', 'Lanche da manhã', '🍎'],
-  ['almoco', 'Almoço', '🍽️'], ['lanche2', 'Lanche da tarde', '🥤'],
-  ['janta', 'Jantar', '🌙'], ['ceia', 'Ceia', '🌜'], ['livre', 'Refeição livre', '🍴']
+  ['cafe', 'Café da manhã', 'cafe'], ['lanche1', 'Lanche da manhã', 'fruta'],
+  ['almoco', 'Almoço', 'almoco'], ['lanche2', 'Lanche da tarde', 'copo'],
+  ['janta', 'Jantar', 'lua'], ['ceia', 'Ceia', 'ceia'], ['livre', 'Refeição livre', 'pizza']
 ];
 
 /* =========================================================
@@ -281,7 +475,7 @@ const REFS = [
    NUNCA troque por uma sb_secret_ ou service_role aqui.
 
    Para apontar para outro projeto, é só editar estas duas
-   linhas (ou usar a tela ⚙ → Supabase dentro do app).
+   linhas (ou usar a tela de Configurações dentro do app).
    ========================================================= */
 const SB_URL = 'https://yobnnkpmlwhrjfwfbsyu.supabase.co';
 const SB_KEY = 'sb_publishable_4XXqlx_HrCMw3CXSZH_xNw_BOvRWzBN';
@@ -451,18 +645,73 @@ function toast(msg) {
   const t = $('#toast'); t.innerHTML = `<div class="toast">${esc(msg)}</div>`;
   clearTimeout(TOAST_T); TOAST_T = setTimeout(() => t.innerHTML = '', 2200);
 }
+
+/* =========================================================
+   FOLHAS (modais)
+   Regra: nada do que você preencheu some por acidente.
+   - toque fora só fecha se você não escreveu nada;
+   - se escreveu, pergunta antes — e a folha continua ali
+     atrás, intacta, caso você escolha continuar;
+   - Esc faz o mesmo caminho;
+   - tem um X visível, porque nem todo mundo adivinha que
+     dá para tocar fora.
+   ========================================================= */
+let SHEET_SUJO = false;
+
 function sheet(html) {
-  $('#modal').innerHTML = `<div class="ov" data-close="1"><div class="sheet">
-    <div class="grab"></div>${html}</div></div>`;
+  SHEET_SUJO = false;
+  $('#modal').innerHTML = `<div class="ov" data-ov="1"><div class="sheet">
+    <div class="grab"></div>
+    <button class="sheet-x" data-a="tentarFechar" aria-label="Fechar">${ic('x', 17)}</button>
+    ${html}</div></div>`;
   document.body.style.overflow = 'hidden';
+  const s = $('#modal .sheet');
+  if (s) {
+    s.addEventListener('input', () => SHEET_SUJO = true);
+    s.addEventListener('change', () => SHEET_SUJO = true);
+  }
 }
-function fechar() { $('#modal').innerHTML = ''; document.body.style.overflow = ''; }
+function fechar() {
+  $('#modal').innerHTML = ''; $('#modal2').innerHTML = '';
+  SHEET_SUJO = false; document.body.style.overflow = '';
+}
+/* Fecha só a pergunta, deixando a folha de baixo viva. */
+function fecharPergunta() { $('#modal2').innerHTML = ''; }
+
+ACT.tentarFechar = () => {
+  if (!SHEET_SUJO) return fechar();
+  pergunta({
+    titulo: 'Descartar o que você preencheu?',
+    texto: 'Você digitou algo nesta tela. Se sair agora, esse conteúdo se perde.',
+    okLabel: 'Descartar', perigo: true, cb: fechar
+  });
+};
+
+/* Pergunta curta desenhada POR CIMA da folha atual — por isso ela
+   nunca destrói o formulário que está embaixo.                     */
+function pergunta({ titulo, texto, okLabel, cancelLabel, perigo, cb }) {
+  window.__perguntaCb = cb;
+  $('#modal2').innerHTML = `<div class="ov ov2" data-ov2="1"><div class="ask">
+    <h4>${esc(titulo)}</h4>
+    ${texto ? `<p>${esc(texto)}</p>` : ''}
+    <div class="btnrow">
+      <button class="btn" data-a="perguntaNao">${esc(cancelLabel || 'Continuar editando')}</button>
+      <button class="btn ${perigo ? 'danger' : 'pri'}" data-a="perguntaSim">${esc(okLabel || 'Confirmar')}</button>
+    </div></div></div>`;
+}
+ACT.perguntaNao = () => fecharPergunta();
+ACT.perguntaSim = () => { const cb = window.__perguntaCb; fecharPergunta(); if (cb) cb(); };
+
+/* Confirmação de ação destrutiva: mesma camada, e ao confirmar
+   fecha tudo (a folha de origem já não faz sentido).             */
 function confirmar(txt, cb) {
-  sheet(`<h3>Confirmar</h3><p class="hint">${esc(txt)}</p>
-    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
-    <button class="btn danger" data-a="confirmOk">Confirmar</button></div>`);
-  window.__confirmCb = cb;
+  pergunta({
+    titulo: 'Confirmar', texto: txt, okLabel: 'Confirmar',
+    cancelLabel: 'Cancelar', perigo: true,
+    cb: () => { fechar(); cb(); }
+  });
 }
+
 const bar = (v, max, cor) => {
   const pct = clamp(max > 0 ? v / max * 100 : 0, 0, 100);
   return `<div class="bar"><i style="width:${pct}%;background:${cor || 'var(--ac)'}"></i></div>`;
@@ -481,15 +730,13 @@ function numOf(id) { return num(valOf(id, 0)); }
 /* =========================================================
    Shell: navegação, roteador, delegação de eventos
    ========================================================= */
-const ACT = {};
-const SCREENS = {};
 let VIEW = 'hoje';
 let D = today();
 let SUB = {};   // estado auxiliar por tela (aba interna, item em edição...)
 
 const NAVITENS = [
-  ['hoje', '◎', 'Hoje'], ['treino', '🏋️', 'Treino'], ['dieta', '🥗', 'Dieta'],
-  ['habitos', '✨', 'Hábitos'], ['lembretes', '🔔', 'Lembretes'], ['resumo', '📈', 'Resumo']
+  ['hoje', 'hoje', 'Hoje'], ['treino', 'treino', 'Treino'], ['dieta', 'dieta', 'Dieta'],
+  ['habitos', 'habitos', 'Hábitos'], ['lembretes', 'lembretes', 'Lembretes'], ['resumo', 'resumo', 'Resumo']
 ];
 const TITULOS = {
   hoje: ['Hoje', ''], treino: ['Exercícios', 'fichas, treinos e esportes'],
@@ -505,12 +752,12 @@ function header() {
   const [t, s] = TITULOS[VIEW] || ['Vitta', ''];
   const voltar = !NAVITENS.some(n => n[0] === VIEW);
   return `<div class="hd">
-    ${voltar ? `<button class="iconbtn" data-a="voltar">‹</button>` : ''}
+    ${voltar ? `<button class="iconbtn" data-a="voltar" aria-label="Voltar">${ic('esq', 20)}</button>` : ''}
     <h1>${esc(t)}${s ? `<small>${esc(s)}</small>` : ''}</h1>
-    ${VIEW === 'hoje' ? `<button class="iconbtn" data-a="ir" data-v="config">⚙</button>
-      <button class="iconbtn" data-a="ir" data-v="perfil">👤</button>` : ''}
-    ${VIEW === 'dieta' ? `<button class="iconbtn" data-a="ajustesHoje" title="Ajustes de hoje">⚡</button>
-      <button class="iconbtn" data-a="ir" data-v="perfil" title="Minhas medidas">📏</button>` : ''}
+    ${VIEW === 'hoje' ? `<button class="iconbtn" data-a="ir" data-v="config" aria-label="Configurações">${ic('config')}</button>
+      <button class="iconbtn" data-a="ir" data-v="perfil" aria-label="Perfil">${ic('perfil')}</button>` : ''}
+    ${VIEW === 'dieta' ? `<button class="iconbtn" data-a="ajustesHoje" title="Ajustes de hoje">${ic('raio')}</button>
+      <button class="iconbtn" data-a="ir" data-v="perfil" title="Minhas medidas">${ic('medidas')}</button>` : ''}
   </div>`;
 }
 
@@ -527,8 +774,8 @@ function dateStrip() {
 function render() {
   APP.innerHTML = header() + (SCREENS[VIEW] ? SCREENS[VIEW]() : '<div class="empty">…</div>');
   $('#nav').innerHTML = NAVITENS.map(([v, i, t]) =>
-    `<button class="${VIEW === v ? 'on' : ''}" data-a="ir" data-v="${v}"><i>${i}</i><span>${t}</span></button>`).join('');
-  $('#fab').innerHTML = FAB[VIEW] ? `<button class="fab" data-a="${FAB[VIEW]}">+</button>` : '';
+    `<button class="${VIEW === v ? 'on' : ''}" data-a="ir" data-v="${v}"><i>${ic(i, 19)}</i><span>${t}</span></button>`).join('');
+  $('#fab').innerHTML = FAB[VIEW] ? `<button class="fab" data-a="${FAB[VIEW]}" aria-label="Adicionar">${ic('mais', 26)}</button>` : '';
   const ds = APP.querySelector('.dstrip'), on = ds && ds.querySelector('.dchip.on');
   if (on) ds.scrollLeft = on.offsetLeft - ds.clientWidth / 2 + on.offsetWidth / 2;
   syncBadge();
@@ -540,12 +787,19 @@ ACT.ir = e => go(e.dataset.v);
 ACT.voltar = () => go(SUB._back || 'hoje');
 ACT.fechar = () => fechar();
 ACT.setDia = e => { D = e.dataset.d; render(); };
-ACT.confirmOk = () => { const cb = window.__confirmCb; fechar(); if (cb) cb(); };
+
 ACT.aba = e => { SUB.aba = e.dataset.t; render(); };
 
 /* ---------- delegação ---------- */
+/* Guardo onde o toque COMEÇOU: arrastar de dentro da folha para fora
+   não pode fechar nada — era assim que o formulário sumia sem querer. */
+let TOQUE_FORA = false;
+document.addEventListener('pointerdown', ev => {
+  const t = ev.target;
+  TOQUE_FORA = !!(t.classList && (t.classList.contains('ov') || t.classList.contains('ov2')));
+}, true);
+
 document.addEventListener('click', ev => {
-  const cl = ev.target.closest('[data-close]');
   const b = ev.target.closest('[data-a]');
   if (b) {
     ev.preventDefault();
@@ -553,7 +807,16 @@ document.addEventListener('click', ev => {
     if (f) f(b, ev); else console.warn('ação sem handler:', b.dataset.a);
     return;
   }
-  if (cl && ev.target === cl) fechar();
+  const t = ev.target;
+  if (!TOQUE_FORA || !t.classList) return;
+  if (t.classList.contains('ov2')) return fecharPergunta();   // pergunta: toque fora só cancela
+  if (t.classList.contains('ov')) ACT.tentarFechar();
+});
+
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape') return;
+  if ($('#modal2').innerHTML) return fecharPergunta();
+  if ($('#modal').innerHTML) ACT.tentarFechar();
 });
 document.addEventListener('change', ev => {
   const b = ev.target.closest('[data-ch]');
@@ -672,7 +935,7 @@ SCREENS.perfil = () => {
 ACT.ajustesHoje = () => {
   const x = dia(D);
   sheet(`<h3>Ajustes de ${esc(dLabel(D))}</h3>
-    <p class="hint">Valem só para este dia. Para algo que se repete, use <b>📏 Medidas</b> e preencha os adicionais fixos.</p>
+    <p class="hint">Valem só para este dia. Para algo que se repete, use <b>Medidas</b> e preencha os adicionais fixos.</p>
     <div class="f"><label>Gasto calórico extra (kcal)</label>
       <input class="in" id="aj_k" type="number" inputmode="numeric" value="${x.ajusteKcal || ''}" placeholder="0" data-inp="ajPrev"></div>
     <div class="f"><label>Água extra na meta de hoje (ml)</label>
@@ -770,7 +1033,7 @@ SCREENS.config = () => {
 
     <div class="row" style="margin-top:4px"><div class="g"><div class="t">Sincronizar automaticamente</div>
       <div class="s">Envia as alterações alguns segundos depois de cada lançamento</div></div>
-      <button class="tick ${c.autoSync ? 'on' : ''}" data-a="cfgAuto">✓</button></div>
+      <button class="tick ${c.autoSync ? 'on' : ''}" data-a="cfgAuto">${ic('check')}</button></div>
     <div class="row"><div class="g"><div class="t">Último sync</div>
       <div class="s">${c.ultimoSync ? new Date(c.ultimoSync).toLocaleString('pt-BR') : 'nunca'}
         ${(DB.delFila || []).length ? ' · ' + DB.delFila.length + ' exclusão(ões) na fila' : ''}</div></div></div>
@@ -793,11 +1056,24 @@ SCREENS.config = () => {
       Chaves <code>sb_secret_</code> e <code>service_role</code> são recusadas aqui — elas ignoram a segurança do banco.</p>
   </div>
 
+  <div class="sec-title">Notificações</div>
+  <div class="card">
+    ${permNotif() === 'granted'
+      ? `<div class="okbox">Ativadas neste aparelho.${swAtivo() ? '' : ' O app ainda não instalou o service worker — publique o <code>sw.js</code> junto do <code>index.html</code> para os avisos aparecerem com o app fechado.'}</div>
+         <button class="btn full sm" data-a="testarNotif">Enviar um aviso de teste</button>`
+      : permNotif() === 'denied'
+      ? `<div class="warnbox">Bloqueadas para este site. Libere em <b>Configurações do site → Notificações</b> no navegador (pelo cadeado ao lado do endereço) e recarregue.</div>`
+      : `<p class="mini" style="margin-bottom:11px">Autorize para receber os lembretes e os hábitos com horário no seu aparelho.</p>
+         <button class="btn pri full sm" data-a="pedirNotif">Ativar notificações</button>`}
+    <p class="mini" style="margin-top:11px">Os avisos disparam no horário marcado, nos dias previstos, e
+      só enquanto o item ainda estiver pendente. No iPhone, é obrigatório ter adicionado o app à Tela de Início.</p>
+  </div>
+
   <div class="sec-title">Backup local</div>
   <div class="card">
     <div class="btnrow" style="margin-bottom:9px">
-      <button class="btn" data-a="exportar">⬇ Exportar JSON</button>
-      <button class="btn" data-a="importar">⬆ Importar</button>
+      <button class="btn" data-a="exportar">${ic('baixar',15)} Exportar JSON</button>
+      <button class="btn" data-a="importar">${ic('enviar',15)} Importar</button>
     </div>
     <button class="btn danger full" data-a="zerar">Apagar dados deste aparelho</button>
   </div>
@@ -805,11 +1081,11 @@ SCREENS.config = () => {
   <div class="sec-title">Bibliotecas</div>
   <div class="card tight">
     <div class="row" data-a="ir" data-v="alimentos"><div class="g"><div class="t">Alimentos</div>
-      <div class="s">${DB.alimentos.length} cadastrados</div></div><div class="v">›</div></div>
+      <div class="s">${DB.alimentos.length} cadastrados</div></div><div class="v">${ic('dir',16,'op')}</div></div>
     <div class="row" data-a="ir" data-v="pratos"><div class="g"><div class="t">Pratos e variações</div>
-      <div class="s">${DB.pratos.length} cadastrados</div></div><div class="v">›</div></div>
+      <div class="s">${DB.pratos.length} cadastrados</div></div><div class="v">${ic('dir',16,'op')}</div></div>
     <div class="row" data-a="ir" data-v="fichas"><div class="g"><div class="t">Fichas de treino</div>
-      <div class="s">${DB.fichas.length} cadastradas</div></div><div class="v">›</div></div>
+      <div class="s">${DB.fichas.length} cadastradas</div></div><div class="v">${ic('dir',16,'op')}</div></div>
   </div>
   <div class="card"><p class="mini">Vitta — versão <b>${VERSAO}</b>. Funciona offline; adicione à
     tela de início do celular pelo menu do navegador para abrir como aplicativo.<br>
@@ -821,7 +1097,7 @@ SCREENS.config = () => {
    ========================================================= */
 TITULOS.ficha = ['Ficha de treino', 'exercícios, séries e cargas alvo'];
 const GRUPOS = ['Peito', 'Costas', 'Ombro', 'Bíceps', 'Tríceps', 'Quadríceps', 'Posterior', 'Glúteo', 'Abdômen', 'Panturrilha', 'Cardio', 'Outro'];
-const CORES = ['#fb923c', '#4ade80', '#a78bfa', '#38bdf8', '#f472b6', '#facc15'];
+const CORES = ['#A9743C', '#5F7346', '#7A6E9E', '#4A7B8A', '#A2657A', '#8A8A3C'];
 
 const volSets = sets => (sets || []).reduce((a, s) => a + num(s.reps) * num(s.carga), 0);
 function volDia(d) {
@@ -840,16 +1116,16 @@ ACT.escolherFicha = () => {
     ${fs.length ? fs.map(f => `<button class="btn full" style="justify-content:flex-start;margin-bottom:8px"
         data-a="iniciarTreino" data-f="${f.id}"><span class="dot" style="background:${f.cor}"></span>
         ${esc(f.nome)} <span style="color:var(--tx3);font-weight:500">· ${(f.exercicios || []).length} ex.</span></button>`).join('')
-      : '<div class="empty"><b>📋</b>Você ainda não montou nenhuma ficha.</div>'}
-    <button class="btn full" style="margin-bottom:8px" data-a="iniciarTreino" data-f="">🎯 Treino livre (sem ficha)</button>
-    <button class="btn gh full" data-a="irFichas">＋ Montar uma ficha</button>`);
+      : `<div class="empty"><b>${ic('ficha')}</b>Você ainda não montou nenhuma ficha.</div>`}
+    <button class="btn full" style="margin-bottom:8px" data-a="iniciarTreino" data-f="">${ic('meta',15)} Treino livre (sem ficha)</button>
+    <button class="btn gh full" data-a="irFichas">${ic('mais',15)} Montar uma ficha</button>`);
 };
 ACT.irFichas = () => { fechar(); SUB._back = 'treino'; go('fichas', true); };
 ACT.iniciarTreino = e => {
   const f = DB.fichas.find(x => x.id === e.dataset.f);
   const x = dia(D);
   x.treino = {
-    fichaId: f ? f.id : null, nome: f ? f.nome : 'Treino livre', cor: f ? f.cor : '#fb923c',
+    fichaId: f ? f.id : null, nome: f ? f.nome : 'Treino livre', cor: f ? f.cor : 'var(--tre)',
     feito: false, duracao: 60, obs: '',
     itens: f ? (f.exercicios || []).map(ex => ({
       exId: ex.id, nome: ex.nome, grupo: ex.grupo,
@@ -865,7 +1141,7 @@ ACT.cancelarTreino = () => confirmar('Remover o registro de treino deste dia?', 
 ACT.concluirTreino = () => {
   const t = dia(D).treino; t.feito = !t.feito;
   t.duracao = numOf('t_dur') || t.duracao; tocaDia(D); save();
-  toast(t.feito ? 'Treino concluído 💪' : 'Treino reaberto'); render();
+  toast(t.feito ? 'Treino concluído' : 'Treino reaberto'); render();
 };
 ACT.durTreino = e => { dia(D).treino.duracao = num(e.value); tocaDia(D); save(false); };
 ACT.tickEx = e => {
@@ -890,9 +1166,9 @@ function sheetEx() {
         <div style="width:26px;color:var(--tx3);font-size:12px;font-weight:700">${k + 1}ª</div>
         <input class="in" style="flex:1" type="number" inputmode="numeric" id="s_r${k}" value="${s.reps ?? ''}" placeholder="reps">
         <input class="in" style="flex:1" type="number" inputmode="decimal" step="0.5" id="s_c${k}" value="${s.carga ?? ''}" placeholder="kg">
-        <button class="btn xs danger" data-a="delSet" data-k="${k}">✕</button>
+        <button class="btn xs danger" data-a="delSet" data-k="${k}">${ic('x',14)}</button>
       </div>`).join('')}</div>
-    <button class="btn gh full sm" style="margin:6px 0 12px" data-a="addSet">＋ Adicionar série</button>
+    <button class="btn gh full sm" style="margin:6px 0 12px" data-a="addSet">${ic('mais',15)} Adicionar série</button>
     <div class="f"><label>Observação</label><input class="in" id="s_obs" value="${esc(i.obs || '')}" placeholder="ex: aumentei 2,5kg, senti o ombro..."></div>
     <div class="btnrow">
       <button class="btn" data-a="fechar">Cancelar</button>
@@ -1016,7 +1292,7 @@ function sheetAtv() {
         <optgroup label="Lista pronta">
           ${Object.keys(MET).map(k => `<option ${!a.nova && a.nome === k ? 'selected' : ''}>${k}</option>`).join('')}
         </optgroup>
-        <option value="__nova" ${a.nova ? 'selected' : ''}>➕ Outra atividade…</option>
+        <option value="__nova" ${a.nova ? 'selected' : ''}>+ Outra atividade…</option>
       </select></div>
 
     ${a.nova ? `<div class="f"><label>Nome da atividade</label>
@@ -1042,7 +1318,7 @@ function sheetAtv() {
       <input class="in" id="es_o" value="${esc(a.obs || '')}" placeholder="opcional" data-inp="atvPrev"></div>
 
     <div class="row" style="border-top:1px solid var(--line);padding-top:12px">
-      <button class="tick ${a.salvar ? 'on' : ''}" data-a="atvSalvarTog">✓</button>
+      <button class="tick ${a.salvar ? 'on' : ''}" data-a="atvSalvarTog">${ic('check')}</button>
       <div class="g"><div class="t">Guardar nas minhas atividades</div>
         <div class="s">para lançar depois com um toque</div></div>
     </div>
@@ -1157,10 +1433,10 @@ SCREENS.atividades = () => {
         </div>
         <button class="btn xs pri" data-a="atvRapida" data-atv="${a.id}">Lançar</button>
       </div></div>`).join('')
-    : `<div class="card"><div class="empty"><b>⚽</b>Cadastre as atividades que você repete — futebol de quinta,
+    : `<div class="card"><div class="empty"><b>${ic('bola')}</b>Cadastre as atividades que você repete — futebol de quinta,
         alongamento todo dia, corrida no fim de semana. Marque os dias e elas aparecem sozinhas na tela de
         Exercícios, prontas para lançar com um toque.</div></div>`)
-    + `<button class="btn pri full" data-a="novaAtv" style="margin-bottom:14px">＋ Nova atividade</button>`;
+    + `<button class="btn pri full" data-a="novaAtv" style="margin-bottom:14px">${ic('mais',15)} Nova atividade</button>`;
 };
 
 /* ---------- tela ---------- */
@@ -1173,7 +1449,7 @@ SCREENS.treino = () => {
 
   if (!t) {
     h += `<div class="card">
-      <div class="empty"><b>🏋️</b>Nenhum treino registrado em ${esc(dLabel(D))}.</div>
+      <div class="empty"><b>${ic('treino')}</b>Nenhum treino registrado em ${esc(dLabel(D))}.</div>
       ${sug ? `<div class="okbox">Sugestão da agenda: <b>${esc(sug.nome)}</b></div>
         <button class="btn pri full" style="margin-bottom:8px" data-a="iniciarTreino" data-f="${sug.id}">Iniciar ${esc(sug.nome)}</button>` : ''}
       <button class="btn full" data-a="escolherFicha">Escolher treino</button>
@@ -1204,16 +1480,16 @@ SCREENS.treino = () => {
       ${t.itens.map((i, k) => {
       const done = i.sets.length ? i.sets.map(s => `${s.reps}×${s.carga || 0}`).join(' · ') : '';
       return `<div class="row">
-          <button class="tick ${i.feito ? 'on' : ''}" data-a="tickEx" data-i="${k}">✓</button>
+          <button class="tick ${i.feito ? 'on' : ''}" data-a="tickEx" data-i="${k}">${ic('check')}</button>
           <div class="g" data-a="abrirEx" data-i="${k}">
             <div class="t">${esc(i.nome)} ${i.extra ? '<span class="pill esc">extra</span>' : ''}</div>
             <div class="s">${done ? esc(done) : i.alvo ? `alvo ${esc(i.alvo.series || '?')}×${esc(i.alvo.reps || '?')} · ${esc(i.alvo.carga || 0)}kg` : '—'}</div>
           </div>
-          <div class="v" data-a="abrirEx" data-i="${k}" style="color:var(--tx3)">›</div>
+          <div class="v" data-a="abrirEx" data-i="${k}">${ic('dir',16,'op')}</div>
         </div>`;
     }).join('')}
-      <button class="btn gh full sm" style="margin-top:10px" data-a="addExtra">＋ Exercício extra</button>
-    </div>` : `<div class="card"><div class="empty"><b>➕</b>Treino livre: adicione os exercícios que você fez.</div>
+      <button class="btn gh full sm" style="margin-top:10px" data-a="addExtra">${ic('mais',15)} Exercício extra</button>
+    </div>` : `<div class="card"><div class="empty"><b>${ic('mais')}</b>Treino livre: adicione os exercícios que você fez.</div>
       <button class="btn pri full" data-a="addExtra">Adicionar exercício</button></div>`;
     h += `<button class="btn gh full sm" style="margin-bottom:14px" data-a="cancelarTreino">Remover registro de treino</button>`;
   }
@@ -1236,18 +1512,18 @@ SCREENS.treino = () => {
       <div class="g"><div class="t">${esc(e.nome)}</div>
         <div class="s">${e.min} min${e.obs ? ' · ' + esc(e.obs) : ''}</div></div>
       <div class="v">${n0(e.kcal)}<span style="font-size:10px;color:var(--tx2)"> kcal</span></div>
-      <button class="btn xs danger" data-a="delEsporte" data-i="${i}">✕</button>
+      <button class="btn xs danger" data-a="delEsporte" data-i="${i}">${ic('x',14)}</button>
     </div>`).join('') + `<div class="row"><div class="g"><div class="t">Total do dia</div></div>
       <div class="v" style="color:var(--tre)">${n0(kes)} kcal</div></div>`
-      : '<div class="empty"><b>⚽</b>Futebol, caminhada, corrida, natação…</div>'}
-    <button class="btn ${es.length ? 'gh' : 'pri'} full sm" style="margin-top:10px" data-a="addEsporte">＋ Registrar atividade</button>
+      : `<div class="empty"><b>${ic('bola')}</b>Futebol, caminhada, corrida, natação…</div>`}
+    <button class="btn ${es.length ? 'gh' : 'pri'} full sm" style="margin-top:10px" data-a="addEsporte">${ic('mais',15)} Registrar atividade</button>
   </div>
   <div class="card tight">
     <div class="row" data-a="irFichasTop"><div class="g"><div class="t">Minhas fichas de treino</div>
-      <div class="s">${DB.fichas.length} ficha(s) montada(s)</div></div><div class="v">›</div></div>
+      <div class="s">${DB.fichas.length} ficha(s) montada(s)</div></div><div class="v">${ic('dir',16,'op')}</div></div>
     <div class="row" data-a="irAtividades"><div class="g"><div class="t">Minhas atividades</div>
       <div class="s">${(DB.atividades || []).length} cadastrada(s)${atvDoDia(D).length ? ' · ' + atvDoDia(D).length + ' hoje' : ''}</div></div>
-      <div class="v">›</div></div>
+      <div class="v">${ic('dir',16,'op')}</div></div>
   </div>`;
   return h;
 };
@@ -1275,9 +1551,9 @@ SCREENS.fichas = () => {
         <button class="btn xs" data-a="abrirFicha" data-f="${f.id}">Editar</button></div>
       <div class="mini">${(f.exercicios || []).length} exercícios${(f.dias || []).length ? ' · ' + f.dias.map(d => DOW[d]).join(', ') : ''}</div>
       <div class="mini" style="color:var(--tx3);margin-top:5px">${esc((f.exercicios || []).map(e => e.nome).slice(0, 4).join(' · ')) || 'vazia'}</div>
-    </div>`).join('') + `<button class="btn pri full" data-a="novaFicha" style="margin-bottom:14px">＋ Nova ficha</button>`
-    : `<div class="card"><div class="empty"><b>📋</b>Monte sua primeira ficha: dê um nome (ex: “Treino A — Peito e tríceps”), escolha os dias da semana e liste os exercícios com séries, repetições e carga alvo.</div>
-      <button class="btn pri full" data-a="novaFicha">＋ Criar ficha</button></div>`;
+    </div>`).join('') + `<button class="btn pri full" data-a="novaFicha" style="margin-bottom:14px">${ic('mais',15)} Nova ficha</button>`
+    : `<div class="card"><div class="empty"><b>${ic('ficha')}</b>Monte sua primeira ficha: dê um nome (ex: “Treino A — Peito e tríceps”), escolha os dias da semana e liste os exercícios com séries, repetições e carga alvo.</div>
+      <button class="btn pri full" data-a="novaFicha">${ic('mais',15)} Criar ficha</button></div>`;
 };
 
 /* --- editor de ficha --- */
@@ -1352,10 +1628,10 @@ SCREENS.ficha = () => {
     ${(f.exercicios || []).map((ex, i) => `<div class="row">
       <div class="g" data-a="fAddEx" data-i="${i}"><div class="t">${esc(ex.nome)}</div>
         <div class="s">${esc(ex.grupo)} · ${ex.series}×${ex.reps} · ${ex.carga}kg · ${ex.desc || 60}s</div></div>
-      <button class="btn xs" data-a="fMove" data-i="${i}" data-dir="-1">↑</button>
-      <button class="btn xs" data-a="fMove" data-i="${i}" data-dir="1">↓</button>
-    </div>`).join('') || '<div class="empty"><b>💪</b>Nenhum exercício ainda.</div>'}
-    <button class="btn gh full sm" style="margin-top:10px" data-a="fAddEx">＋ Adicionar exercício</button>
+      <button class="btn xs" data-a="fMove" data-i="${i}" data-dir="-1" aria-label="Subir">${ic('baixo',13,'up')}</button>
+      <button class="btn xs" data-a="fMove" data-i="${i}" data-dir="1" aria-label="Descer">${ic('baixo',13)}</button>
+    </div>`).join('') || `<div class="empty"><b>${ic('treino')}</b>Nenhum exercício ainda.</div>`}
+    <button class="btn gh full sm" style="margin-top:10px" data-a="fAddEx">${ic('mais',15)} Adicionar exercício</button>
   </div>
   <div class="btnrow" style="margin-bottom:14px">
     <button class="btn danger" data-a="delFicha" data-f="${f.id}">Excluir</button>
@@ -1367,7 +1643,7 @@ SCREENS.ficha = () => {
    ========================================================= */
 TITULOS.prato = ['Prato', 'monte a combinação'];
 const refNome = k => (REFS.find(r => r[0] === k) || [, k])[1];
-const refIcone = k => (REFS.find(r => r[0] === k) || [, , '🍴'])[2];
+const refIcone = k => (REFS.find(r => r[0] === k) || [, , 'almoco'])[2];
 const alimById = id => DB.alimentos.find(a => a.id === id);
 
 function macrosPrato(p) {
@@ -1412,14 +1688,14 @@ function sheetAdd(keepFocus) {
         <div class="t">${esc(p.nome)}</div>
         <div class="s">${n0(m.kcal)} kcal · C${n0(m.c)} P${n0(m.p)} G${n0(m.g)}</div></div>
         <button class="btn xs pri" data-a="addPrato" data-p="${p.id}">Lançar</button></div>`;
-    }).join('') : `<div class="empty"><b>🍲</b>Nenhum prato cadastrado para ${esc(refNome(r))}.</div>`;
-    corpo += `<button class="btn gh full sm" style="margin-top:10px" data-a="irPratos">＋ Montar prato</button>`;
+    }).join('') : `<div class="empty"><b>${ic('almoco')}</b>Nenhum prato cadastrado para ${esc(refNome(r))}.</div>`;
+    corpo += `<button class="btn gh full sm" style="margin-top:10px" data-a="irPratos">${ic('mais',15)} Montar prato</button>`;
   } else if (aba === 'alimento') {
     corpo = `<input class="in" id="q_alim" placeholder="Buscar alimento…" value="${esc(SUB.busca || '')}" data-inp="buscaAlim" autocomplete="off">
       <div style="max-height:38vh;overflow-y:auto;margin-top:8px">
       ${alims.map(a => `<div class="row"><div class="g" data-a="addAlim" data-i="${a.id}">
         <div class="t">${esc(a.nome)}</div><div class="s">${n0(a.kcal)} kcal / ${a.porcao}${a.un}</div></div>
-        <button class="btn xs" data-a="addAlim" data-i="${a.id}">＋</button></div>`).join('') || '<div class="empty">Nada encontrado.</div>'}
+        <button class="btn xs" data-a="addAlim" data-i="${a.id}">${ic('mais',14)}</button></div>`).join('') || '<div class="empty">Nada encontrado.</div>'}
       </div>
       <button class="btn gh full sm" style="margin-top:10px" data-a="irAlimentos">Gerenciar alimentos</button>`;
   } else {
@@ -1436,10 +1712,10 @@ function sheetAdd(keepFocus) {
       <button class="btn pri full" data-a="addLivre">Lançar</button>`;
   }
 
-  sheet(`<h3>${refIcone(r)} ${esc(refNome(r))}</h3>
+  sheet(`<h3>${ic(refIcone(r), 18)} ${esc(refNome(r))}</h3>
     <p class="hint">Marque abaixo se for algo fora da dieta — o app contabiliza como escape sem deixar de somar as calorias.</p>
     <div class="row" style="border:0;padding:0 0 12px">
-      <button class="tick ${SUB.escape ? 'on' : ''}" data-a="togEscape">✓</button>
+      <button class="tick ${SUB.escape ? 'on' : ''}" data-a="togEscape">${ic('check')}</button>
       <div class="g"><div class="t">Fora da dieta (escape)</div></div>
     </div>
     <div class="segs" style="margin-bottom:12px">
@@ -1517,7 +1793,7 @@ SCREENS.dieta = () => {
       ${ring(t.kcal / m.kcal, t.kcal > m.kcal * 1.05 ? 'var(--warn)' : 'var(--die)', 78, n0(m.kcal - t.kcal))}
       <div style="flex:1">
         <div class="macro" style="margin:0;flex-direction:column;gap:9px">
-          ${[['Carbo', t.c, m.c, '#38bdf8'], ['Proteína', t.p, m.p, '#a78bfa'], ['Gordura', t.g, m.g, '#fbbf24']].map(mm =>
+          ${[['Carbo', t.c, m.c, 'var(--carb)'], ['Proteína', t.p, m.p, 'var(--prot)'], ['Gordura', t.g, m.g, 'var(--gord)']].map(mm =>
     `<div><div class="mt"><span>${mm[0]}</span><span>${n0(mm[1])} / ${n0(mm[2])} g</span></div>${bar(mm[1], mm[2], mm[3])}</div>`).join('')}
         </div>
       </div>
@@ -1537,36 +1813,36 @@ SCREENS.dieta = () => {
       <button class="btn sm gh" data-a="agua" data-v="-250">−</button>
     </div>
     ${t.liq ? `<div class="mini" style="margin-top:9px">Outros líquidos lançados na dieta: <b>${n0(t.liq)} ml</b> (não somam na meta de água).</div>` : ''}
-    <div class="row" data-a="ajustesHoje" style="margin-top:4px"><div class="g"><div class="t">⚡ Ajustes de hoje</div>
+    <div class="row" data-a="ajustesHoje" style="margin-top:4px"><div class="g"><div class="t">${ic('raio',15)} Ajustes de hoje</div>
       <div class="s">${x.ajusteAgua || x.ajusteKcal
         ? `${x.ajusteAgua ? '+' + n0(x.ajusteAgua) + ' ml de água' : ''}${x.ajusteAgua && x.ajusteKcal ? ' · ' : ''}${x.ajusteKcal ? '+' + n0(x.ajusteKcal) + ' kcal de gasto' : ''}`
-        : 'somar água ou gasto calórico extra só neste dia'}</div></div><div class="v">›</div></div>
+        : 'somar água ou gasto calórico extra só neste dia'}</div></div><div class="v">${ic('dir',16,'op')}</div></div>
   </div>`;
 
   /* refeições */
   h += `<div class="sec-title">Refeições</div>`;
-  REFS.forEach(([k, nome, ic]) => {
+  REFS.forEach(([k, nome, ic_]) => {
     const itens = x.refeicoes[k] || [], s = somaItens(itens);
     h += `<div class="card tight">
       <div class="ch" style="margin-bottom:${itens.length ? 9 : 0}px">
-        <span style="font-size:16px">${ic}</span><h2>${nome}</h2>
+        <span style="line-height:0;color:var(--tx2)">${ic(ic_, 17)}</span><h2>${nome}</h2>
         ${itens.length ? `<span class="sub">${n0(s.kcal)} kcal</span>` : ''}
-        <button class="btn xs pri" data-a="addRef" data-r="${k}">＋</button></div>
+        <button class="btn xs pri" data-a="addRef" data-r="${k}">${ic('mais',14)}</button></div>
       ${itens.map((i, idx) => `<div class="row">
         <div class="g"><div class="t">${esc(i.nome)} ${i.escape ? '<span class="pill esc">escape</span>' : ''}</div>
           <div class="s">${i.qtd ? esc(i.qtd + ' ' + (i.un || '')) + ' · ' : ''}C${n1(i.c)} P${n1(i.p)} G${n1(i.g)}${i.liq ? ' · ' + n0(i.liq) + 'ml' : ''}</div></div>
         <div class="v">${n0(i.kcal)}</div>
-        <button class="btn xs" data-a="togItemEsc" data-r="${k}" data-i="${idx}">⚠</button>
-        <button class="btn xs danger" data-a="delItem" data-r="${k}" data-i="${idx}">✕</button>
+        <button class="btn xs" data-a="togItemEsc" data-r="${k}" data-i="${idx}" title="Marcar como escape">${ic('alerta',14)}</button>
+        <button class="btn xs danger" data-a="delItem" data-r="${k}" data-i="${idx}">${ic('x',14)}</button>
       </div>`).join('')}
     </div>`;
   });
 
   h += `<div class="card tight" style="margin-bottom:14px">
     <div class="row" data-a="irPratosTop"><div class="g"><div class="t">Meus pratos</div>
-      <div class="s">${DB.pratos.length} cadastrados</div></div><div class="v">›</div></div>
+      <div class="s">${DB.pratos.length} cadastrados</div></div><div class="v">${ic('dir',16,'op')}</div></div>
     <div class="row" data-a="irAlimTop"><div class="g"><div class="t">Alimentos</div>
-      <div class="s">${DB.alimentos.length} na biblioteca</div></div><div class="v">›</div></div>
+      <div class="s">${DB.alimentos.length} na biblioteca</div></div><div class="v">${ic('dir',16,'op')}</div></div>
   </div>`;
   return h;
 };
@@ -1619,13 +1895,13 @@ function listaAlim() {
   return l.map(a => `<div class="row"><div class="g" data-a="novoAlim" data-i="${a.id}">
     <div class="t">${esc(a.nome)}</div>
     <div class="s">${a.porcao}${a.un} · ${n0(a.kcal)}kcal · C${n1(a.c)} P${n1(a.p)} G${n1(a.g)}</div></div>
-    <div class="v" style="color:var(--tx3)">›</div></div>`).join('') || '<div class="empty">Nada encontrado.</div>';
+    <div class="v">${ic('dir',16,'op')}</div></div>`).join('') || '<div class="empty">Nada encontrado.</div>';
 }
 SCREENS.alimentos = () => `<div class="card">
     <input class="in" placeholder="Buscar…" value="${esc(SUB.q || '')}" data-inp="filtroAlim" autocomplete="off">
     <div id="alim_list" style="margin-top:6px">${listaAlim()}</div>
   </div>
-  <button class="btn pri full" data-a="novoAlim" style="margin-bottom:14px">＋ Novo alimento</button>`;
+  <button class="btn pri full" data-a="novoAlim" style="margin-bottom:14px">${ic('mais',15)} Novo alimento</button>`;
 
 /* =========================================================
    Pratos e variações
@@ -1666,7 +1942,7 @@ function listaPrAlim(q) {
   return DB.alimentos.filter(a => !q || a.nome.toLowerCase().includes(q)).slice(0, 40).map(a =>
     `<div class="row"><div class="g" data-a="prPickAlim" data-i="${a.id}"><div class="t">${esc(a.nome)}</div>
       <div class="s">${a.porcao}${a.un} · ${n0(a.kcal)} kcal</div></div>
-      <button class="btn xs" data-a="prPickAlim" data-i="${a.id}">＋</button></div>`).join('') || '<div class="empty">Nada encontrado.</div>';
+      <button class="btn xs" data-a="prPickAlim" data-i="${a.id}">${ic('mais',14)}</button></div>`).join('') || '<div class="empty">Nada encontrado.</div>';
 }
 ACT.prPickAlim = e => {
   const a = alimById(e.dataset.i); SUB.alimId = a.id;
@@ -1692,11 +1968,11 @@ SCREENS.pratos = () => {
       return `<div class="row"><div class="g" data-a="abrirPrato" data-p="${p.id}">
         <div class="t">${esc(p.nome)} ${p.variacaoDe ? '<span class="pill mut">variação</span>' : ''}</div>
         <div class="s">${n0(m.kcal)} kcal · C${n0(m.c)} P${n0(m.p)} G${n0(m.g)}</div></div>
-        <button class="btn xs" data-a="dupPrato" data-p="${p.id}">⧉</button></div>`;
+        <button class="btn xs" data-a="dupPrato" data-p="${p.id}">${ic('copiar',13)}</button></div>`;
     }).join('')}</div>`;
   });
-  if (!DB.pratos.length) h = `<div class="card"><div class="empty"><b>🍲</b>Monte pratos que você come com frequência (ex.: “Arroz, feijão e frango”). Depois basta um toque para lançar no dia — e você pode criar variações a partir de um prato existente.</div></div>`;
-  return h + `<button class="btn pri full" data-a="novoPrato" style="margin-bottom:14px">＋ Novo prato</button>`;
+  if (!DB.pratos.length) h = `<div class="card"><div class="empty"><b>${ic('almoco')}</b>Monte pratos que você come com frequência (ex.: “Arroz, feijão e frango”). Depois basta um toque para lançar no dia — e você pode criar variações a partir de um prato existente.</div></div>`;
+  return h + `<button class="btn pri full" data-a="novoPrato" style="margin-bottom:14px">${ic('mais',15)} Novo prato</button>`;
 };
 
 SCREENS.prato = () => {
@@ -1715,9 +1991,9 @@ SCREENS.prato = () => {
     const f = it.qtd / (a.porcao || 1);
     return `<div class="row"><div class="g"><div class="t">${esc(a.nome)}</div>
       <div class="s">${n1(it.qtd)} ${a.un} · ${n0(a.kcal * f)} kcal</div></div>
-      <button class="btn xs danger" data-a="prDelItem" data-i="${i}">✕</button></div>`;
-  }).join('') || '<div class="empty"><b>🥄</b>Adicione os alimentos que compõem o prato.</div>'}
-    <button class="btn gh full sm" style="margin-top:10px" data-a="prAddItem">＋ Adicionar alimento</button>
+      <button class="btn xs danger" data-a="prDelItem" data-i="${i}">${ic('x',14)}</button></div>`;
+  }).join('') || `<div class="empty"><b>${ic('almoco')}</b>Adicione os alimentos que compõem o prato.</div>`}
+    <button class="btn gh full sm" style="margin-top:10px" data-a="prAddItem">${ic('mais',15)} Adicionar alimento</button>
     <div class="kpi" style="margin-top:12px">
       <div><b>${n0(m.c)}</b><span>carbo g</span></div>
       <div><b>${n0(m.p)}</b><span>prot g</span></div>
@@ -1733,7 +2009,8 @@ SCREENS.prato = () => {
    MÓDULO 3 — HÁBITOS
    ========================================================= */
 TITULOS.habito = ['Hábito', 'acompanhamento'];
-const ICONES = ['😴', '📚', '🧘', '💧', '🚭', '📵', '🏃', '🌅', '🙏', '✍️', '🧹', '💊', '🎯', '🎸'];
+const ICONES = ['sono', 'estudo', 'meditar', 'agua', 'parar', 'celular', 'correr', 'manha',
+  'remedio', 'escrever', 'musica', 'treino', 'meta', 'faisca'];
 
 const habById = id => DB.habitos.find(h => h.id === id);
 function habDevidoEm(h, d) {
@@ -1773,15 +2050,15 @@ ACT.novoHabito = () => { SUB.habEdit = null; sheetHab(); };
 ACT.editHabito = e => { SUB.habEdit = e.dataset.h; sheetHab(); };
 function sheetHab() {
   const h = SUB.habEdit ? habById(SUB.habEdit) : {
-    nome: '', icone: '🎯', motivos: '', inicio: today(), fim: '', freqTipo: 'diario',
-    dias: [1, 2, 3, 4, 5], vezes: 3, medida: 'check', unidade: '', meta: 0
+    nome: '', icone: 'meta', motivos: '', inicio: today(), fim: '', freqTipo: 'diario',
+    dias: [1, 2, 3, 4, 5], vezes: 3, medida: 'check', unidade: '', meta: 0, hora: ''
   };
   SUB.icone = SUB.icone || h.icone; SUB.freqTipo = SUB.freqTipo || h.freqTipo;
   SUB.medida = SUB.medida || h.medida; SUB.hdias = SUB.hdias || (h.dias || []).slice();
   sheet(`<h3>${SUB.habEdit ? 'Editar' : 'Novo'} hábito</h3>
     <p class="hint">Um hábito precisa de um porquê. Escreva o motivo — ele aparece toda vez que você abrir o hábito.</p>
     <div class="f"><label>Ícone</label><div class="chiprow">
-      ${ICONES.map(i => `<button class="chip ${SUB.icone === i ? 'on' : ''}" data-a="hIcone" data-i="${i}">${i}</button>`).join('')}
+      ${ICONES.map(i => `<button class="chip ${SUB.icone === i ? 'on' : ''}" data-a="hIcone" data-i="${i}">${ic(i, 18)}</button>`).join('')}
     </div></div>
     <div class="f"><label>Nome</label><input class="in" id="h_nome" value="${esc(h.nome)}" placeholder="ex: Dormir 8 horas"></div>
     <div class="f"><label>Por que eu quero este hábito?</label>
@@ -1790,6 +2067,10 @@ function sheetHab() {
       <div class="f"><label>Início</label><input class="in" id="h_ini" type="date" value="${h.inicio}"></div>
       <div class="f"><label>Fim (opcional)</label><input class="in" id="h_fim" type="date" value="${h.fim || ''}"></div>
     </div>
+    <div class="f"><label>Me lembrar às (opcional)</label>
+      <input class="in" id="h_hora" type="time" value="${esc(h.hora || '')}">
+      <p class="mini" style="margin-top:6px">Com horário preenchido, o app manda uma notificação nesse
+      horário nos dias em que o hábito está previsto — e só se você ainda não tiver dado o check.</p></div>
     <div class="f"><label>Frequência</label>
       <div class="segs">${[['diario', 'Todo dia'], ['dias', 'Dias fixos'], ['semana', 'X por semana']].map(t =>
     `<button class="${SUB.freqTipo === t[0] ? 'on' : ''}" data-a="hFreq" data-t="${t[0]}">${t[1]}</button>`).join('')}</div></div>
@@ -1812,7 +2093,7 @@ function sheetHab() {
 ACT.fecharHab = () => { SUB.icone = SUB.freqTipo = SUB.medida = SUB.hdias = null; fechar(); };
 function hCapturar() {
   SUB.tmp = SUB.tmp || {};
-  ['h_nome', 'h_mot', 'h_ini', 'h_fim', 'h_vezes', 'h_un', 'h_meta'].forEach(k => {
+  ['h_nome', 'h_mot', 'h_ini', 'h_fim', 'h_hora', 'h_vezes', 'h_un', 'h_meta'].forEach(k => {
     const e = document.getElementById(k); if (e) SUB.tmp[k] = e.value;
   });
 }
@@ -1830,7 +2111,7 @@ function restaurarHab() {
 ACT.salvarHabito = () => {
   const nome = valOf('h_nome').trim(); if (!nome) return toast('Dê um nome ao hábito');
   const o = {
-    nome, icone: SUB.icone, motivos: valOf('h_mot'), inicio: valOf('h_ini') || today(),
+    nome, icone: SUB.icone, motivos: valOf('h_mot'), hora: valOf('h_hora') || '', inicio: valOf('h_ini') || today(),
     fim: valOf('h_fim') || null, freqTipo: SUB.freqTipo, dias: SUB.hdias, vezes: numOf('h_vezes') || 3,
     medida: SUB.medida, unidade: valOf('h_un'), meta: numOf('h_meta'), ativo: true, upd: nowISO()
   };
@@ -1864,13 +2145,13 @@ ACT.hTick = e => {
 ACT.hCheckin = e => {
   const h = habById(e.dataset.h); SUB.habAtual = h.id;
   const r = regHab(D, h.id) || { feito: false, qual: 0, valor: '', nota: '' };
-  sheet(`<h3>${h.icone} ${esc(h.nome)}</h3>
+  sheet(`<h3>${icOu(h.icone, 18)} ${esc(h.nome)}</h3>
     <p class="hint">${esc(dLabel(D))}${h.motivos ? ' — <i>' + esc(h.motivos) + '</i>' : ''}</p>
     ${h.medida === 'numero' ? `<div class="f"><label>Quanto? ${esc(h.unidade || '')}${h.meta ? ' (meta ' + n1(h.meta) + ')' : ''}</label>
       <input class="in" id="hc_v" type="number" inputmode="decimal" value="${r.valor || ''}"></div>` : ''}
     <div class="f"><label>Qualidade dessa ação</label>
       <div class="chiprow">${[1, 2, 3, 4, 5].map(q =>
-      `<button class="chip ${(SUB.hq || r.qual) === q ? 'on' : ''}" data-a="hQual" data-q="${q}" style="flex:1;text-align:center">${'★'.repeat(q)}</button>`).join('')}</div></div>
+      `<button class="chip ${(SUB.hq || r.qual) === q ? 'on' : ''}" data-a="hQual" data-q="${q}" style="flex:1;text-align:center">${estrelas(q, q)}</button>`).join('')}</div></div>
     <div class="f"><label>Observação</label><input class="in" id="hc_n" value="${esc(r.nota || '')}" placeholder="como foi hoje?"></div>
     <div class="btnrow"><button class="btn" data-a="hNaoFiz" data-h="${h.id}">Não fiz hoje</button>
       <button class="btn pri" data-a="hSalvarCheck" data-h="${h.id}">Confirmar ✓</button></div>`);
@@ -1902,7 +2183,7 @@ ACT.encerrar = e => {
     <div class="f"><label>Reflexão final</label>
       <textarea class="in" id="en_n" placeholder="o que funcionou, o que atrapalhou, o que fica daqui"></textarea></div>
     <div class="btnrow"><button class="btn" data-a="encerrarOk" data-h="${h.id}" data-ok="0">Não alcancei</button>
-      <button class="btn pri" data-a="encerrarOk" data-h="${h.id}" data-ok="1">Objetivo alcançado 🎉</button></div>`);
+      <button class="btn pri" data-a="encerrarOk" data-h="${h.id}" data-ok="1">Objetivo alcançado</button></div>`);
 };
 ACT.encerrarOk = e => {
   const h = habById(e.dataset.h);
@@ -1920,10 +2201,10 @@ SCREENS.habitos = () => {
   let html = dateStrip();
 
   if (!DB.habitos.length) {
-    return html + `<div class="card"><div class="empty"><b>✨</b>
+    return html + `<div class="card"><div class="empty"><b>${ic('faisca')}</b>
       Crie um hábito, escreva <b>por que</b> ele importa para você, defina o período e confirme todo dia.
       O app acompanha início, meio e fim — e no encerramento você registra se o objetivo foi alcançado.</div>
-      <button class="btn pri full" data-a="novoHabito">＋ Criar hábito</button></div>`;
+      <button class="btn pri full" data-a="novoHabito">${ic('mais',15)} Criar hábito</button></div>`;
   }
 
   const feitosHoje = hoje.filter(h => (regHab(D, h.id) || {}).feito).length;
@@ -1938,14 +2219,14 @@ SCREENS.habitos = () => {
     const feito = r && r.feito;
     return `<div class="card tight">
       <div class="row" style="border:0;padding:2px 0">
-        <button class="tick ${feito ? 'on' : ''}" data-a="hTick" data-h="${h.id}">✓</button>
+        <button class="tick ${feito ? 'on' : ''}" data-a="hTick" data-h="${h.id}">${ic('check')}</button>
         <div class="g" data-a="hCheckin" data-h="${h.id}">
-          <div class="t">${h.icone} ${esc(h.nome)}</div>
+          <div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
           <div class="s">${feito
-        ? (h.medida === 'numero' && r.valor ? `${n1(r.valor)} ${esc(h.unidade || '')} · ` : '') + (r.qual ? '★'.repeat(r.qual) + ' · ' : '') + 'feito'
+        ? (h.medida === 'numero' && r.valor ? `${n1(r.valor)} ${esc(h.unidade || '')} · ` : '') + (r.qual ? estrelas(r.qual) + ' · ' : '') + 'feito'
         : r ? 'não fiz hoje' : `sequência ${s.streak} dia(s) · ${n0(s.taxa * 100)}% de adesão`}</div>
         </div>
-        <div class="v" data-a="abrirHabito" data-h="${h.id}" style="color:var(--tx3)">›</div>
+        <div class="v" data-a="abrirHabito" data-h="${h.id}">${ic('dir',16,'op')}</div>
       </div>
     </div>`;
   }).join('');
@@ -1953,18 +2234,18 @@ SCREENS.habitos = () => {
   if (ativos.length > hoje.length) {
     html += `<div class="sec-title">Fora da frequência hoje</div><div class="card tight">
       ${ativos.filter(h => !habDevidoEm(h, D)).map(h => `<div class="row" data-a="abrirHabito" data-h="${h.id}">
-        <div class="g"><div class="t">${h.icone} ${esc(h.nome)}</div>
+        <div class="g"><div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
         <div class="s">${h.fim && D > h.fim ? 'período encerrado' : D < h.inicio ? 'começa em ' + esc(dLabel(h.inicio)) : 'não previsto para hoje'}</div></div>
-        <div class="v">›</div></div>`).join('')}</div>`;
+        <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
   }
   if (enc.length) {
     html += `<div class="sec-title">Encerrados</div><div class="card tight">
       ${enc.map(h => `<div class="row" data-a="abrirHabito" data-h="${h.id}">
-        <div class="g"><div class="t">${h.icone} ${esc(h.nome)}</div>
-        <div class="s">${h.encerrado ? (h.encerrado.alcancado ? '🎉 objetivo alcançado' : 'não alcançado') + ' · ' + esc(dLabel(h.encerrado.data)) : ''}</div></div>
-        <div class="v">›</div></div>`).join('')}</div>`;
+        <div class="g"><div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
+        <div class="s">${h.encerrado ? (h.encerrado.alcancado ? ic('festa', 14) + ' objetivo alcançado' : 'não alcançado') + ' · ' + esc(dLabel(h.encerrado.data)) : ''}</div></div>
+        <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
   }
-  return html + `<button class="btn pri full" data-a="novoHabito" style="margin-bottom:14px">＋ Novo hábito</button>`;
+  return html + `<button class="btn pri full" data-a="novoHabito" style="margin-bottom:14px">${ic('mais',15)} Novo hábito</button>`;
 };
 
 SCREENS.habito = () => {
@@ -1972,7 +2253,7 @@ SCREENS.habito = () => {
   const s = habStats(h);
   const ult = []; for (let i = 29; i >= 0; i--) ult.push(addDays(today(), -i));
   return `<div class="card">
-    <div class="ch"><span style="font-size:20px">${h.icone}</span><h2>${esc(h.nome)}</h2>
+    <div class="ch"><span style="line-height:0">${icOu(h.icone, 22)}</span><h2>${esc(h.nome)}</h2>
       <button class="btn xs" data-a="editHabito" data-h="${h.id}">Editar</button></div>
     ${h.motivos ? `<div class="okbox"><b>Por que eu quero isso:</b><br>${esc(h.motivos)}</div>` : ''}
     <div class="kpi">
@@ -1991,12 +2272,12 @@ SCREENS.habito = () => {
     <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:5px">
       ${ult.map(d => {
     const dev = habDevidoEm(h, d), r = regHab(d, h.id);
-    const bg = !dev ? 'var(--bg2)' : r && r.feito ? 'var(--hab)' : r ? 'rgba(248,113,113,.5)' : 'var(--line)';
+    const bg = !dev ? 'var(--bg2)' : r && r.feito ? 'var(--hab)' : r ? 'color-mix(in srgb,var(--bad) 55%,transparent)' : 'var(--line)';
     return `<div title="${d}" style="aspect-ratio:1;border-radius:6px;background:${bg}"></div>`;
   }).join('')}
     </div>
     <div class="legend"><span><i style="background:var(--hab)"></i>feito</span>
-      <span><i style="background:rgba(248,113,113,.5)"></i>falhou</span>
+      <span><i style="background:color-mix(in srgb,var(--bad) 55%,transparent)"></i>falhou</span>
       <span><i style="background:var(--line)"></i>sem registro</span>
       <span><i style="background:var(--bg2)"></i>fora da frequência</span></div>
   </div>
@@ -2004,7 +2285,7 @@ SCREENS.habito = () => {
   ${h.encerrado ? `<div class="card">
       <div class="ch"><h2>Encerramento</h2></div>
       <div class="${h.encerrado.alcancado ? 'okbox' : 'warnbox'}">
-        <b>${h.encerrado.alcancado ? '🎉 Objetivo alcançado' : 'Objetivo não alcançado'}</b> — ${esc(dLabel(h.encerrado.data))}
+        <b>${h.encerrado.alcancado ? ic('festa', 15) + ' Objetivo alcançado' : 'Objetivo não alcançado'}</b> — ${esc(dLabel(h.encerrado.data))}
         ${h.encerrado.nota ? '<br>' + esc(h.encerrado.nota) : ''}</div>
       <button class="btn full sm" data-a="reabrir" data-h="${h.id}">Reabrir hábito</button>
     </div>
@@ -2035,39 +2316,89 @@ function lemAtrasado(l, d) {
   return agora.getHours() * 60 + agora.getMinutes() > minutos(l.hora);
 }
 
-/* ---------- notificações ---------- */
+/* =========================================================
+   AVISOS NO SISTEMA
+   Quem exibe a notificação é o service worker (sw.js), e não a
+   página: é assim que o aviso aparece no Android com o app em
+   segundo plano, e é a ÚNICA forma no iPhone. Se o worker não
+   estiver disponível, cai para a notificação da página e, em
+   último caso, para o aviso interno do app.
+   ========================================================= */
+let SW_REG = null;
+async function registrarSW() {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return null;
+  try {
+    SW_REG = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    return SW_REG;
+  } catch (e) { console.warn('[sw] não registrado:', e.message); return null; }
+}
 const podeNotificar = () => typeof Notification !== 'undefined';
 const permNotif = () => podeNotificar() ? Notification.permission : 'indisponível';
+const swAtivo = () => !!(SW_REG && (SW_REG.active || SW_REG.installing || SW_REG.waiting));
+
 ACT.pedirNotif = async () => {
   if (!podeNotificar()) return toast('Este navegador não suporta notificações');
   try {
     const r = await Notification.requestPermission();
-    toast(r === 'granted' ? 'Notificações ativadas ✓' : 'Permissão negada');
+    if (r === 'granted') { await registrarSW(); toast('Notificações ativadas'); }
+    else toast('Permissão negada');
   } catch (e) { toast('Não foi possível pedir a permissão'); }
   render();
 };
-function dispara(l) {
-  const corpo = l.texto;
+ACT.testarNotif = async () => {
+  const ok = await avisar('Vitta', 'Se você está lendo isto, as notificações funcionam.', 'teste');
+  if (!ok) toast('Ainda sem permissão do sistema');
+};
+
+async function avisar(titulo, corpo, tag) {
   if (permNotif() === 'granted') {
     try {
-      new Notification('⏰ ' + (l.hora || ''), { body: corpo, tag: l.id, icon: undefined });
-      return;
-    } catch (e) { /* alguns navegadores exigem service worker — cai no aviso interno */ }
+      const reg = SW_REG || (navigator.serviceWorker ? await navigator.serviceWorker.ready.catch(() => null) : null);
+      if (reg && reg.active) {
+        reg.active.postMessage({ tipo: 'aviso', titulo, corpo, tag, icone: logoDataURI() });
+        return true;
+      }
+      if (reg && reg.showNotification) {
+        await reg.showNotification(titulo, { body: corpo, tag, icon: logoDataURI(), badge: logoDataURI() });
+        return true;
+      }
+      new Notification(titulo, { body: corpo, tag, icon: logoDataURI() });
+      return true;
+    } catch (e) { console.warn('[aviso]', e); }
   }
-  toast('⏰ ' + corpo);
+  toast(corpo);
+  return false;
 }
+
+/* Percorre lembretes E hábitos com horário, e avisa o que já venceu
+   e ainda não foi marcado. Roda ao abrir o app, ao voltar para ele e
+   a cada 30 segundos enquanto estiver aberto.                        */
 function checarLembretes() {
   const d = today(), agora = new Date(), mn = agora.getHours() * 60 + agora.getMinutes();
   let mudou = false;
+
   (DB.lembretes || []).forEach(l => {
     if (!lemDevidoEm(l, d) || lemFeito(l, d)) return;
     if (mn < minutos(l.hora)) return;
     const marca = d + 'T' + l.hora;
     if (l.alertado === marca) return;
     l.alertado = marca; mudou = true;
-    dispara(l);
+    avisar('Lembrete', l.texto, 'lem-' + l.id);
   });
-  if (mudou) { save(false); if (VIEW === 'lembretes' || VIEW === 'hoje') render(); }
+
+  (DB.habitos || []).forEach(h => {
+    if (h.ativo === false || !h.hora) return;
+    if (!habDevidoEm(h, d)) return;
+    if ((regHab(d, h.id) || {}).feito) return;
+    if (mn < minutos(h.hora)) return;
+    const marca = d + 'T' + h.hora;
+    if (h.alertado === marca) return;
+    h.alertado = marca; mudou = true;
+    avisar('Hábito de hoje', h.nome + ' — ainda falta o check de hoje.', 'hab-' + h.id);
+  });
+
+  if (mudou) { save(false); if (VIEW === 'lembretes' || VIEW === 'hoje' || VIEW === 'habitos') render(); }
 }
 
 /* ---------- criar / editar ---------- */
@@ -2151,14 +2482,14 @@ function linhaLem(l, d, compacto) {
   const rep = l.repetir === 'diario' ? 'todo dia'
     : l.repetir === 'dias' ? (l.dias || []).map(i => DOW[i]).join(', ') : 'uma vez';
   return `<div class="row">
-    <button class="tick ${feito ? 'on' : ''}" data-a="lemTick" data-l="${l.id}">✓</button>
+    <button class="tick ${feito ? 'on' : ''}" data-a="lemTick" data-l="${l.id}">${ic('check')}</button>
     <div class="g" ${compacto ? '' : `data-a="editLembrete" data-l="${l.id}"`}>
       <div class="t wrap">${esc(l.texto)}</div>
       <div class="s">${esc(l.hora)} · ${esc(rep)}
         ${atrasado ? '<span class="pill bad">atrasado</span>' : ''}
         ${l.ativo === false ? '<span class="pill mut">pausado</span>' : ''}</div>
     </div>
-    ${compacto ? '' : `<button class="btn xs" data-a="lemPausa" data-l="${l.id}">${l.ativo === false ? '▶' : '❚❚'}</button>`}
+    ${compacto ? '' : `<button class="btn xs" data-a="lemPausa" data-l="${l.id}">${l.ativo === false ? ic('play', 13) : ic('pausa', 13)}</button>`}
   </div>`;
 }
 
@@ -2173,10 +2504,10 @@ SCREENS.lembretes = () => {
   let h = dateStrip();
 
   if (!L.length) {
-    return h + `<div class="card"><div class="empty"><b>🔔</b>
+    return h + `<div class="card"><div class="empty"><b>${ic('lembretes')}</b>
       Escreva qualquer coisa que você não quer esquecer — tomar o suplemento, marcar a consulta,
       levar a roupa de treino. Escolha a hora e o app te avisa.</div>
-      <button class="btn pri full" data-a="novoLembrete">＋ Criar lembrete</button></div>`;
+      <button class="btn pri full" data-a="novoLembrete">${ic('mais',15)} Criar lembrete</button></div>`;
   }
 
   h += `<div class="card">
@@ -2194,23 +2525,23 @@ SCREENS.lembretes = () => {
   h += doDia.length ? `<div class="card">
     <div class="ch"><h2>Hoje</h2><span class="sub">toque no texto para editar</span></div>
     ${doDia.map(l => linhaLem(l, D)).join('')}
-  </div>` : `<div class="card"><div class="empty"><b>☀️</b>Nada marcado para ${esc(dLabel(D))}.</div></div>`;
+  </div>` : `<div class="card"><div class="empty"><b>${ic('manha')}</b>Nada marcado para ${esc(dLabel(D))}.</div></div>`;
 
   if (prox.length) {
     h += `<div class="sec-title">Próximos</div><div class="card tight">
       ${prox.map(l => `<div class="row" data-a="editLembrete" data-l="${l.id}">
         <div class="g"><div class="t wrap">${esc(l.texto)}</div>
           <div class="s">${esc(dLabel(l.data))} às ${esc(l.hora)}</div></div>
-        <div class="v">›</div></div>`).join('')}</div>`;
+        <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
   }
   if (outros.length) {
     h += `<div class="sec-title">Outros</div><div class="card tight">
       ${outros.map(l => `<div class="row" data-a="editLembrete" data-l="${l.id}">
         <div class="g"><div class="t wrap">${esc(l.texto)}</div>
           <div class="s">${l.ativo === false ? 'pausado' : 'fora da frequência de hoje'} · ${esc(l.hora)}</div></div>
-        <div class="v">›</div></div>`).join('')}</div>`;
+        <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
   }
-  return h + `<button class="btn pri full" data-a="novoLembrete" style="margin-bottom:14px">＋ Novo lembrete</button>`;
+  return h + `<button class="btn pri full" data-a="novoLembrete" style="margin-bottom:14px">${ic('mais',15)} Novo lembrete</button>`;
 };
 /* =========================================================
    RESUMO — relatórios diário e mensal
@@ -2314,10 +2645,10 @@ SCREENS.resumo = () => {
       <button class="${aba === 'dia' ? 'on' : ''}" data-a="resAba" data-t="dia">Diário</button>
       <button class="${aba === 'mes' ? 'on' : ''}" data-a="resAba" data-t="mes">Mensal</button>
     </div>
-    <button class="iconbtn" data-a="planilha" title="Exportar planilha">⬇</button>
+    <button class="iconbtn" data-a="planilha" title="Exportar planilha">${ic('baixar')}</button>
   </div>`;
   return h + (aba === 'dia' ? resumoDia() : resumoMes())
-    + `<button class="btn full" data-a="planilha" style="margin-bottom:14px">⬇ Exportar planilha</button>`;
+    + `<button class="btn full" data-a="planilha" style="margin-bottom:14px">${ic('baixar',15)} Exportar planilha</button>`;
 };
 
 function resumoDia() {
@@ -2351,13 +2682,13 @@ function resumoDia() {
     </div>
     <p class="mini" style="margin-top:9px">Gasto = TMB × atividade${num(DB.perfil.gastoExtra) ? ' + adicional fixo' : ''} (${n0(gd.base)} kcal) + treino e esportes lançados (${n0(gd.extra)} kcal)${gd.ajuste ? ` + ajuste de hoje (${n0(gd.ajuste)} kcal)` : ''}.
       ${bal < 0 ? 'Você está em déficit hoje.' : bal > 0 ? 'Você está em superávit hoje.' : 'Você está no equilíbrio.'}</p>
-    <button class="btn gh full sm" style="margin-top:10px" data-a="ajustesHoje">⚡ Ajustes de hoje</button>
+    <button class="btn gh full sm" style="margin-top:10px" data-a="ajustesHoje">${ic('raio',15)} Ajustes de hoje</button>
   </div>
 
   <div class="card">
     <div class="ch"><h2>Macronutrientes</h2><span class="sub">${n0(t.kcal)} / ${n0(m.kcal)} kcal</span></div>
     <div class="macro" style="flex-direction:column;gap:10px">
-      ${[['Carboidrato', t.c, m.c, '#38bdf8'], ['Proteína', t.p, m.p, '#a78bfa'], ['Gordura', t.g, m.g, '#fbbf24']].map(r =>
+      ${[['Carboidrato', t.c, m.c, 'var(--carb)'], ['Proteína', t.p, m.p, 'var(--prot)'], ['Gordura', t.g, m.g, 'var(--gord)']].map(r =>
     `<div><div class="mt"><span>${r[0]}</span><span>${n1(r[1])} / ${n0(r[2])} g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}
     </div>
     ${t.escape ? `<div class="warnbox" style="margin:11px 0 0">Escapes hoje: <b>${n0(t.escape)} kcal</b> (${n0(t.kcal ? t.escape / t.kcal * 100 : 0)}% do total).</div>` : ''}
@@ -2416,9 +2747,9 @@ function resumoMes() {
 
   return `<div class="card">
     <div class="ch">
-      <button class="btn xs" data-a="mesNav" data-v="-1">‹</button>
+      <button class="btn xs" data-a="mesNav" data-v="-1">${ic('esq',16)}</button>
       <h2 style="text-align:center">${MESL[mes]} ${ano}</h2>
-      <button class="btn xs" data-a="mesNav" data-v="1">›</button></div>
+      <button class="btn xs" data-a="mesNav" data-v="1">${ic('dir',16)}</button></div>
     <div class="kpi" style="margin-bottom:9px">
       <div><b style="color:var(--tre)">${treinos}</b><span>treinos</span></div>
       <div><b style="color:var(--die)">${n0(mediaKcal)}</b><span>kcal/dia</span></div>
@@ -2471,7 +2802,7 @@ function resumoMes() {
     ${DB.habitos.filter(h => h.ativo !== false).map(h => {
         const prev = passados.filter(s => habDevidoEm(h, s.d)).length;
         const fez = passados.filter(s => ((DB.dias[s.d] || { habitos: {} }).habitos[h.id] || {}).feito).length;
-        return `<div class="row"><div class="g"><div class="t">${h.icone} ${esc(h.nome)}</div>
+        return `<div class="row"><div class="g"><div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
         <div class="s">${fez} de ${prev} dias</div></div>
         <div class="v">${prev ? n0(fez / prev * 100) : 0}%</div></div>`;
       }).join('')}
@@ -2483,7 +2814,7 @@ function resumoMes() {
         const dd = passados.filter(s => s.kcal > 0), k = dd.length || 1;
         const mc = dd.reduce((a, s) => a + s.c, 0) / k, mp = dd.reduce((a, s) => a + s.p, 0) / k, mg = dd.reduce((a, s) => a + s.g, 0) / k;
         return `<div class="macro" style="flex-direction:column;gap:10px">
-        ${[['Carboidrato', mc, m.c, '#38bdf8'], ['Proteína', mp, m.p, '#a78bfa'], ['Gordura', mg, m.g, '#fbbf24']].map(r =>
+        ${[['Carboidrato', mc, m.c, 'var(--carb)'], ['Proteína', mp, m.p, 'var(--prot)'], ['Gordura', mg, m.g, 'var(--gord)']].map(r =>
           `<div><div class="mt"><span>${r[0]}</span><span>${n0(r[1])} / ${n0(r[2])} g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}</div>`;
       })()}
   </div>`;
@@ -2614,8 +2945,8 @@ SCREENS.hoje = () => {
   const sug = fichaDoDia(D);
   const rest = m.kcal - t.kcal, mAgua = metaAguaDia(D);
 
-  let h = `<div class="card" style="background:linear-gradient(160deg,#16243a,#131c2c)">
-    <div class="ch" style="margin-bottom:6px"><h2 style="font-size:16px">${saudacao()}${esc(nome)} 👋</h2></div>
+  let h = `<div class="card hero">
+    <div class="ch" style="margin-bottom:6px"><h2 style="font-size:16px">${saudacao()}${esc(nome)}</h2></div>
     <p class="mini">${esc(dLabel(D))} — ${D === today() ? 'lance seus dados do dia em poucos toques.' : 'você está editando um dia anterior.'}</p>
   </div>` + dateStrip();
 
@@ -2626,7 +2957,7 @@ SCREENS.hoje = () => {
     ${x.treino ? `<div class="row" style="border:0;padding:0" data-a="ir" data-v="treino">
         <div class="g"><div class="t">${esc(x.treino.nome)}</div>
           <div class="s">${x.treino.itens.filter(i => i.feito).length} de ${x.treino.itens.length} exercícios · ${n0(volDia(D))} kg</div></div>
-        <div class="v">›</div></div>
+        <div class="v">${ic('dir',16,'op')}</div></div>
       ${bar(x.treino.itens.filter(i => i.feito).length, Math.max(x.treino.itens.length, 1), 'var(--tre)')}`
       : `<div class="row" style="border:0;padding:0 0 10px"><div class="g">
           <div class="t">${sug ? 'Hoje na agenda: ' + esc(sug.nome) : 'Nenhum treino registrado'}</div>
@@ -2644,13 +2975,13 @@ SCREENS.hoje = () => {
       <div style="flex:1">
         <div class="mini" style="margin-bottom:7px">${rest >= 0 ? 'kcal restantes hoje' : 'kcal acima da meta'}</div>
         <div class="macro" style="margin:0;flex-direction:column;gap:7px">
-          ${[['C', t.c, m.c, '#38bdf8'], ['P', t.p, m.p, '#a78bfa'], ['G', t.g, m.g, '#fbbf24']].map(r =>
+          ${[['C', t.c, m.c, 'var(--carb)'], ['P', t.p, m.p, 'var(--prot)'], ['G', t.g, m.g, 'var(--gord)']].map(r =>
       `<div><div class="mt"><span>${r[0]}</span><span>${n0(r[1])}/${n0(r[2])}g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}
         </div>
       </div>
     </div>
     <div class="btnrow" style="margin-top:12px">
-      <button class="btn sm pri" data-a="fabDieta">＋ Lançar refeição</button>
+      <button class="btn sm pri" data-a="fabDieta">${ic('mais',15)} Lançar refeição</button>
       <button class="btn sm" data-a="ir" data-v="dieta">Ver dieta</button>
     </div>
   </div>`;
@@ -2685,19 +3016,19 @@ SCREENS.hoje = () => {
     ${habs.length ? habs.map(hh => {
         const r = x.habitos[hh.id];
         return `<div class="row">
-        <button class="tick ${r && r.feito ? 'on' : ''}" data-a="hTick" data-h="${hh.id}">✓</button>
-        <div class="g" data-a="hCheckin" data-h="${hh.id}"><div class="t">${hh.icone} ${esc(hh.nome)}</div>
-          <div class="s">${r ? (r.feito ? (r.qual ? '★'.repeat(r.qual) + ' · ' : '') + 'feito hoje' : 'não fiz hoje') : 'aguardando check-in'}</div></div>
+        <button class="tick ${r && r.feito ? 'on' : ''}" data-a="hTick" data-h="${hh.id}">${ic('check')}</button>
+        <div class="g" data-a="hCheckin" data-h="${hh.id}"><div class="t">${icOu(hh.icone, 15)} ${esc(hh.nome)}</div>
+          <div class="s">${r ? (r.feito ? (r.qual ? estrelas(r.qual) + ' · ' : '') + 'feito hoje' : 'não fiz hoje') : 'aguardando check-in'}</div></div>
       </div>`;
-      }).join('') : `<div class="empty" style="padding:14px"><b>✨</b>Nenhum hábito ativo.</div>
+      }).join('') : `<div class="empty" style="padding:14px"><b>${ic('faisca')}</b>Nenhum hábito ativo.</div>
         <button class="btn pri full sm" data-a="ir" data-v="habitos">Criar hábito</button>`}
   </div>
 
   <div class="card tight" style="margin-bottom:14px">
-    <div class="row" data-a="ir" data-v="resumo"><div class="g"><div class="t">📈 Ver resumo e evolução</div>
-      <div class="s">relatórios diário e mensal</div></div><div class="v">›</div></div>
-    <div class="row" data-a="ir" data-v="perfil"><div class="g"><div class="t">📏 Minhas medidas e metas</div>
-      <div class="s">TMB ${n0(tmb())} · gasto ${n0(get())} kcal</div></div><div class="v">›</div></div>
+    <div class="row" data-a="ir" data-v="resumo"><div class="g"><div class="t">${ic('resumo',15)} Ver resumo e evolução</div>
+      <div class="s">relatórios diário e mensal</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+    <div class="row" data-a="ir" data-v="perfil"><div class="g"><div class="t">${ic('medidas',15)} Minhas medidas e metas</div>
+      <div class="s">TMB ${n0(tmb())} · gasto ${n0(get())} kcal</div></div><div class="v">${ic('dir',16,'op')}</div></div>
   </div>`;
   return h;
 };
@@ -2898,12 +3229,12 @@ const TABELAS = [
     up: h => ({
       id: h.id, user_id: SB.user, nome: h.nome, icone: h.icone, motivos: h.motivos, inicio: h.inicio, fim: h.fim || null,
       freq_tipo: h.freqTipo, dias: h.dias || [], vezes: h.vezes || 0, medida: h.medida, unidade: h.unidade || '',
-      meta: h.meta || 0, ativo: h.ativo !== false, encerrado: h.encerrado, upd: h.upd
+      meta: h.meta || 0, hora: h.hora || null, ativo: h.ativo !== false, encerrado: h.encerrado, upd: h.upd
     }),
     down: r => ({
       id: r.id, nome: r.nome, icone: r.icone, motivos: r.motivos, inicio: r.inicio, fim: r.fim,
       freqTipo: r.freq_tipo, dias: r.dias || [], vezes: r.vezes, medida: r.medida, unidade: r.unidade,
-      meta: +r.meta || 0, ativo: r.ativo, encerrado: r.encerrado, upd: r.upd
+      meta: +r.meta || 0, hora: r.hora || '', ativo: r.ativo, encerrado: r.encerrado, upd: r.upd
     })
   }
 ];
@@ -3066,11 +3397,18 @@ document.addEventListener('visibilitychange', () => {
     checarLembretes();
   }
 });
+/* logo como ícone da aba e da tela de início */
+(() => {
+  const uri = logoDataURI();
+  document.querySelectorAll("link[rel='icon'],link[rel='apple-touch-icon']").forEach(l => l.href = uri);
+})();
+
 render();
 iniciarSupabase(false);
 
-/* lembretes: confere a cada 30s enquanto o app estiver aberto */
-checarLembretes();
+/* Notificações: registra o service worker (quem mostra o aviso) e
+   confere o que venceu — ao abrir, ao voltar ao app e a cada 30s. */
+registrarSW().then(() => checarLembretes());
 setInterval(checarLembretes, 30000);
 </script>
 </body>
