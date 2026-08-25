@@ -276,19 +276,62 @@ const SB_URL = 'https://yobnnkpmlwhrjfwfbsyu.supabase.co';
 const SB_KEY = 'sb_publishable_4XXqlx_HrCMw3CXSZH_xNw_BOvRWzBN';
 
 /* ---------- estado ---------- */
+/* Os alimentos que já vêm no app usam id derivado do nome, e não sorteado:
+   assim dois aparelhos geram exatamente a mesma linha e o banco não duplica.
+   O carimbo antigo faz qualquer edição sua vencer o valor de fábrica.        */
+const SEED_UPD = '2000-01-01T00:00:00.000Z';
+const slug = s => 'sd-' + s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+
 function novoDB() {
-  const al = [...SEED_ALIM.map(a => ({ id: uid(), nome: a[0], porcao: a[1], un: a[2], kcal: a[3], c: a[4], p: a[5], g: a[6], liq: 0, upd: nowISO() })),
-  ...SEED_LIQ.map(a => ({ id: uid(), nome: a[0], porcao: a[1], un: a[2], kcal: a[3], c: a[4], p: a[5], g: a[6], liq: a[1], upd: nowISO() }))];
+  const al = [...SEED_ALIM.map(a => ({ id: slug(a[0]), nome: a[0], porcao: a[1], un: a[2], kcal: a[3], c: a[4], p: a[5], g: a[6], liq: 0, upd: SEED_UPD })),
+  ...SEED_LIQ.map(a => ({ id: slug(a[0]), nome: a[0], porcao: a[1], un: a[2], kcal: a[3], c: a[4], p: a[5], g: a[6], liq: a[1], upd: SEED_UPD }))];
   return {
     v: 1,
     perfil: {
       nome: '', sexo: 'M', peso: 75, altura: 175, idade: 30, ativ: 1.55,
       objetivo: 'manter', ajuste: 0, protKg: 1.8, gordPct: 25,
-      aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, upd: nowISO()
+      aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, upd: null
     },
     fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], dias: {},
+    delFila: [],
     cfg: { url: SB_URL, key: SB_KEY, autoSync: true, ultimoSync: null }
   };
+}
+const SEMENTES = () => novoDB().alimentos;
+
+/* Alimentos de fábrica de versões antigas nasciam com id sorteado, então cada
+   aparelho criava a sua cópia. Aqui eles voltam para o id determinístico e as
+   cópias repetidas caem fora (e entram na fila para sumir também do servidor). */
+function limparAlimentos(lista) {
+  const semente = new Map(SEMENTES().map(s => [s.nome.toLowerCase(), s]));
+  const iguais = (a, b) => ['porcao', 'un', 'kcal', 'c', 'p', 'g'].every(f => String(a[f]) === String(b[f]));
+
+  const migrada = lista.map(a => {
+    const s = semente.get((a.nome || '').toLowerCase());
+    return (s && !String(a.id).startsWith('sd-') && iguais(s, a))
+      ? Object.assign({}, a, { id: s.id, upd: SEED_UPD, idAntigo: a.id })
+      : a;
+  });
+
+  const vistos = new Map(), remover = [], fica = [];
+  migrada.forEach(a => {
+    const chave = String(a.id).startsWith('sd-') ? a.id : (a.nome || '').toLowerCase() + '|' + a.kcal;
+    const ant = vistos.get(chave);
+    if (!ant) { vistos.set(chave, a); fica.push(a); return; }
+    if (!iguais(ant, a)) { fica.push(a); return; }        // mesmo nome, valores diferentes: são dois alimentos
+    remover.push(a.idAntigo || a.id);                     // duplicata de verdade
+  });
+  fica.forEach(a => delete a.idAntigo);
+  migrada.forEach(a => { if (a.idAntigo && !remover.includes(a.idAntigo)) remover.push(a.idAntigo); });
+  fica.forEach(a => delete a.idAntigo);
+  return { lista: fica, remover: [...new Set(remover)].filter(Boolean) };
+}
+
+/* Exclusões esperando para serem aplicadas no servidor no próximo sync. */
+function enfileirarDel(tabela, id) {
+  DB.delFila = DB.delFila || [];
+  if (!DB.delFila.some(d => d.t === tabela && d.id === id)) DB.delFila.push({ t: tabela, id });
 }
 
 let DB = (() => {
@@ -300,7 +343,12 @@ let DB = (() => {
     // aparelho que já usava o app antes das credenciais virem no arquivo
     if (!cfg.url) cfg.url = SB_URL;
     if (!cfg.key) cfg.key = SB_KEY;
-    return Object.assign(base, d, { perfil: Object.assign(base.perfil, d.perfil || {}), cfg });
+    const db = Object.assign(base, d, { perfil: Object.assign(base.perfil, d.perfil || {}), cfg });
+    db.delFila = db.delFila || [];
+    const lim = limparAlimentos(db.alimentos || []);
+    db.alimentos = lim.lista;
+    lim.remover.forEach(id => { if (!db.delFila.some(x => x.t === 'alimentos' && x.id === id)) db.delFila.push({ t: 'alimentos', id }); });
+    return db;
   } catch (e) { const d = novoDB(); writeRaw(JSON.stringify(d)); return d; }
 })();
 
@@ -309,8 +357,18 @@ function save(sync = true) {
   writeRaw(JSON.stringify(DB));
   if (sync) { DIRTY = true; agendarSync(); }
 }
+/* Um dia só existe de verdade depois que você lança alguma coisa nele.
+   Abrir o app cria a estrutura em memória, mas SEM carimbo de hora — é isso
+   que impede um dia em branco de sobrescrever o dia real que está no servidor. */
+function diaVazio(x) {
+  if (!x) return true;
+  return !x.treino && !(x.esportes || []).length
+    && !Object.values(x.refeicoes || {}).some(l => l && l.length)
+    && !x.agua && !Object.keys(x.habitos || {}).length
+    && !x.peso && !x.nota && !x.ajusteKcal && !x.ajusteAgua;
+}
 function dia(d) {
-  if (!DB.dias[d]) DB.dias[d] = { treino: null, esportes: [], refeicoes: {}, agua: 0, habitos: {}, peso: null, nota: '', ajusteKcal: 0, ajusteAgua: 0, upd: nowISO() };
+  if (!DB.dias[d]) DB.dias[d] = { treino: null, esportes: [], refeicoes: {}, agua: 0, habitos: {}, peso: null, nota: '', ajusteKcal: 0, ajusteAgua: 0, upd: null };
   const x = DB.dias[d];
   x.esportes = x.esportes || []; x.refeicoes = x.refeicoes || {}; x.habitos = x.habitos || {};
   x.ajusteKcal = x.ajusteKcal || 0; x.ajusteAgua = x.ajusteAgua || 0;
@@ -671,28 +729,51 @@ ACT.zerar = () => confirmar('Apagar TODOS os dados deste aparelho? Isso não afe
 
 SCREENS.config = () => {
   const c = DB.cfg;
+  const contaOk = SB.user && !SB.anon;
   return `<div class="card">
-    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Supabase</h2>
-      <span class="sub" id="sb_status">${SB.status}</span></div>
-    ${STORAGE_OK ? '' : '<div class="warnbox">Este navegador está bloqueando o armazenamento local. Os dados só ficam nesta aba — conecte o Supabase para não perder nada.</div>'}
+    <div class="ch"><span class="dot" style="background:${contaOk ? 'var(--ac)' : SB.anon ? 'var(--warn)' : 'var(--tx3)'}"></span>
+      <h2>Conta</h2><span class="sub" id="sb_status">${SB.status}</span></div>
+
+    ${contaOk ? `<div class="okbox">Entrando com <b>${esc(SB.email)}</b> em outro aparelho, os dados
+        são os mesmos nos dois. É a mesma conta.</div>
+      <div class="row"><div class="g"><div class="t">${esc(SB.email)}</div>
+        <div class="s" style="word-break:break-all">${esc(SB.user)}</div></div></div>
+      <div class="btnrow" style="margin-top:11px">
+        <button class="btn" data-a="syncAgora">Sincronizar agora</button>
+        <button class="btn gh" data-a="sair">Sair</button>
+      </div>`
+    : SB.anon ? `<div class="warnbox"><b>Este aparelho está em modo anônimo.</b> Nesse modo cada
+        aparelho vira um usuário diferente no banco, e o celular não enxerga o que você lançou no
+        computador. Para juntar os dois, entre com e-mail — o que já está aqui sobe para a conta.</div>
+      <button class="btn pri full" data-a="entrarEmail">Sincronizar entre aparelhos</button>
+      <div class="btnrow" style="margin-top:9px">
+        <button class="btn gh" data-a="syncAgora">Sincronizar agora</button>
+        <button class="btn gh" data-a="sair">Sair do modo anônimo</button>
+      </div>`
+    : `<p class="mini" style="margin-bottom:12px">Entre com seu e-mail para que celular e computador
+        mostrem os mesmos dados. Você recebe um código de 6 dígitos — não existe senha para criar.</p>
+      <button class="btn pri full" data-a="entrarEmail" style="margin-bottom:8px">Entrar com e-mail</button>
+      <button class="btn gh full sm" data-a="entrarAnon">Usar só neste aparelho</button>`}
+
+    <div class="row" style="margin-top:4px"><div class="g"><div class="t">Sincronizar automaticamente</div>
+      <div class="s">Envia as alterações alguns segundos depois de cada lançamento</div></div>
+      <button class="tick ${c.autoSync ? 'on' : ''}" data-a="cfgAuto">✓</button></div>
+    <div class="row"><div class="g"><div class="t">Último sync</div>
+      <div class="s">${c.ultimoSync ? new Date(c.ultimoSync).toLocaleString('pt-BR') : 'nunca'}
+        ${(DB.delFila || []).length ? ' · ' + DB.delFila.length + ' exclusão(ões) na fila' : ''}</div></div></div>
+    ${STORAGE_OK ? '' : '<div class="warnbox" style="margin-top:11px">Este navegador está bloqueando o armazenamento local. Os dados só ficam nesta aba.</div>'}
+  </div>
+
+  <div class="sec-title">Projeto no Supabase</div>
+  <div class="card">
     ${c.url === SB_URL && c.key === SB_KEY
-      ? '<div class="okbox">As credenciais já vêm dentro do arquivo — o app conecta sozinho em qualquer aparelho. Você só precisa mexer aqui para apontar para outro projeto.</div>'
+      ? '<div class="okbox">As credenciais já vêm dentro do arquivo — o app conecta sozinho em qualquer aparelho. Só mexa aqui para apontar para outro projeto.</div>'
       : '<div class="warnbox">Você está usando credenciais diferentes das que vêm no arquivo.</div>'}
     <div class="f"><label>Project URL</label>
       <input class="in" id="c_url" value="${esc(c.url)}" placeholder="https://xxxxx.supabase.co" autocapitalize="off" spellcheck="false"></div>
     <div class="f"><label>Chave anon / publishable</label>
-      <input class="in" id="c_key" value="${esc(c.key)}" placeholder="eyJhbGciOi..." autocapitalize="off" spellcheck="false"></div>
-    <div class="btnrow" style="margin-bottom:11px">
-      <button class="btn pri" data-a="cfgSalvar">Conectar</button>
-      <button class="btn" data-a="syncAgora">Sincronizar agora</button>
-    </div>
-    <div class="row"><div class="g"><div class="t">Sincronizar automaticamente</div>
-      <div class="s">Envia as alterações alguns segundos depois de cada lançamento</div></div>
-      <button class="tick ${c.autoSync ? 'on' : ''}" data-a="cfgAuto">✓</button></div>
-    <div class="row"><div class="g"><div class="t">Último sync</div>
-      <div class="s">${c.ultimoSync ? new Date(c.ultimoSync).toLocaleString('pt-BR') : 'nunca'}</div></div></div>
-    ${SB.user ? `<div class="row"><div class="g"><div class="t">Seu ID de usuário</div>
-      <div class="s" style="word-break:break-all">${esc(SB.user)}</div></div></div>` : ''}
+      <input class="in" id="c_key" value="${esc(c.key)}" placeholder="sb_publishable_..." autocapitalize="off" spellcheck="false"></div>
+    <button class="btn full sm" data-a="cfgSalvar">Salvar e reconectar</button>
     ${c.url === SB_URL && c.key === SB_KEY ? '' :
       '<button class="btn gh full sm" style="margin-top:9px" data-a="cfgPadrao">Voltar às credenciais do arquivo</button>'}
     <p class="mini" style="margin-top:10px">Use apenas a chave <b>publishable</b> ou <b>anon</b> (públicas).
@@ -972,7 +1053,7 @@ ACT.abrirFicha = e => { const id = e.dataset.f; SUB = { fichaId: id, _back: 'fic
 ACT.delFicha = e => {
   const id = e.dataset.f;
   confirmar('Excluir esta ficha? Os treinos já registrados não são apagados.', () => {
-    DB.fichas = DB.fichas.filter(f => f.id !== id); save(); go('fichas');
+    DB.fichas = DB.fichas.filter(f => f.id !== id); enfileirarDel('fichas', id); save(); go('fichas');
   });
 };
 
@@ -1318,7 +1399,7 @@ ACT.salvarAlim = e => {
   else DB.alimentos.push(Object.assign({ id: uid() }, o));
   save(); fechar(); render();
 };
-ACT.delAlim = e => { DB.alimentos = DB.alimentos.filter(a => a.id !== e.dataset.i); save(); fechar(); render(); };
+ACT.delAlim = e => { DB.alimentos = DB.alimentos.filter(a => a.id !== e.dataset.i); enfileirarDel('alimentos', e.dataset.i); save(); fechar(); render(); };
 ACT.filtroAlim = e => { SUB.q = e.value; const l = document.getElementById('alim_list'); if (l) l.innerHTML = listaAlim(); };
 function listaAlim() {
   const q = (SUB.q || '').toLowerCase();
@@ -1351,7 +1432,7 @@ ACT.dupPrato = e => {
   DB.pratos.push(c); save(); SUB = { pratoId: c.id, _back: 'pratos' }; go('prato', true); SUB.pratoId = c.id; SUB._back = 'pratos';
 };
 ACT.delPrato = e => confirmar('Excluir este prato?', () => {
-  DB.pratos = DB.pratos.filter(p => p.id !== e.dataset.p); save(); go('pratos');
+  DB.pratos = DB.pratos.filter(p => p.id !== e.dataset.p); enfileirarDel('pratos', e.dataset.p); save(); go('pratos');
 });
 ACT.pSalvarPrato = () => {
   const p = pratoAtual(); p.nome = valOf('pr_nome').trim() || 'Sem nome';
@@ -1546,7 +1627,7 @@ ACT.salvarHabito = () => {
   save(); SUB.tmp = null; ACT.fecharHab(); render();
 };
 ACT.delHabito = e => confirmar('Excluir este hábito e seu histórico de acompanhamento?', () => {
-  DB.habitos = DB.habitos.filter(h => h.id !== e.dataset.h); save(); go('habitos');
+  DB.habitos = DB.habitos.filter(h => h.id !== e.dataset.h); enfileirarDel('habitos', e.dataset.h); save(); go('habitos');
 });
 
 /* ---------- check-in diário ---------- */
@@ -1825,7 +1906,7 @@ ACT.salvarLembrete = () => {
   if (permNotif() === 'default') ACT.pedirNotif();
 };
 ACT.delLembrete = e => confirmar('Excluir este lembrete?', () => {
-  DB.lembretes = DB.lembretes.filter(l => l.id !== e.dataset.l); save(); fechar(); render();
+  DB.lembretes = DB.lembretes.filter(l => l.id !== e.dataset.l); enfileirarDel('lembretes', e.dataset.l); save(); fechar(); render();
 });
 ACT.lemTick = e => {
   const l = DB.lembretes.find(x => x.id === e.dataset.l);
@@ -2281,29 +2362,52 @@ SCREENS.hoje = () => {
   return h;
 };
 /* =========================================================
-   SUPABASE — conexão e sincronização
-   Estratégia: last-write-wins por registro, comparando o campo "upd".
+   SUPABASE — conta e sincronização
+
+   IDENTIDADE
+   Cada linha do banco tem um dono (user_id) e o RLS só devolve
+   as linhas de quem está pedindo. Por isso a conta precisa ser
+   A MESMA em todos os aparelhos: entrar com e-mail resolve.
+   A sessão anônima cria um usuário novo por aparelho — serve
+   para uso em um aparelho só, nunca para sincronizar.
+
+   CONFLITOS
+   Last-write-wins por registro, comparando o campo "upd".
+   Registros sem "upd" (dia aberto mas nunca lançado, perfil
+   nunca editado) NUNCA são enviados: eram eles que apagavam
+   os dados bons do servidor.
    ========================================================= */
-const SB = { client: null, user: null, status: 'desconectado' };
-function syncBadge() { const e = document.getElementById('sb_status'); if (e) e.textContent = SB.status; }
+const SB = { client: null, user: null, email: null, anon: false, status: 'desconectado' };
+function syncBadge() {
+  const e = document.getElementById('sb_status'); if (e) e.textContent = SB.status;
+}
+const logado = () => !!(SB.client && SB.user);
 
 async function iniciarSupabase(manual) {
   const { url, key } = DB.cfg;
   if (!url || !key) { SB.status = 'não configurado'; syncBadge(); return; }
-  if (!window.supabase) { SB.status = 'biblioteca não carregada (offline?)'; syncBadge(); return; }
+  if (!window.supabase) { SB.status = 'sem conexão'; syncBadge(); return; }
   try {
     SB.status = 'conectando…'; syncBadge();
-    SB.client = window.supabase.createClient(url, key, {
-      auth: { persistSession: true, autoRefreshToken: true, storageKey: 'vitta_auth' }
-    });
-    let { data: { session } } = await SB.client.auth.getSession();
-    if (!session) {
-      const r = await SB.client.auth.signInAnonymously();
-      if (r.error) throw r.error;
-      session = r.data.session;
+    if (!SB.client) {
+      SB.client = window.supabase.createClient(url, key, {
+        auth: {
+          persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+          // implicit: o link do e-mail funciona mesmo aberto pelo navegador
+          // interno do app de e-mail, que não compartilha dados com o Chrome/Safari
+          flowType: 'implicit', storageKey: 'vitta_auth'
+        }
+      });
+      SB.client.auth.onAuthStateChange((evento, sessao) => {
+        if (evento === 'SIGNED_IN' && sessao) {
+          limparURL(); aplicarSessao(sessao); fechar(); syncAll(true);
+        }
+        if (evento === 'SIGNED_OUT') { SB.user = SB.email = null; SB.anon = false; SB.status = 'sem conta'; syncBadge(); }
+      });
     }
-    SB.user = session.user.id;
-    SB.status = 'conectado'; syncBadge();
+    const { data: { session } } = await SB.client.auth.getSession();
+    if (!session) { SB.user = null; SB.status = 'sem conta'; syncBadge(); render(); return; }
+    limparURL(); aplicarSessao(session);
     await syncAll(manual);
   } catch (e) {
     SB.status = 'erro: ' + (e.message || e); syncBadge();
@@ -2311,8 +2415,111 @@ async function iniciarSupabase(manual) {
     console.error('[supabase]', e);
   }
 }
+/* tira os tokens do endereço depois que o link do e-mail é usado */
+function limparURL() {
+  if (location.hash && /access_token|error_description/.test(location.hash)) {
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { }
+  }
+}
+function aplicarSessao(session) {
+  SB.user = session.user.id;
+  SB.email = session.user.email || null;
+  SB.anon = !!session.user.is_anonymous || !session.user.email;
+  SB.status = 'conectado'; syncBadge();
+}
 
-/* mapeamento local <-> tabela */
+/* ---------- entrar com e-mail ----------
+   Dois caminhos, e o app aceita os dois:
+   1. tocar no link que chega no e-mail (funciona sem configurar nada);
+   2. digitar o código de 6 dígitos (só aparece se o modelo de e-mail do
+      Supabase tiver a variável do token — o que exige SMTP próprio nos
+      projetos gratuitos novos).                                          */
+const URL_APP = () => location.origin + location.pathname;
+
+ACT.entrarEmail = () => {
+  sheet(`<h3>Sincronizar entre aparelhos</h3>
+    <p class="hint">Informe seu e-mail e abra a mensagem <b>neste mesmo aparelho</b>: tocar no
+    link já entra. Use o mesmo e-mail no celular e no computador e os dados passam a ser os mesmos.</p>
+    <div class="f"><label>E-mail</label>
+      <input class="in" id="au_mail" type="email" inputmode="email" autocapitalize="off"
+        spellcheck="false" placeholder="voce@exemplo.com" value="${esc(DB.cfg.ultimoEmail || '')}"></div>
+    <div class="warnbox">Use o <b>mesmo e-mail da sua conta do Supabase</b>. Sem um servidor de
+    e-mail próprio configurado, o Supabase só entrega mensagem para os endereços da organização
+    do projeto — para qualquer outro, o e-mail simplesmente não chega.</div>
+    ${SB.anon ? '<div class="okbox">Tudo o que já está neste aparelho sobe para a conta assim que você entrar.</div>' : ''}
+    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="enviarCodigo">Enviar acesso</button></div>`);
+};
+ACT.enviarCodigo = async e => {
+  const email = valOf('au_mail').trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('E-mail inválido');
+  if (!SB.client) await iniciarSupabase(false);
+  e.textContent = 'Enviando…';
+  const { error } = await SB.client.auth.signInWithOtp({
+    email, options: { shouldCreateUser: true, emailRedirectTo: URL_APP() }
+  });
+  if (error) { e.textContent = 'Enviar acesso'; return toast('Erro: ' + error.message); }
+  DB.cfg.ultimoEmail = email; save(false);
+  sheetCodigo(email);
+};
+function sheetCodigo(email) {
+  const local = location.protocol === 'file:';
+  sheet(`<h3>Verifique seu e-mail</h3>
+    <p class="hint">Enviamos para <b>${esc(email)}</b>. Chega em alguns segundos — confira o spam.</p>
+    <div class="okbox"><b>Caminho mais simples:</b> abra o e-mail neste aparelho e toque no link
+    (<i>Log In</i> / <i>Confirm your mail</i>). Você volta para cá já conectado.</div>
+    ${local ? '<div class="warnbox">Este arquivo está aberto direto do disco. O link do e-mail só consegue devolver você para o app se ele estiver publicado num endereço da internet — use o código abaixo, ou abra o app pelo endereço publicado.</div>' : ''}
+    <div class="f"><label>Ou, se o e-mail trouxer um código de 6 dígitos</label>
+      <input class="in" id="au_cod" inputmode="numeric" autocomplete="one-time-code"
+        placeholder="000000" style="font-size:22px;letter-spacing:6px;text-align:center"></div>
+    <div class="btnrow"><button class="btn" data-a="entrarEmail">Voltar</button>
+      <button class="btn pri" data-a="confirmarCodigo" data-m="${esc(email)}">Entrar com o código</button></div>
+    <p class="mini" style="margin-top:10px">Não chegou? Espere 60 segundos antes de pedir de novo —
+    é o limite do Supabase. E confirme que o endereço é o mesmo da sua conta do Supabase.</p>`);
+}
+ACT.confirmarCodigo = async e => {
+  const token = valOf('au_cod').replace(/\D/g, ''), email = e.dataset.m;
+  if (token.length < 6) return toast('O código tem 6 dígitos — ou use o link do e-mail');
+  e.textContent = 'Entrando…';
+  // e-mail novo chega pelo modelo "Confirm signup" (type signup);
+  // e-mail que já existe chega pelo "Magic Link" (type email). Tenta os dois.
+  let sessao = null, ultimo = null;
+  for (const tipo of ['email', 'signup', 'magiclink']) {
+    const r = await SB.client.auth.verifyOtp({ email, token, type: tipo });
+    if (!r.error && r.data && r.data.session) { sessao = r.data.session; break; }
+    ultimo = r.error;
+  }
+  if (!sessao) {
+    e.textContent = 'Entrar com o código';
+    console.error('[auth]', ultimo);
+    return toast('Código inválido ou expirado');
+  }
+  aplicarSessao(sessao);
+  fechar(); toast('Conectado como ' + email);
+  await syncAll(true);
+};
+
+/* ---------- usar só neste aparelho ---------- */
+ACT.entrarAnon = () => confirmar(
+  'Sem e-mail, os dados ficam só neste aparelho: cada aparelho vira um usuário diferente e eles não se enxergam. Continuar?',
+  async () => {
+    if (!SB.client) await iniciarSupabase(false);
+    const { data, error } = await SB.client.auth.signInAnonymously();
+    if (error) return toast('Erro: ' + error.message);
+    aplicarSessao(data.session); await syncAll(true);
+  });
+
+ACT.sair = () => confirmar(
+  'Sair da conta neste aparelho? Os lançamentos continuam guardados aqui e voltam a subir quando você entrar de novo.',
+  async () => {
+    await SB.client.auth.signOut();
+    SB.user = SB.email = null; SB.anon = false;
+    SB.status = 'sem conta'; syncBadge(); render();
+  });
+
+/* =========================================================
+   mapeamento local <-> tabela
+   ========================================================= */
 const TABELAS = [
   {
     n: 'fichas', get: () => DB.fichas, set: a => DB.fichas = a,
@@ -2357,21 +2564,35 @@ const TABELAS = [
 ];
 
 async function syncAll(avisar) {
-  if (!SB.client || !SB.user) return;
+  if (!logado()) { if (avisar) toast('Entre com seu e-mail primeiro'); return; }
   SB.status = 'sincronizando…'; syncBadge();
   try {
+    await aplicarExclusoes();
     for (const t of TABELAS) await syncTabela(t);
     await syncPerfil();
     await syncDias();
     DB.cfg.ultimoSync = nowISO(); DIRTY = false;
     save(false);
     SB.status = 'sincronizado'; syncBadge();
-    if (avisar) { toast('Sincronizado ✓'); render(); } else render();
+    if (avisar) toast('Sincronizado ✓');
+    render();
   } catch (e) {
     SB.status = 'erro no sync'; syncBadge();
     console.error('[sync]', e);
     if (avisar) toast('Erro: ' + (e.message || e));
   }
+}
+
+/* exclusões feitas offline ou em outro momento */
+async function aplicarExclusoes() {
+  const fila = DB.delFila || []; if (!fila.length) return;
+  const porTabela = {};
+  fila.forEach(d => (porTabela[d.t] = porTabela[d.t] || []).push(d.id));
+  for (const t of Object.keys(porTabela)) {
+    const { error } = await SB.client.from(t).delete().eq('user_id', SB.user).in('id', porTabela[t]);
+    if (error) throw error;
+  }
+  DB.delFila = [];
 }
 
 async function syncTabela(t) {
@@ -2381,8 +2602,7 @@ async function syncTabela(t) {
   const remotos = (data || []).map(t.down);
   const mapL = new Map(locais.map(x => [x.id, x])), mapR = new Map(remotos.map(x => [x.id, x]));
   const enviar = [], resultado = [];
-  const ids = new Set([...mapL.keys(), ...mapR.keys()]);
-  ids.forEach(id => {
+  new Set([...mapL.keys(), ...mapR.keys()]).forEach(id => {
     const l = mapL.get(id), r = mapR.get(id);
     if (l && r) { const vence = (l.upd || '') >= (r.upd || '') ? l : r; resultado.push(vence); if (vence === l) enviar.push(l); }
     else if (l) { resultado.push(l); enviar.push(l); }
@@ -2398,13 +2618,15 @@ async function syncTabela(t) {
 async function syncPerfil() {
   const { data, error } = await SB.client.from('perfil').select('*').eq('user_id', SB.user).maybeSingle();
   if (error) throw error;
-  if (data && (data.upd || '') > (DB.perfil.upd || '')) {
+  const meu = DB.perfil.upd;                     // null = nunca editei neste aparelho
+  if (data && (!meu || (data.upd || '') > meu)) {
     DB.perfil = Object.assign(DB.perfil, data.dados, { upd: data.upd });
-  } else {
-    const { error: e2 } = await SB.client.from('perfil')
-      .upsert({ user_id: SB.user, dados: DB.perfil, upd: DB.perfil.upd || nowISO() }, { onConflict: 'user_id' });
-    if (e2) throw e2;
+    return;
   }
+  if (!meu) return;                              // nada meu para enviar: não sobrescreve o servidor
+  const { error: e2 } = await SB.client.from('perfil')
+    .upsert({ user_id: SB.user, dados: DB.perfil, upd: meu }, { onConflict: 'user_id' });
+  if (e2) throw e2;
 }
 
 const baixaDia = r => ({
@@ -2412,6 +2634,7 @@ const baixaDia = r => ({
   habitos: r.habitos || {}, peso: r.peso, nota: r.nota || '',
   ajusteKcal: +r.ajuste_kcal || 0, ajusteAgua: +r.ajuste_agua || 0, upd: r.upd
 });
+const diaEnviavel = x => !!(x && x.upd && !diaVazio(x));
 
 async function syncDias() {
   const limite = addDays(today(), -400);
@@ -2419,37 +2642,36 @@ async function syncDias() {
   if (error) throw error;
   const mapR = new Map((data || []).map(r => [r.data, r]));
   const enviar = [];
-  const chaves = new Set([...Object.keys(DB.dias), ...mapR.keys()]);
-  chaves.forEach(k => {
+  new Set([...Object.keys(DB.dias), ...mapR.keys()]).forEach(k => {
     const l = DB.dias[k], r = mapR.get(k);
     if (l && r) {
-      if ((l.upd || '') >= (r.upd || '')) enviar.push(k);
+      // só disputo o dia se eu tiver conteúdo de verdade e for mais recente
+      if (diaEnviavel(l) && l.upd >= r.upd) enviar.push(k);
       else DB.dias[k] = baixaDia(r);
-    } else if (l) enviar.push(k);
+    } else if (l) { if (diaEnviavel(l)) enviar.push(k); }
     else DB.dias[k] = baixaDia(r);
   });
-  if (enviar.length) {
-    const rows = enviar.map(k => {
-      const x = DB.dias[k];
-      return {
-        user_id: SB.user, data: k, treino: x.treino, esportes: x.esportes || [], refeicoes: x.refeicoes || {},
-        agua: x.agua || 0, habitos: x.habitos || {}, peso: x.peso, nota: x.nota || '',
-        ajuste_kcal: x.ajusteKcal || 0, ajuste_agua: x.ajusteAgua || 0, upd: x.upd || nowISO()
-      };
-    });
-    for (let i = 0; i < rows.length; i += 200) {
-      const { error: e2 } = await SB.client.from('dias').upsert(rows.slice(i, i + 200), { onConflict: 'user_id,data' });
-      if (e2) throw e2;
-    }
+  if (!enviar.length) return;
+  const rows = enviar.map(k => {
+    const x = DB.dias[k];
+    return {
+      user_id: SB.user, data: k, treino: x.treino, esportes: x.esportes || [], refeicoes: x.refeicoes || {},
+      agua: x.agua || 0, habitos: x.habitos || {}, peso: x.peso, nota: x.nota || '',
+      ajuste_kcal: x.ajusteKcal || 0, ajuste_agua: x.ajusteAgua || 0, upd: x.upd
+    };
+  });
+  for (let i = 0; i < rows.length; i += 200) {
+    const { error: e2 } = await SB.client.from('dias').upsert(rows.slice(i, i + 200), { onConflict: 'user_id,data' });
+    if (e2) throw e2;
   }
 }
 
 let SYNC_T;
 function agendarSync() {
-  if (!DB.cfg.autoSync || !SB.client) return;
+  if (!DB.cfg.autoSync || !logado()) return;
   clearTimeout(SYNC_T); SYNC_T = setTimeout(() => syncAll(false), 4000);
 }
-ACT.syncAgora = () => { SB.client ? syncAll(true) : iniciarSupabase(true); };
+ACT.syncAgora = () => { logado() ? syncAll(true) : iniciarSupabase(true); };
 window.addEventListener('online', () => { if (DIRTY) agendarSync(); });
 /* ========================= INIT ========================= */
 window.addEventListener('error', e => console.error('[vitta]', e.message));
