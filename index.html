@@ -185,6 +185,8 @@ code{background:var(--bg2);padding:1px 6px;border-radius:6px;font-size:12px;font
    VITTA — núcleo: estado, storage, utilidades, render
    ========================================================= */
 const KEY = 'vitta_db_v1';
+const VERSAO = '2026-08-25d';   // conferível em ⚙ — serve para saber se o navegador
+                                // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
 
@@ -245,6 +247,15 @@ const SEED_LIQ = [
   ['Cerveja lata 350ml', 350, 'ml', 153, 12.6, 1.6, 0]
 ];
 const MET = { 'Caminhada leve': 3.0, 'Caminhada rápida': 4.8, 'Corrida': 9.8, 'Bicicleta': 7.5, 'Futebol': 8.0, 'Natação': 7.0, 'Vôlei': 4.0, 'Basquete': 6.5, 'Musculação': 5.0, 'Funcional / HIIT': 8.5, 'Dança': 5.0, 'Trilha': 6.0, 'Tênis / Beach tennis': 6.5, 'Pular corda': 11.0 };
+/* Para atividades que você mesmo cadastra: em vez de pedir o MET (que ninguém
+   sabe de cabeça), pergunta o esforço e traduz para um MET razoável.          */
+const ESFORCO = [
+  ['3', 'Leve — alongamento, caminhada tranquila, ioga'],
+  ['5', 'Moderado — musculação, dança, pedalada leve'],
+  ['7', 'Puxado — natação, trilha, futebol de quadra'],
+  ['9.5', 'Intenso — corrida, futebol de campo, HIIT'],
+  ['11', 'Muito intenso — pular corda, competição']
+];
 const ATIV = [
   ['1.2', 'Sedentário — pouco ou nenhum exercício'],
   ['1.375', 'Leve — treino 1 a 3x por semana'],
@@ -255,7 +266,7 @@ const ATIV = [
 const REFS = [
   ['cafe', 'Café da manhã', '🌅'], ['lanche1', 'Lanche da manhã', '🍎'],
   ['almoco', 'Almoço', '🍽️'], ['lanche2', 'Lanche da tarde', '🥤'],
-  ['janta', 'Jantar', '🌙'], ['ceia', 'Ceia', '🌜']
+  ['janta', 'Jantar', '🌙'], ['ceia', 'Ceia', '🌜'], ['livre', 'Refeição livre', '🍴']
 ];
 
 /* =========================================================
@@ -293,7 +304,7 @@ function novoDB() {
       objetivo: 'manter', ajuste: 0, protKg: 1.8, gordPct: 25,
       aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, upd: null
     },
-    fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], dias: {},
+    fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], dias: {},
     delFila: [],
     cfg: { url: SB_URL, key: SB_KEY, autoSync: true, ultimoSync: null }
   };
@@ -345,6 +356,8 @@ let DB = (() => {
     if (!cfg.key) cfg.key = SB_KEY;
     const db = Object.assign(base, d, { perfil: Object.assign(base.perfil, d.perfil || {}), cfg });
     db.delFila = db.delFila || [];
+    db.atividades = db.atividades || [];
+    db.atividades = db.atividades || [];
     const lim = limparAlimentos(db.alimentos || []);
     db.alimentos = lim.lista;
     lim.remover.forEach(id => { if (!db.delFila.some(x => x.t === 'alimentos' && x.id === id)) db.delFila.push({ t: 'alimentos', id }); });
@@ -798,7 +811,10 @@ SCREENS.config = () => {
     <div class="row" data-a="ir" data-v="fichas"><div class="g"><div class="t">Fichas de treino</div>
       <div class="s">${DB.fichas.length} cadastradas</div></div><div class="v">›</div></div>
   </div>
-  <div class="card"><p class="mini">Vitta v1 — funciona offline. Adicione à tela de início do celular pelo menu do navegador para abrir como aplicativo.</p></div>`;
+  <div class="card"><p class="mini">Vitta — versão <b>${VERSAO}</b>. Funciona offline; adicione à
+    tela de início do celular pelo menu do navegador para abrir como aplicativo.<br>
+    Se esta versão não for a que você acabou de publicar, o navegador está servindo uma cópia
+    guardada: recarregue segurando o botão de atualizar (ou Ctrl+Shift+R no computador).</p></div>`;
 };
 /* =========================================================
    MÓDULO 1 — EXERCÍCIOS
@@ -936,35 +952,216 @@ ACT.salvarExtra = () => {
   tocaDia(D); save(); fechar(); render();
 };
 
-/* --- esportes --- */
-ACT.addEsporte = () => {
-  sheet(`<h3>Esporte / atividade</h3><p class="hint">Calculamos o gasto calórico pelo MET da atividade e o seu peso (${n1(DB.perfil.peso)} kg).</p>
-    <div class="f"><label>Atividade</label><select class="in" id="es_n" data-inp="esPrev">
-      ${Object.keys(MET).map(k => `<option>${k}</option>`).join('')}</select></div>
-    <div class="grid2">
-      <div class="f"><label>Duração (min)</label><input class="in" id="es_m" type="number" inputmode="numeric" value="45" data-inp="esPrev"></div>
-      <div class="f"><label>Intensidade</label><select class="in" id="es_i" data-inp="esPrev">
-        <option value="0.8">Leve</option><option value="1" selected>Moderada</option><option value="1.25">Forte</option></select></div>
-    </div>
-    <div class="okbox" id="es_prev"></div>
-    <div class="f"><label>Observação</label><input class="in" id="es_o" placeholder="opcional"></div>
-    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
-    <button class="btn pri" data-a="salvarEsporte">Adicionar</button></div>`);
-  ACT.esPrev();
+/* =========================================================
+   ATIVIDADES E ESPORTES
+   A lista fixa é só um atalho: você pode cadastrar qualquer
+   atividade, com esforço e duração padrão, e dar a ela uma
+   frequência semanal para aparecer sozinha no dia certo.
+   ========================================================= */
+TITULOS.atividades = ['Minhas atividades', 'esportes, duração e frequência'];
+const atvById = id => (DB.atividades || []).find(a => a.id === id);
+const atvDoDia = d => (DB.atividades || []).filter(a => (a.dias || []).includes(parseD(d).getDay()));
+const metDe = nome => MET[nome] || (((DB.atividades || []).find(a => a.nome === nome) || {}).met) || 5;
+const esforcoNome = met => (ESFORCO.find(e => num(e[0]) >= num(met)) || ESFORCO[ESFORCO.length - 1])[1].split(' —')[0];
+
+/* --- lançar uma atividade no dia --- */
+ACT.addEsporte = e => {
+  const pre = e && e.dataset && e.dataset.atv ? atvById(e.dataset.atv) : null;
+  SUB.atv = {
+    nome: pre ? pre.nome : Object.keys(MET)[0],
+    nova: false, met: pre ? pre.met : null,
+    min: pre ? pre.min || 45 : 45, int: pre ? pre.int || 1 : 1,
+    salvar: false, dias: pre ? (pre.dias || []).slice() : [], edita: pre ? pre.id : null
+  };
+  sheetAtv();
 };
-ACT.esPrev = () => {
+function atvCapturar() {
+  const a = SUB.atv;
+  const g = id => { const el = document.getElementById(id); return el ? el.value : null; };
+  const sel = g('es_n'); if (sel !== null) { a.nova = sel === '__nova'; if (!a.nova) a.nome = sel; }
+  const nome = g('es_nome'); if (nome !== null && a.nova) a.nome = nome;
+  const esf = g('es_esf'); if (esf !== null) a.met = num(esf);
+  const min = g('es_m'); if (min !== null) a.min = num(min);
+  const int = g('es_i'); if (int !== null) a.int = num(int);
+  const obs = g('es_o'); if (obs !== null) a.obs = obs;
+}
+ACT.atvMuda = () => { atvCapturar(); sheetAtv(); };
+/* Só recalcula o gasto. Redesenhar a folha a cada digitação fazia o campo
+   perder o foco e, pior, engolia o toque seguinte no botão ao lado. */
+ACT.atvPrev = () => {
+  atvCapturar();
   const b = document.getElementById('es_prev'); if (!b) return;
-  const k = Math.round(kcalEsporte(valOf('es_n'), numOf('es_m')) * num(valOf('es_i', 1)));
-  b.innerHTML = `Gasto estimado: <b>${n0(k)} kcal</b>`;
+  const a = SUB.atv, met = a.nova ? (a.met || 5) : metDe(a.nome);
+  const kcal = Math.round(kcalEsporte2(met, a.min) * a.int);
+  b.innerHTML = `Gasto estimado: <b>${n0(kcal)} kcal</b>` + (a.nova ? ` · esforço ${esc(esforcoNome(met))}` : '');
 };
+ACT.atvSalvarTog = () => { atvCapturar(); SUB.atv.salvar = !SUB.atv.salvar; sheetAtv(); };
+ACT.atvDia = e => {
+  atvCapturar(); const d = +e.dataset.d, i = SUB.atv.dias.indexOf(d);
+  i < 0 ? SUB.atv.dias.push(d) : SUB.atv.dias.splice(i, 1); sheetAtv();
+};
+
+function sheetAtv() {
+  const a = SUB.atv, salvas = DB.atividades || [];
+  const met = a.nova ? (a.met || 5) : metDe(a.nome);
+  const kcal = Math.round(kcalEsporte2(met, a.min) * a.int);
+  sheet(`<h3>${a.edita ? 'Registrar' : 'Atividade / esporte'}</h3>
+    <p class="hint">Calculamos o gasto pelo esforço da atividade e pelo seu peso (${n1(DB.perfil.peso)} kg).</p>
+
+    <div class="f"><label>Atividade</label>
+      <select class="in" id="es_n" data-ch="atvMuda">
+        ${salvas.length ? `<optgroup label="Minhas atividades">
+          ${salvas.map(x => `<option ${!a.nova && a.nome === x.nome ? 'selected' : ''}>${esc(x.nome)}</option>`).join('')}
+        </optgroup>` : ''}
+        <optgroup label="Lista pronta">
+          ${Object.keys(MET).map(k => `<option ${!a.nova && a.nome === k ? 'selected' : ''}>${k}</option>`).join('')}
+        </optgroup>
+        <option value="__nova" ${a.nova ? 'selected' : ''}>➕ Outra atividade…</option>
+      </select></div>
+
+    ${a.nova ? `<div class="f"><label>Nome da atividade</label>
+        <input class="in" id="es_nome" value="${esc(a.nome === '__nova' ? '' : a.nome || '')}"
+          placeholder="ex: Alongamento, Jiu-jitsu, Surf" data-inp="atvPrev"></div>
+      <div class="f"><label>Esforço</label>
+        <select class="in" id="es_esf" data-ch="atvPrev">
+          ${ESFORCO.map(x => `<option value="${x[0]}" ${String(a.met || 5) === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}
+        </select></div>` : ''}
+
+    <div class="grid2">
+      <div class="f"><label>Duração (min)</label>
+        <input class="in" id="es_m" type="number" inputmode="numeric" value="${a.min}" data-inp="atvPrev"></div>
+      <div class="f"><label>Como foi</label>
+        <select class="in" id="es_i" data-ch="atvPrev">
+          <option value="0.8" ${a.int === 0.8 ? 'selected' : ''}>Mais leve que o normal</option>
+          <option value="1" ${a.int === 1 ? 'selected' : ''}>Normal</option>
+          <option value="1.25" ${a.int === 1.25 ? 'selected' : ''}>Mais forte que o normal</option>
+        </select></div>
+    </div>
+    <div class="okbox" id="es_prev">Gasto estimado: <b>${n0(kcal)} kcal</b>${a.nova ? ` · esforço ${esc(esforcoNome(met))}` : ''}</div>
+    <div class="f"><label>Observação</label>
+      <input class="in" id="es_o" value="${esc(a.obs || '')}" placeholder="opcional" data-inp="atvPrev"></div>
+
+    <div class="row" style="border-top:1px solid var(--line);padding-top:12px">
+      <button class="tick ${a.salvar ? 'on' : ''}" data-a="atvSalvarTog">✓</button>
+      <div class="g"><div class="t">Guardar nas minhas atividades</div>
+        <div class="s">para lançar depois com um toque</div></div>
+    </div>
+    ${a.salvar ? `<div class="f" style="margin-top:9px"><label>Repetir nestes dias (opcional)</label>
+      <div class="chiprow">${DOW.map((d, i) =>
+        `<button class="chip ${a.dias.includes(i) ? 'on' : ''}" data-a="atvDia" data-d="${i}">${d}</button>`).join('')}</div>
+      <p class="mini" style="margin-top:6px">Nos dias marcados ela aparece como sugestão na tela de Exercícios, pronta para lançar.</p></div>` : ''}
+
+    <div class="btnrow" style="margin-top:12px"><button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarEsporte">Lançar no dia</button></div>`);
+}
+const kcalEsporte2 = (met, min, peso = num(DB.perfil.peso)) => Math.round(met * 3.5 * peso / 200 * min);
+
 ACT.salvarEsporte = () => {
-  const nome = valOf('es_n'), min = numOf('es_m');
-  if (!min) return toast('Informe a duração');
-  const kcal = Math.round(kcalEsporte(nome, min) * num(valOf('es_i', 1)));
-  dia(D).esportes.push({ id: uid(), nome, min, int: num(valOf('es_i', 1)), kcal, obs: valOf('es_o') });
-  tocaDia(D); save(); fechar(); render();
+  atvCapturar();
+  const a = SUB.atv;
+  const nome = String(a.nome || '').trim();
+  if (!nome || nome === '__nova') return toast('Escolha ou dê um nome à atividade');
+  if (!a.min) return toast('Informe a duração');
+  const met = a.nova ? (a.met || 5) : metDe(nome);
+  const kcal = Math.round(kcalEsporte2(met, a.min) * a.int);
+
+  if (a.salvar) {
+    const existente = (DB.atividades || []).find(x => x.nome.toLowerCase() === nome.toLowerCase());
+    const o = { nome, met, min: a.min, int: a.int, dias: a.dias, upd: nowISO() };
+    if (existente) Object.assign(existente, o);
+    else (DB.atividades = DB.atividades || []).push(Object.assign({ id: uid() }, o));
+  }
+  dia(D).esportes.push({ id: uid(), nome, min: a.min, int: a.int, met, kcal, obs: a.obs || '' });
+  tocaDia(D); save(); fechar(); render(); toast('Atividade registrada ✓');
 };
 ACT.delEsporte = e => { const x = dia(D); x.esportes.splice(+e.dataset.i, 1); tocaDia(D); save(); render(); };
+
+/* --- lançamento em um toque, a partir da agenda --- */
+ACT.atvRapida = e => {
+  const a = atvById(e.dataset.atv); if (!a) return;
+  const kcal = Math.round(kcalEsporte2(a.met, a.min || 45) * (a.int || 1));
+  dia(D).esportes.push({ id: uid(), nome: a.nome, min: a.min || 45, int: a.int || 1, met: a.met, kcal, obs: '' });
+  tocaDia(D); save(); render(); toast(`${a.nome} registrado ✓`);
+};
+
+/* --- gerenciar minhas atividades --- */
+FAB.atividades = 'novaAtv';
+ACT.irAtividades = () => { SUB._back = 'treino'; go('atividades', true); SUB._back = 'treino'; };
+ACT.novaAtv = () => { SUB.atvEdit = null; sheetAtvEdit(); };
+ACT.editAtv = e => { SUB.atvEdit = e.dataset.atv; sheetAtvEdit(); };
+function sheetAtvEdit() {
+  const a = SUB.atvEdit ? atvById(SUB.atvEdit) : { nome: '', met: 5, min: 45, int: 1, dias: [] };
+  SUB.atvDias = SUB.atvDias || (a.dias || []).slice();
+  sheet(`<h3>${SUB.atvEdit ? 'Editar' : 'Nova'} atividade</h3>
+    <p class="hint">Fica guardada para você lançar com um toque. Com dias marcados, ela vira sugestão automática.</p>
+    <div class="f"><label>Nome</label>
+      <input class="in" id="ae_nome" value="${esc(a.nome)}" placeholder="ex: Alongamento, Futebol, Surf"></div>
+    <div class="f"><label>Esforço</label>
+      <select class="in" id="ae_esf">
+        ${ESFORCO.map(x => `<option value="${x[0]}" ${String(a.met) === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}
+      </select></div>
+    <div class="grid2">
+      <div class="f"><label>Duração padrão (min)</label>
+        <input class="in" id="ae_min" type="number" inputmode="numeric" value="${a.min || 45}"></div>
+      <div class="f"><label>Intensidade padrão</label>
+        <select class="in" id="ae_int">
+          <option value="0.8" ${a.int === 0.8 ? 'selected' : ''}>Leve</option>
+          <option value="1" ${(a.int || 1) === 1 ? 'selected' : ''}>Normal</option>
+          <option value="1.25" ${a.int === 1.25 ? 'selected' : ''}>Forte</option>
+        </select></div>
+    </div>
+    <div class="f"><label>Frequência</label>
+      <div class="chiprow">${DOW.map((d, i) =>
+        `<button class="chip ${SUB.atvDias.includes(i) ? 'on' : ''}" data-a="aeDia" data-d="${i}">${d}</button>`).join('')}</div>
+      <p class="mini" style="margin-top:6px">Sem nenhum dia marcado ela continua na lista, só não vira sugestão.</p></div>
+    <div class="btnrow"><button class="btn" data-a="fecharAtv">Cancelar</button>
+      <button class="btn pri" data-a="salvarAtv">Salvar</button></div>
+    ${SUB.atvEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delAtv" data-atv="${SUB.atvEdit}">Excluir atividade</button>` : ''}`);
+}
+ACT.fecharAtv = () => { SUB.atvDias = null; fechar(); };
+ACT.aeDia = e => {
+  const tmp = { nome: valOf('ae_nome'), esf: valOf('ae_esf'), min: valOf('ae_min'), int: valOf('ae_int') };
+  const d = +e.dataset.d, i = SUB.atvDias.indexOf(d);
+  i < 0 ? SUB.atvDias.push(d) : SUB.atvDias.splice(i, 1);
+  sheetAtvEdit();
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  set('ae_nome', tmp.nome); set('ae_esf', tmp.esf); set('ae_min', tmp.min); set('ae_int', tmp.int);
+};
+ACT.salvarAtv = () => {
+  const nome = valOf('ae_nome').trim(); if (!nome) return toast('Dê um nome à atividade');
+  const o = {
+    nome, met: num(valOf('ae_esf')), min: numOf('ae_min') || 45,
+    int: num(valOf('ae_int')) || 1, dias: SUB.atvDias || [], upd: nowISO()
+  };
+  DB.atividades = DB.atividades || [];
+  if (SUB.atvEdit) Object.assign(atvById(SUB.atvEdit), o);
+  else DB.atividades.push(Object.assign({ id: uid() }, o));
+  SUB.atvDias = null; save(); fechar(); render();
+};
+ACT.delAtv = e => {
+  const id = e.dataset.atv, a = atvById(id);
+  confirmar(`Excluir “${a ? a.nome : 'esta atividade'}” da sua lista? As atividades já registradas nos dias continuam no histórico.`, () => {
+    DB.atividades = DB.atividades.filter(x => x.id !== id);
+    enfileirarDel('atividades', id); SUB.atvDias = null; save(); fechar(); render();
+  });
+};
+
+SCREENS.atividades = () => {
+  const l = DB.atividades || [];
+  return (l.length ? l.map(a => `<div class="card tight">
+      <div class="row" style="border:0;padding:2px 0">
+        <div class="g" data-a="editAtv" data-atv="${a.id}">
+          <div class="t">${esc(a.nome)}</div>
+          <div class="s">${a.min || 45} min · ${esc(esforcoNome(a.met))} · ${n0(kcalEsporte2(a.met, a.min || 45) * (a.int || 1))} kcal
+            ${(a.dias || []).length ? ' · ' + a.dias.map(i => DOW[i]).join(', ') : ' · sem frequência'}</div>
+        </div>
+        <button class="btn xs pri" data-a="atvRapida" data-atv="${a.id}">Lançar</button>
+      </div></div>`).join('')
+    : `<div class="card"><div class="empty"><b>⚽</b>Cadastre as atividades que você repete — futebol de quinta,
+        alongamento todo dia, corrida no fim de semana. Marque os dias e elas aparecem sozinhas na tela de
+        Exercícios, prontas para lançar com um toque.</div></div>`)
+    + `<button class="btn pri full" data-a="novaAtv" style="margin-bottom:14px">＋ Nova atividade</button>`;
+};
 
 /* ---------- tela ---------- */
 FAB.treino = 'fabTreino';
@@ -1023,7 +1220,17 @@ SCREENS.treino = () => {
 
   /* esportes */
   const es = x.esportes || [], kes = es.reduce((a, e) => a + e.kcal, 0);
+  const naAgenda = atvDoDia(D).filter(a => !es.some(e => e.nome === a.nome));
   h += `<div class="sec-title">Esportes e atividades</div>
+  ${naAgenda.length ? `<div class="card tight">
+    <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>Na sua agenda de ${DOW[parseD(D).getDay()]}</h2></div>
+    ${naAgenda.map(a => `<div class="row">
+      <div class="g"><div class="t">${esc(a.nome)}</div>
+        <div class="s">${a.min || 45} min · ${n0(kcalEsporte2(a.met, a.min || 45) * (a.int || 1))} kcal</div></div>
+      <button class="btn xs pri" data-a="atvRapida" data-atv="${a.id}">Registrar</button>
+      <button class="btn xs" data-a="addEsporte" data-atv="${a.id}">Ajustar</button>
+    </div>`).join('')}
+  </div>` : ''}
   <div class="card">
     ${es.length ? es.map((e, i) => `<div class="row">
       <div class="g"><div class="t">${esc(e.nome)}</div>
@@ -1035,8 +1242,13 @@ SCREENS.treino = () => {
       : '<div class="empty"><b>⚽</b>Futebol, caminhada, corrida, natação…</div>'}
     <button class="btn ${es.length ? 'gh' : 'pri'} full sm" style="margin-top:10px" data-a="addEsporte">＋ Registrar atividade</button>
   </div>
-  <div class="card tight"><div class="row" data-a="irFichasTop"><div class="g"><div class="t">Minhas fichas de treino</div>
-    <div class="s">${DB.fichas.length} ficha(s) montada(s)</div></div><div class="v">›</div></div></div>`;
+  <div class="card tight">
+    <div class="row" data-a="irFichasTop"><div class="g"><div class="t">Minhas fichas de treino</div>
+      <div class="s">${DB.fichas.length} ficha(s) montada(s)</div></div><div class="v">›</div></div>
+    <div class="row" data-a="irAtividades"><div class="g"><div class="t">Minhas atividades</div>
+      <div class="s">${(DB.atividades || []).length} cadastrada(s)${atvDoDia(D).length ? ' · ' + atvDoDia(D).length + ' hoje' : ''}</div></div>
+      <div class="v">›</div></div>
+  </div>`;
   return h;
 };
 ACT.irFichasTop = () => { SUB._back = 'treino'; go('fichas', true); SUB._back = 'treino'; };
@@ -1626,9 +1838,19 @@ ACT.salvarHabito = () => {
   else DB.habitos.push(Object.assign({ id: uid(), encerrado: null }, o));
   save(); SUB.tmp = null; ACT.fecharHab(); render();
 };
-ACT.delHabito = e => confirmar('Excluir este hábito e seu histórico de acompanhamento?', () => {
-  DB.habitos = DB.habitos.filter(h => h.id !== e.dataset.h); enfileirarDel('habitos', e.dataset.h); save(); go('habitos');
-});
+ACT.delHabito = e => {
+  const h = habById(e.dataset.h), s = h ? habStats(h) : null;
+  const id = e.dataset.h;
+  confirmar(
+    `Excluir “${h ? h.nome : 'este hábito'}” de vez?` +
+    (s && s.feitos ? ` Os ${s.feitos} check-in(s) registrados somem junto, em todos os aparelhos.` : ' Isso não pode ser desfeito.') +
+    ' Se você só quer parar de acompanhar, use “Encerrar e avaliar objetivo” — aí o histórico fica guardado.',
+    () => {
+      DB.habitos = DB.habitos.filter(x => x.id !== id);
+      Object.values(DB.dias).forEach(d => { if (d.habitos && d.habitos[id]) { delete d.habitos[id]; d.upd = nowISO(); } });
+      enfileirarDel('habitos', id); save(); toast('Hábito excluído'); go('habitos');
+    });
+};
 
 /* ---------- check-in diário ---------- */
 ACT.hTick = e => {
@@ -1785,8 +2007,10 @@ SCREENS.habito = () => {
         <b>${h.encerrado.alcancado ? '🎉 Objetivo alcançado' : 'Objetivo não alcançado'}</b> — ${esc(dLabel(h.encerrado.data))}
         ${h.encerrado.nota ? '<br>' + esc(h.encerrado.nota) : ''}</div>
       <button class="btn full sm" data-a="reabrir" data-h="${h.id}">Reabrir hábito</button>
-    </div>`
-      : `<button class="btn full" data-a="encerrar" data-h="${h.id}" style="margin-bottom:14px">Encerrar e avaliar objetivo</button>`}`;
+    </div>
+    <button class="btn danger full" data-a="delHabito" data-h="${h.id}" style="margin-bottom:14px">Excluir hábito</button>`
+      : `<button class="btn full" data-a="encerrar" data-h="${h.id}" style="margin-bottom:10px">Encerrar e avaliar objetivo</button>`}
+  <button class="btn danger full" data-a="delHabito" data-h="${h.id}" style="margin-bottom:14px">Excluir hábito</button>`;
 };
 /* =========================================================
    MÓDULO 4 — LEMBRETES
@@ -2085,10 +2309,15 @@ ACT.mesNav = e => {
 
 SCREENS.resumo = () => {
   const aba = SUB.res || 'dia';
-  let h = `<div class="segs" style="margin-bottom:13px">
-    <button class="${aba === 'dia' ? 'on' : ''}" data-a="resAba" data-t="dia">Diário</button>
-    <button class="${aba === 'mes' ? 'on' : ''}" data-a="resAba" data-t="mes">Mensal</button></div>`;
-  return h + (aba === 'dia' ? resumoDia() : resumoMes());
+  let h = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:13px">
+    <div class="segs" style="flex:1;margin:0">
+      <button class="${aba === 'dia' ? 'on' : ''}" data-a="resAba" data-t="dia">Diário</button>
+      <button class="${aba === 'mes' ? 'on' : ''}" data-a="resAba" data-t="mes">Mensal</button>
+    </div>
+    <button class="iconbtn" data-a="planilha" title="Exportar planilha">⬇</button>
+  </div>`;
+  return h + (aba === 'dia' ? resumoDia() : resumoMes())
+    + `<button class="btn full" data-a="planilha" style="margin-bottom:14px">⬇ Exportar planilha</button>`;
 };
 
 function resumoDia() {
@@ -2259,6 +2488,117 @@ function resumoMes() {
       })()}
   </div>`;
 }
+
+/* =========================================================
+   EXPORTAR PLANILHA
+   Gera um CSV com uma linha por dia. CSV abre no Excel, no
+   Google Sheets e no Numbers sem nada instalado.
+   Separador ";" e vírgula decimal, que é como o Excel em
+   português espera; BOM no começo para os acentos saírem certos.
+   ========================================================= */
+const csvNum = v => (v == null || v === '' ? '' : String(v).replace('.', ','));
+const csvTxt = v => {
+  const t = String(v == null ? '' : v);
+  return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+};
+
+function planilhaDias(ds) {
+  const m = metas();
+  const cab = ['Data', 'Dia da semana', 'Treino', 'Exercícios feitos', 'Volume (kg)', 'Duração (min)',
+    'Atividades', 'Kcal atividades', 'Kcal consumidas', 'Meta kcal', 'Carboidrato (g)', 'Proteína (g)',
+    'Gordura (g)', 'Escapes (kcal)', 'Água (ml)', 'Meta água (ml)', 'Gasto estimado (kcal)',
+    'Balanço (kcal)', 'Peso (kg)', 'Hábitos feitos', 'Hábitos previstos', 'Anotação'];
+  const linhas = [cab.join(';')];
+  ds.forEach(d => {
+    const x = DB.dias[d]; if (!x || diaVazio(x)) return;
+    const t = somaDia(d), g = gastoDia(d);
+    const habs = DB.habitos.filter(h => habDevidoEm(h, d));
+    const hf = habs.filter(h => (x.habitos[h.id] || {}).feito).length;
+    const tr = x.treino;
+    linhas.push([
+      d, DOW[parseD(d).getDay()],
+      csvTxt(tr ? tr.nome + (tr.feito ? '' : ' (em aberto)') : ''),
+      tr ? tr.itens.filter(i => i.feito).length + '/' + tr.itens.length : '',
+      csvNum(volDia(d) || ''), tr ? tr.duracao || '' : '',
+      csvTxt((x.esportes || []).map(e => e.nome + ' ' + e.min + 'min').join(' | ')),
+      (x.esportes || []).reduce((a, e) => a + e.kcal, 0) || '',
+      Math.round(t.kcal) || '', Math.round(m.kcal),
+      csvNum(+t.c.toFixed(1)), csvNum(+t.p.toFixed(1)), csvNum(+t.g.toFixed(1)),
+      Math.round(t.escape || 0) || '', x.agua || '', metaAguaDia(d),
+      Math.round(g.total), Math.round(t.kcal - g.total),
+      csvNum(x.peso || ''), habs.length ? hf : '', habs.length || '',
+      csvTxt(x.nota || '')
+    ].join(';'));
+  });
+  return linhas.join('\r\n');
+}
+
+function periodoDias(tipo) {
+  if (tipo === 'mes') {
+    const ref = SUB.mes ? parseD(SUB.mes + '-01') : parseD(D);
+    return diasDoMes(ref.getFullYear(), ref.getMonth());
+  }
+  if (tipo === '30') { const o = []; for (let i = 29; i >= 0; i--) o.push(addDays(today(), -i)); return o; }
+  return Object.keys(DB.dias).sort();
+}
+
+ACT.planilha = () => {
+  SUB.expTipo = SUB.expTipo || 'mes';
+  sheetPlanilha();
+};
+function sheetPlanilha() {
+  const tipo = SUB.expTipo;
+  const ds = periodoDias(tipo).filter(d => DB.dias[d] && !diaVazio(DB.dias[d]));
+  const ref = SUB.mes ? parseD(SUB.mes + '-01') : parseD(D);
+  sheet(`<h3>Exportar planilha</h3>
+    <p class="hint">Um arquivo com uma linha por dia: treino, calorias, macros, água, peso e
+    hábitos. Abre no Excel, no Google Sheets e no Numbers.</p>
+    <div class="f"><label>Período</label>
+      <div class="segs">
+        ${[['mes', MESL[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2)],
+          ['30', 'Últimos 30 dias'], ['tudo', 'Tudo']].map(o =>
+          `<button class="${tipo === o[0] ? 'on' : ''}" data-a="expTipo" data-t="${o[0]}">${o[1]}</button>`).join('')}
+      </div></div>
+    <div class="${ds.length ? 'okbox' : 'warnbox'}">${ds.length
+      ? `<b>${ds.length}</b> dia(s) com registro entram na planilha.`
+      : 'Nenhum dia com registro neste período.'}</div>
+    ${ds.length ? `<div class="btnrow">
+        <button class="btn pri" data-a="planilhaEnviar">Compartilhar</button>
+        <button class="btn" data-a="planilhaBaixar">Baixar</button>
+      </div>
+      <p class="mini" style="margin-top:10px"><b>Compartilhar</b> abre a lista de aplicativos do
+      celular — escolha o e-mail e a planilha vai já anexada. No computador, use
+      <b>Baixar</b> e anexe o arquivo você mesmo: e-mail não deixa um site anexar arquivo sozinho.</p>`
+      : '<button class="btn full" data-a="fechar">Fechar</button>'}`);
+}
+ACT.expTipo = e => { SUB.expTipo = e.dataset.t; sheetPlanilha(); };
+
+function arquivoPlanilha() {
+  const ds = periodoDias(SUB.expTipo);
+  const nome = 'vitta-' + (SUB.expTipo === 'tudo' ? 'historico' :
+    SUB.expTipo === '30' ? 'ultimos-30-dias' : (SUB.mes || today().slice(0, 7))) + '.csv';
+  return { nome, texto: '\ufeff' + planilhaDias(ds) };
+}
+ACT.planilhaBaixar = () => {
+  const { nome, texto } = arquivoPlanilha();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' }));
+  a.download = nome; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  fechar(); toast('Planilha gerada ✓');
+};
+ACT.planilhaEnviar = async () => {
+  const { nome, texto } = arquivoPlanilha();
+  try {
+    const arq = new File([texto], nome, { type: 'text/csv' });
+    if (navigator.canShare && navigator.canShare({ files: [arq] })) {
+      await navigator.share({ files: [arq], title: 'Vitta — acompanhamento', text: 'Segue minha planilha do Vitta.' });
+      fechar(); return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  ACT.planilhaBaixar();
+  toast('Este navegador não compartilha arquivos — a planilha foi baixada');
+};
 /* =========================================================
    HOJE — painel de lançamento rápido
    ========================================================= */
@@ -2549,6 +2889,11 @@ const TABELAS = [
     })
   },
   {
+    n: 'atividades', get: () => DB.atividades, set: a => DB.atividades = a,
+    up: a => ({ id: a.id, user_id: SB.user, nome: a.nome, met: a.met, min: a.min, intens: a.int || 1, dias: a.dias || [], upd: a.upd }),
+    down: r => ({ id: r.id, nome: r.nome, met: +r.met, min: +r.min, int: +r.intens || 1, dias: r.dias || [], upd: r.upd })
+  },
+  {
     n: 'habitos', get: () => DB.habitos, set: a => DB.habitos = a,
     up: h => ({
       id: h.id, user_id: SB.user, nome: h.nome, icone: h.icone, motivos: h.motivos, inicio: h.inicio, fim: h.fim || null,
@@ -2573,14 +2918,34 @@ async function syncAll(avisar) {
     await syncDias();
     DB.cfg.ultimoSync = nowISO(); DIRTY = false;
     save(false);
-    SB.status = 'sincronizado'; syncBadge();
+    SB.status = SEM_TABELA.size
+      ? 'sincronizado (falta a tabela ' + [...SEM_TABELA].join(', ') + ' — rode o schema.sql)'
+      : 'sincronizado';
+    syncBadge();
     if (avisar) toast('Sincronizado ✓');
     render();
   } catch (e) {
-    SB.status = 'erro no sync'; syncBadge();
     console.error('[sync]', e);
-    if (avisar) toast('Erro: ' + (e.message || e));
+    SB.status = explicarErro(e); syncBadge();
+    if (avisar) toast(SB.status);
+    render();
   }
+}
+
+/* Traduz os erros que o Supabase devolve para o que fazer a respeito. */
+function explicarErro(e) {
+  const m = String((e && e.message) || e || '');
+  if (/no unique or exclusion constraint/i.test(m))
+    return 'Banco na versão antiga — rode o schema.sql de novo no SQL Editor';
+  if (/USING expression/i.test(m))
+    return 'Identificador em conflito entre contas — rode o schema.sql de novo (parte 8)';
+  if (/row-level security/i.test(m))
+    return 'Regras de segurança faltando — rode o schema.sql de novo (parte 9)';
+  if (/does not exist|schema cache/i.test(m))
+    return 'Falta tabela ou coluna — rode o schema.sql inteiro no SQL Editor';
+  if (/Failed to fetch|NetworkError/i.test(m))
+    return 'Sem conexão com o servidor';
+  return 'Erro no sync: ' + m.slice(0, 80);
 }
 
 /* exclusões feitas offline ou em outro momento */
@@ -2590,14 +2955,25 @@ async function aplicarExclusoes() {
   fila.forEach(d => (porTabela[d.t] = porTabela[d.t] || []).push(d.id));
   for (const t of Object.keys(porTabela)) {
     const { error } = await SB.client.from(t).delete().eq('user_id', SB.user).in('id', porTabela[t]);
-    if (error) throw error;
+    if (error && !tabelaAusente(error)) throw error;
   }
   DB.delFila = [];
 }
 
+/* Tabela que ainda não existe no banco (schema desatualizado) não derruba o
+   sync inteiro: o app avisa uma vez e segue sincronizando o resto.            */
+const SEM_TABELA = new Set();
+const tabelaAusente = e => /does not exist|schema cache|PGRST205/i.test(String((e && e.message) || e));
+
 async function syncTabela(t) {
+  if (SEM_TABELA.has(t.n)) return;
   const locais = t.get();
   const { data, error } = await SB.client.from(t.n).select('*').eq('user_id', SB.user);
+  if (error && tabelaAusente(error)) {
+    SEM_TABELA.add(t.n);
+    console.warn('[sync] tabela ausente:', t.n, '— rode o schema.sql de novo');
+    return;
+  }
   if (error) throw error;
   const remotos = (data || []).map(t.down);
   const mapL = new Map(locais.map(x => [x.id, x])), mapR = new Map(remotos.map(x => [x.id, x]));
@@ -2609,10 +2985,18 @@ async function syncTabela(t) {
     else resultado.push(r);
   });
   t.set(resultado);
-  if (enviar.length) {
-    const { error: e2 } = await SB.client.from(t.n).upsert(enviar.map(t.up), { onConflict: 'user_id,id' });
-    if (e2) throw e2;
+  if (enviar.length) await upsertCompat(t.n, enviar.map(t.up));
+}
+
+/* Bancos criados com a versão antiga do schema.sql ainda têm a chave
+   primária só no id. Tenta a chave nova e cai para a antiga se preciso. */
+async function upsertCompat(tabela, linhas) {
+  let r = await SB.client.from(tabela).upsert(linhas, { onConflict: 'user_id,id' });
+  if (r.error && /no unique or exclusion constraint/i.test(r.error.message || '')) {
+    r = await SB.client.from(tabela).upsert(linhas, { onConflict: 'id' });
   }
+  if (r.error && tabelaAusente(r.error)) { SEM_TABELA.add(tabela); return; }
+  if (r.error) throw r.error;
 }
 
 async function syncPerfil() {
