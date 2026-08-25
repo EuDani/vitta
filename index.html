@@ -2610,7 +2610,7 @@ async function syncTabela(t) {
   });
   t.set(resultado);
   if (enviar.length) {
-    const { error: e2 } = await SB.client.from(t.n).upsert(enviar.map(t.up), { onConflict: 'id' });
+    const { error: e2 } = await SB.client.from(t.n).upsert(enviar.map(t.up), { onConflict: 'user_id,id' });
     if (e2) throw e2;
   }
 }
