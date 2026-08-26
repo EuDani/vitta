@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <!-- Android 13+ exige pedir permissão para notificar. Sem isto os
+       lembretes, hábitos e medicamentos não avisam nada. -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Remarcar os avisos depois que o aparelho reinicia -->
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+  <application
+      android:allowBackup="true"
+      android:fullBackupContent="true"
+      android:icon="@mipmap/ic_launcher"
+      android:roundIcon="@mipmap/ic_launcher"
+      android:label="@string/app_name"
+      android:supportsRtl="true"
+      android:usesCleartextTraffic="false"
+      android:theme="@style/Tema.Vitta">
+
+    <activity
+        android:name=".MainActivity"
+        android:exported="true"
+        android:launchMode="singleTask"
+        android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|smallestScreenSize|density"
+        android:windowSoftInputMode="adjustResize"
+        android:theme="@style/Tema.Vitta">
+
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+
+      <!-- Faz o link do e-mail de acesso (magic link) abrir DENTRO do app,
+           e não no navegador — é o que mantém a sessão no mesmo lugar.
+           O endereço vem de res/values/strings.xml. -->
+      <intent-filter android:autoVerify="false">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="@string/app_host" />
+      </intent-filter>
+    </activity>
+
+    <!-- Quem toca o alarme na hora marcada -->
+    <receiver android:name=".AlarmeReceiver" android:exported="false" />
+
+    <!-- Alarme não sobrevive a reiniciar o aparelho: este recebedor
+         remarca tudo quando o celular liga. -->
+    <receiver android:name=".BootReceiver" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+      </intent-filter>
+    </receiver>
+
+    <!-- Só para Android 9 e anteriores, onde a planilha é gravada na
+         pasta do app antes de ser compartilhada. -->
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="${applicationId}.arquivos"
+        android:exported="false"
+        android:grantUriPermissions="true">
+      <meta-data
+          android:name="android.support.FILE_PROVIDER_PATHS"
+          android:resource="@xml/arquivos" />
+    </provider>
+  </application>
+</manifest>

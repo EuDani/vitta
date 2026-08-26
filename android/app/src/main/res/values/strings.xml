@@ -1,0 +1,25 @@
+<resources>
+  <string name="app_name">Vitta</string>
+
+  <!-- ================================================================
+       ENDEREÇO DO APP PUBLICADO
+
+       Cole aqui o endereço do seu GitHub Pages, por exemplo:
+         https://eudani.github.io/vitta/
+
+       Por que vale a pena preencher:
+         - o app se atualiza sozinho quando você publica uma versão nova;
+         - o link de acesso que chega no e-mail volta para DENTRO do app,
+           que é o que mantém a sincronização entre celular e computador.
+
+       Deixando em branco, o app usa a cópia que veio dentro do APK:
+       funciona 100% offline, mas só atualiza quando você instalar um
+       APK novo, e o login por link de e-mail não volta para o app
+       (nesse caso, entre pelo código de 6 dígitos).
+       ================================================================ -->
+  <string name="app_url">https://eudani.github.io/vitta/</string>
+
+  <!-- Só o domínio do endereço acima (sem https:// e sem a barra).
+       É o que faz o link do e-mail abrir no app. Ex.: eudani.github.io -->
+  <string name="app_host">eudani.github.io</string>
+</resources>

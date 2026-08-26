@@ -1,0 +1,7 @@
+<resources>
+  <!-- Mesma paleta sálvia do app, para não haver um piscar branco na abertura -->
+  <color name="fundo">#E8EFD7</color>
+  <color name="verde">#5F7346</color>
+  <color name="verde_escuro">#4C5D37</color>
+  <color name="claro">#FBFDF2</color>
+</resources>
