@@ -630,7 +630,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-26h';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-26i';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -5697,12 +5697,36 @@ ACT.enviarCodigo = async e => {
 };
 function sheetCodigo(email) {
   const local = location.protocol === 'file:';
+  /* No APK, o Android manda link https para o navegador por padrão. O
+     Chrome entra — mas a sessão fica lá, não aqui. Por isso o caminho do
+     link não pode ser o único: colar o link resolve em qualquer aparelho,
+     sem depender de configuração nenhuma do sistema. */
+  const naWebView = /\bwv\b|Version\/[\d.]+ Chrome/.test(navigator.userAgent)
+    || typeof AndroidVitta !== 'undefined';
   sheet(`<h3>Verifique seu e-mail</h3>
     <p class="hint">Enviamos para <b>${esc(email)}</b>. Chega em alguns segundos — confira o spam.</p>
-    <div class="okbox"><b>Caminho mais simples:</b> abra o e-mail neste aparelho e toque no link
-    (<i>Log In</i> / <i>Confirm your mail</i>). Você volta para cá já conectado.</div>
-    ${local ? '<div class="warnbox">Este arquivo está aberto direto do disco. O link do e-mail só consegue devolver você para o app se ele estiver publicado num endereço da internet — use o código abaixo, ou abra o app pelo endereço publicado.</div>' : ''}
-    <div class="f"><label>Ou, se o e-mail trouxer um código de 6 dígitos</label>
+
+    ${naWebView
+      ? `<div class="warnbox">Você está no aplicativo. Tocar no link do e-mail abre o
+         <b>navegador</b>, e a sessão fica lá — não aqui. Use uma das duas opções abaixo.</div>`
+      : `<div class="okbox"><b>Caminho mais simples:</b> abra o e-mail neste aparelho e toque no link
+         (<i>Log In</i> / <i>Confirm your mail</i>). Você volta para cá já conectado.</div>`}
+    ${local ? '<div class="warnbox">Este arquivo está aberto direto do disco. O link do e-mail só consegue devolver você para o app se ele estiver publicado num endereço da internet — use o código ou o link colado abaixo.</div>' : ''}
+
+    <div class="f"><label>1 · Cole aqui o link do e-mail</label>
+      <div class="row" style="gap:8px;border:0;padding:0">
+        <input class="in" id="au_link" style="flex:1" placeholder="https://…"
+          inputmode="url" autocapitalize="off" spellcheck="false">
+        <button class="btn xs" data-a="colarDaArea" data-sujo="1">Colar</button>
+      </div>
+      <p class="mini" style="margin-top:6px">Segure o botão do e-mail, escolha <b>copiar link</b> e
+      cole aqui. Se você já abriu no navegador, copie o endereço da barra depois que a página
+      carregar — ele traz o acesso.</p></div>
+    <button class="btn pri full sm" data-a="entrarComLink">Entrar com o link</button>
+
+    <hr class="sep">
+
+    <div class="f"><label>2 · Ou o código de 6 dígitos, se o e-mail trouxer</label>
       <input class="in" id="au_cod" inputmode="numeric" autocomplete="one-time-code"
         placeholder="000000" style="font-size:22px;letter-spacing:6px;text-align:center"></div>
     <div class="btnrow"><button class="btn" data-a="entrarEmail">Voltar</button>
@@ -5710,6 +5734,60 @@ function sheetCodigo(email) {
     <p class="mini" style="margin-top:10px">Não chegou? Espere 60 segundos antes de pedir de novo —
     é o limite do Supabase. E confirme que o endereço é o mesmo da sua conta do Supabase.</p>`);
 }
+/* ---------- entrar colando o link ----------
+   Aceita as duas formas em que o acesso aparece:
+   · o link do e-mail, ainda não aberto  → .../verify?token=…&type=magiclink
+   · o endereço da barra do navegador     → …/vitta/#access_token=…&refresh_token=…
+   O primeiro é de uso único: se você já tocou nele, ele não serve mais —
+   aí o que vale é copiar da barra do navegador.                             */
+async function sessaoDoLink(bruto) {
+  let u;
+  try { u = new URL(bruto.trim()); } catch (e) { return { msg: 'Isso não parece um link' }; }
+  const q = new URLSearchParams(u.search);
+  const h = new URLSearchParams((u.hash || '').replace(/^#/, ''));
+  const pega = k => h.get(k) || q.get(k);
+
+  const erro = pega('error_description') || pega('error');
+  const at = pega('access_token'), rt = pega('refresh_token');
+  if (at && rt) {
+    const { data, error } = await SB.client.auth.setSession({ access_token: at, refresh_token: rt });
+    if (error || !data.session) return { msg: 'O acesso desse link já expirou — peça um novo' };
+    return { sessao: data.session };
+  }
+  if (erro) return { msg: decodeURIComponent(erro).replace(/\+/g, ' ') };
+
+  const th = pega('token_hash') || pega('token');
+  if (th) {
+    const tipos = [pega('type'), 'magiclink', 'email', 'signup'].filter(Boolean);
+    for (const t of tipos) {
+      const r = await SB.client.auth.verifyOtp({ token_hash: th, type: t });
+      if (!r.error && r.data && r.data.session) return { sessao: r.data.session };
+    }
+    return { msg: 'Link já usado ou expirado. Peça outro e copie sem abrir' };
+  }
+  return { msg: 'Não encontrei o acesso nesse link' };
+}
+ACT.colarDaArea = async () => {
+  try {
+    const t = await navigator.clipboard.readText();
+    const c = document.getElementById('au_link');
+    if (c && t) { c.value = t.trim(); toast('Link colado'); }
+    else toast('Nada na área de transferência');
+  } catch (e) { toast('Cole com o teclado: segure o campo e escolha Colar'); }
+};
+ACT.entrarComLink = async e => {
+  const bruto = valOf('au_link').trim();
+  if (!bruto) return toast('Cole o link do e-mail');
+  if (!SB.client) await iniciarSupabase(false);
+  if (!SB.client) return toast('Sem conexão com o Supabase');
+  const rotulo = e.textContent;
+  e.textContent = 'Entrando…';
+  const r = await sessaoDoLink(bruto);
+  if (!r.sessao) { e.textContent = rotulo; console.error('[auth link]', r.msg); return toast(r.msg); }
+  aplicarSessao(r.sessao);
+  fechar(); toast('Conectado como ' + (r.sessao.user.email || 'você'));
+  await syncAll(true);
+};
 ACT.confirmarCodigo = async e => {
   const token = valOf('au_cod').replace(/\D/g, ''), email = e.dataset.m;
   if (token.length < 6) return toast('O código tem 6 dígitos — ou use o link do e-mail');
