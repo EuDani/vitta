@@ -476,6 +476,7 @@ const ICONS = {
   raio: 'M13 2.5 3.8 13.6a.6.6 0 0 0 .5 1H11l-.9 6.9 9.1-11.1a.6.6 0 0 0-.5-1H12z',
   conta: 'M3 7.5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z@M3.5 8.2 12 14l8.5-5.8',
   sair: 'M14.5 3.5H19a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-4.5M10 16.5 5.5 12 10 7.5M5.5 12h10',
+  cadeado: 'M5.5 10.5h13a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20v-8a1.5 1.5 0 0 1 1.5-1.5z@M7.6 10.5V7.2a4.4 4.4 0 0 1 8.8 0v3.3@M12 14.8v2.8',
   nuvem: 'M17.5 19a4.5 4.5 0 0 0 .3-9A6.5 6.5 0 0 0 5.2 11.4 3.8 3.8 0 0 0 6 19z',
 
   /* refeições */
@@ -630,7 +631,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-26i';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-26k';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -1024,7 +1025,9 @@ const sujar = () => { SHEET_SUJO = true; };
    marcar sujo aqui daria um "descartar?" falso. */
 const SEM_SUJEIRA = new Set(['tentarFechar', 'fechar', 'voltar', 'perguntaSim', 'perguntaNao',
   'expTipo', 'planilhaBaixar', 'planilhaEnviar', 'aba', 'abaAdd', 'resAba', 'buscaAlim',
-  'entrarEmail', 'enviarCodigo', 'confirmarCodigo', 'pedirNotif', 'testarNotif']);
+  'entrarEmail', 'enviarCodigo', 'confirmarCodigo', 'pedirNotif', 'testarNotif',
+  'authModo', 'entrarSenha', 'criarSenha', 'definirSenha', 'salvarSenha',
+  'entrarComLink', 'colarDaArea']);
 
 /* Um clique num chip, num segmentado ou num contador É preenchimento,
    mesmo sem teclado: escolher 4 estrelas de sono é dado que se perde. */
@@ -1669,6 +1672,11 @@ SCREENS.config = () => {
         são os mesmos nos dois. É a mesma conta.</div>
       <div class="row"><div class="g"><div class="t">${esc(SB.email)}</div>
         <div class="s" style="word-break:break-all">${esc(SB.user)}</div></div></div>
+      <div class="row" data-a="definirSenha"><div class="g">
+        <div class="t">${ic('cadeado', 15)} ${DB.cfg.temSenha ? 'Trocar a senha' : 'Definir uma senha'}</div>
+        <div class="s">${DB.cfg.temSenha ? 'entrar em outro aparelho sem depender de e-mail'
+          : 'o jeito mais direto de entrar no celular — sem link, sem código'}</div></div>
+        <div class="v">${ic('dir', 16, 'op')}</div></div>
       <div class="btnrow" style="margin-top:11px">
         <button class="btn" data-a="syncAgora">Sincronizar agora</button>
         <button class="btn gh" data-a="sair">Sair</button>
@@ -1681,9 +1689,10 @@ SCREENS.config = () => {
         <button class="btn gh" data-a="syncAgora">Sincronizar agora</button>
         <button class="btn gh" data-a="sair">Sair do modo anônimo</button>
       </div>`
-    : `<p class="mini" style="margin-bottom:12px">Entre com seu e-mail para que celular e computador
-        mostrem os mesmos dados. Você recebe um código de 6 dígitos — não existe senha para criar.</p>
-      <button class="btn pri full" data-a="entrarEmail" style="margin-bottom:8px">Entrar com e-mail</button>
+    : `<p class="mini" style="margin-bottom:12px">Entre na sua conta para que celular e computador
+        mostrem os mesmos dados. Com e-mail e senha é imediato; por e-mail, o Supabase manda um
+        link ou um código.</p>
+      <button class="btn pri full" data-a="entrarEmail" style="margin-bottom:8px">Entrar na conta</button>
       <button class="btn gh full sm" data-a="entrarAnon">Usar só neste aparelho</button>`}
 
     ${contaOk ? '' : `<div class="row" style="margin-top:4px" data-a="verBoasVindas"><div class="g">
@@ -2531,6 +2540,143 @@ ACT.delItem = e => {
   const x = dia(D), l = x.refeicoes[e.dataset.r];
   l.splice(+e.dataset.i, 1); tocaDia(D); save(); render();
 };
+
+/* =========================================================
+   EDITAR UM ITEM JÁ LANÇADO
+
+   Antes, errar a quantidade ou a refeição obrigava a apagar e
+   lançar de novo — e quem lançou "à mão" perdia os macros que
+   tinha digitado. Aqui o item abre inteiro: nome, quantidade,
+   calorias, macros, líquido, escape e em qual refeição ele está.
+
+   Quando o item veio de um alimento ou prato que ainda existe,
+   mexer na quantidade recalcula tudo sozinho — que é o motivo
+   mais comum de voltar aqui ("comi 150 g, não 100").
+   ========================================================= */
+const CAMPOS_ITEM = ['it_nome', 'it_q', 'it_un', 'it_k', 'it_c', 'it_p', 'it_g', 'it_l'];
+const itemEdit = () => ((dia(D).refeicoes[SUB.edRef] || [])[SUB.edIdx]) || null;
+
+function origemItem(it) {
+  if (!it) return null;
+  if (it.fonte === 'alimento') {
+    const a = alimById(it.refId);
+    return a ? { base: num(a.porcao) || 1, un: a.un, nome: a.nome,
+      kcal: a.kcal, c: a.c, p: a.p, g: a.g, liq: a.liq || 0 } : null;
+  }
+  if (it.fonte === 'prato') {
+    const p = DB.pratos.find(x => x.id === it.refId);
+    if (!p) return null;
+    const m = macrosPrato(p);
+    return { base: 1, un: 'porção', nome: p.nome, kcal: m.kcal, c: m.c, p: m.p, g: m.g, liq: m.liq };
+  }
+  return null;   // lançamento livre, ou a origem foi excluída depois
+}
+function itCapturar() {
+  SUB.edTmp = SUB.edTmp || {};
+  CAMPOS_ITEM.forEach(k => { const el = document.getElementById(k); if (el) SUB.edTmp[k] = el.value; });
+}
+function itRestaurar() {
+  if (!SUB.edTmp) return;
+  CAMPOS_ITEM.forEach(k => { const el = document.getElementById(k); if (el && SUB.edTmp[k] !== undefined) el.value = SUB.edTmp[k]; });
+}
+ACT.editItem = e => {
+  SUB.edRef = e.dataset.r; SUB.edIdx = +e.dataset.i; SUB.edTmp = null;
+  const it = itemEdit(); if (!it) return;
+  SUB.edEscape = !!it.escape; SUB.edDest = SUB.edRef;
+  sheetItem();
+};
+ACT.itQtd = () => {
+  const o = origemItem(itemEdit()); if (!o) return;
+  const f = numOf('it_q') / (o.base || 1);
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  set('it_k', Math.round(o.kcal * f));
+  set('it_c', +(o.c * f).toFixed(1));
+  set('it_p', +(o.p * f).toFixed(1));
+  set('it_g', +(o.g * f).toFixed(1));
+  set('it_l', Math.round((o.liq || 0) * f));
+  const av = document.getElementById('it_calc');
+  if (av) av.innerHTML = `<b>${n0(o.kcal * f)} kcal</b> · C ${n1(o.c * f)}g · P ${n1(o.p * f)}g · G ${n1(o.g * f)}g
+    <span class="mini" style="display:block;margin-top:3px">recalculado a partir de ${esc(o.nome)}</span>`;
+};
+ACT.itEsc = () => { itCapturar(); SUB.edEscape = !SUB.edEscape; sheetItem(); itRestaurar(); };
+ACT.itRef = e => { itCapturar(); SUB.edDest = e.dataset.t; sheetItem(); itRestaurar(); };
+
+function sheetItem() {
+  const it = itemEdit(); if (!it) return fechar();
+  const o = origemItem(it), dest = SUB.edDest || SUB.edRef;
+  sheet(`<h3>Editar item</h3>
+    <p class="hint">${o
+      ? `Veio de <b>${esc(o.nome)}</b> — mexer na quantidade recalcula calorias e macros sozinho.`
+      : 'Lançamento livre: os valores são os que você digitar aqui.'}</p>
+
+    <div class="f"><label>Nome</label><input class="in" id="it_nome" value="${esc(it.nome)}"></div>
+    <div class="grid2">
+      <div class="f"><label>Quantidade</label>
+        <input class="in" id="it_q" type="number" inputmode="decimal" step="0.1"
+          value="${it.qtd || ''}"${o ? ' data-inp="itQtd"' : ''}></div>
+      <div class="f"><label>Unidade</label>
+        <input class="in" id="it_un" value="${esc(it.un || '')}" placeholder="${o ? esc(o.un) : 'g, ml, un…'}"></div>
+    </div>
+    ${o ? `<div class="okbox" id="it_calc">Porção base: ${n1(o.base)} ${esc(o.un)} = ${n0(o.kcal)} kcal</div>` : ''}
+
+    <div class="grid2">
+      <div class="f"><label>Calorias</label>
+        <input class="in" id="it_k" type="number" inputmode="decimal" value="${it.kcal || 0}"></div>
+      <div class="f"><label>Líquido (ml)</label>
+        <input class="in" id="it_l" type="number" inputmode="numeric" value="${it.liq || 0}"></div>
+    </div>
+    <div class="grid3">
+      <div class="f"><label>Carbo (g)</label>
+        <input class="in" id="it_c" type="number" inputmode="decimal" step="0.1" value="${it.c || 0}"></div>
+      <div class="f"><label>Proteína (g)</label>
+        <input class="in" id="it_p" type="number" inputmode="decimal" step="0.1" value="${it.p || 0}"></div>
+      <div class="f"><label>Gordura (g)</label>
+        <input class="in" id="it_g" type="number" inputmode="decimal" step="0.1" value="${it.g || 0}"></div>
+    </div>
+
+    <div class="f"><label>Refeição</label>
+      <div class="chiprow">${REFS.map(([k, nome]) =>
+        `<button class="chip ${dest === k ? 'on' : ''}" data-a="itRef" data-t="${k}">${esc(nome)}</button>`).join('')}</div>
+      ${dest !== SUB.edRef ? `<p class="mini" style="margin-top:6px">Vai sair de <b>${esc(refNome(SUB.edRef))}</b>
+        e entrar em <b>${esc(refNome(dest))}</b> ao salvar.</p>` : ''}</div>
+
+    <div class="f"><label>Escape</label>
+      <button class="chip ${SUB.edEscape ? 'on' : ''}" data-a="itEsc">${ic('alerta', 14)}
+        ${SUB.edEscape ? 'marcado como escape' : 'não é escape'}</button>
+      <p class="mini" style="margin-top:6px">Escape é o que fugiu do plano. Continua contando nas calorias
+      do dia, mas aparece separado no resumo.</p></div>
+
+    <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarItem">Salvar</button></div>
+    <button class="btn danger full sm" style="margin-top:9px" data-a="delItemSheet">Excluir este item</button>`);
+}
+ACT.salvarItem = () => {
+  const it = itemEdit(); if (!it) return fechar();
+  const nome = valOf('it_nome').trim();
+  if (!nome) return toast('Dê um nome ao item');
+  const kcal = numOf('it_k');
+  if (kcal < 0) return toast('Calorias não podem ser negativas');
+  Object.assign(it, {
+    nome, qtd: numOf('it_q'), un: valOf('it_un').trim(),
+    kcal: Math.round(kcal),
+    c: +numOf('it_c').toFixed(1), p: +numOf('it_p').toFixed(1), g: +numOf('it_g').toFixed(1),
+    liq: Math.round(numOf('it_l')), escape: !!SUB.edEscape
+  });
+  const dest = SUB.edDest || SUB.edRef, mudou = dest !== SUB.edRef;
+  if (mudou) {
+    const x = dia(D);
+    x.refeicoes[SUB.edRef].splice(SUB.edIdx, 1);
+    x.refeicoes[dest] = x.refeicoes[dest] || [];
+    x.refeicoes[dest].push(it);
+  }
+  SUB.edTmp = null;
+  tocaDia(D); save(); fechar(); render();
+  toast(mudou ? 'Movido para ' + refNome(dest) : 'Item atualizado ✓');
+};
+ACT.delItemSheet = () => confirmar('Excluir este item da refeição?', () => {
+  (dia(D).refeicoes[SUB.edRef] || []).splice(SUB.edIdx, 1);
+  SUB.edTmp = null; tocaDia(D); save(); fechar(); render();
+});
 ACT.togItemEsc = e => {
   const it = dia(D).refeicoes[e.dataset.r][+e.dataset.i];
   it.escape = !it.escape; tocaDia(D); save(); render();
@@ -2592,7 +2738,8 @@ SCREENS.dieta = () => {
         ${itens.length ? `<span class="sub">${n0(s.kcal)} kcal</span>` : ''}
         <button class="btn xs pri" data-a="addRef" data-r="${k}">${ic('mais',14)}</button></div>
       ${itens.map((i, idx) => `<div class="row">
-        <div class="g"><div class="t wrap">${esc(i.nome)} ${i.escape ? '<span class="pill esc">escape</span>' : ''}</div>
+        <div class="g" data-a="editItem" data-r="${k}" data-i="${idx}">
+          <div class="t wrap">${esc(i.nome)} ${i.escape ? '<span class="pill esc">escape</span>' : ''}</div>
           <div class="s">${i.qtd ? esc(i.qtd + ' ' + (i.un || '')) + ' · ' : ''}C${n1(i.c)} P${n1(i.p)} G${n1(i.g)}${i.liq ? ' · ' + n0(i.liq) + 'ml' : ''}</div></div>
         <div class="v">${n0(i.kcal)}</div>
         <button class="btn xs" data-a="togItemEsc" data-r="${k}" data-i="${idx}" title="Marcar como escape">${ic('alerta',14)}</button>
@@ -5669,30 +5816,156 @@ function aplicarSessao(session) {
       projetos gratuitos novos).                                          */
 const URL_APP = () => location.origin + location.pathname;
 
-ACT.entrarEmail = () => {
+/* O serviço de e-mail que vem junto do Supabase é de teste: poucas
+   mensagens por hora no projeto inteiro. Depurar login estoura esse teto
+   em minutos — e aí não há link nem código que chegue. Por isso a senha
+   é o caminho principal: ela não manda e-mail nenhum. */
+const emailOk = e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+const ESPERA_EMAIL = 60000;
+function faltaEsperar() {
+  const t = DB.cfg.ultimoEnvio || 0;
+  const f = Math.ceil((ESPERA_EMAIL - (Date.now() - t)) / 1000);
+  return f > 0 && f <= 60 ? f : 0;
+}
+/* Mensagem do Supabase vem em inglês e sem contexto. Traduzir aqui é o que
+   transforma "over_email_send_rate_limit" em algo acionável. */
+function erroAuth(err) {
+  const m = String((err && (err.message || err.msg)) || err || '');
+  const cod = String((err && err.code) || '');
+  if (/rate limit|over_email_send_rate/i.test(m) || cod === 'over_email_send_rate_limit')
+    return 'Limite de e-mails do Supabase estourado. O serviço de e-mail que vem de fábrica manda '
+      + 'poucas mensagens por hora. Espere uma hora — ou entre com senha, que não manda e-mail nenhum.';
+  const seg = m.match(/after (\d+) seconds?/i);
+  if (seg) return `Espere ${seg[1]} segundos antes de pedir de novo.`;
+  if (/Invalid login credentials/i.test(m)) return 'E-mail ou senha não conferem';
+  if (/Email not confirmed/i.test(m)) return 'Esta conta ainda não foi confirmada por e-mail';
+  if (/already registered|already been registered|user_already_exists/i.test(m))
+    return 'Já existe conta com este e-mail. Use “Entrar” com a sua senha';
+  if (/Password should be at least|weak.?password/i.test(m)) return 'Senha curta ou fraca demais';
+  if (/Signups not allowed|signup_disabled/i.test(m)) return 'A criação de contas está desligada neste projeto do Supabase';
+  if (/Failed to fetch|NetworkError/i.test(m)) return 'Sem conexão com o Supabase';
+  return 'Erro: ' + m;
+}
+
+function authCapturar() {
+  SUB.authTmp = SUB.authTmp || {};
+  ['au_mail', 'au_pass'].forEach(k => { const el = document.getElementById(k); if (el) SUB.authTmp[k] = el.value; });
+}
+function authRestaurar() {
+  if (!SUB.authTmp) return;
+  Object.keys(SUB.authTmp).forEach(k => { const el = document.getElementById(k); if (el) el.value = SUB.authTmp[k]; });
+}
+ACT.entrarEmail = () => { SUB.authModo = SUB.authModo || 'senha'; sheetEntrar(); };
+ACT.authModo = e => { authCapturar(); SUB.authModo = e.dataset.t; sheetEntrar(); authRestaurar(); };
+
+function sheetEntrar() {
+  const modo = SUB.authModo || 'senha';
+  const mail = (SUB.authTmp || {}).au_mail || DB.cfg.ultimoEmail || '';
+  const espera = faltaEsperar();
   sheet(`<h3>Sincronizar entre aparelhos</h3>
-    <p class="hint">Informe seu e-mail e abra a mensagem <b>neste mesmo aparelho</b>: tocar no
-    link já entra. Use o mesmo e-mail no celular e no computador e os dados passam a ser os mesmos.</p>
+    <p class="hint">A mesma conta no celular e no computador faz os dois mostrarem os mesmos dados.</p>
+    <div class="segs" style="margin-bottom:12px">
+      <button class="${modo === 'senha' ? 'on' : ''}" data-a="authModo" data-t="senha">Com senha</button>
+      <button class="${modo === 'email' ? 'on' : ''}" data-a="authModo" data-t="email">Por e-mail</button>
+    </div>
+
     <div class="f"><label>E-mail</label>
       <input class="in" id="au_mail" type="email" inputmode="email" autocapitalize="off"
-        spellcheck="false" placeholder="voce@exemplo.com" value="${esc(DB.cfg.ultimoEmail || '')}"></div>
-    <div class="warnbox">Use o <b>mesmo e-mail da sua conta do Supabase</b>. Sem um servidor de
-    e-mail próprio configurado, o Supabase só entrega mensagem para os endereços da organização
-    do projeto — para qualquer outro, o e-mail simplesmente não chega.</div>
-    ${SB.anon ? '<div class="okbox">Tudo o que já está neste aparelho sobe para a conta assim que você entrar.</div>' : ''}
-    <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
-      <button class="btn pri" data-a="enviarCodigo">Enviar acesso</button></div>`);
-};
-ACT.enviarCodigo = async e => {
-  const email = valOf('au_mail').trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('E-mail inválido');
+        spellcheck="false" autocomplete="username" placeholder="voce@exemplo.com" value="${esc(mail)}"></div>
+
+    ${modo === 'senha' ? `
+      <div class="f"><label>Senha</label>
+        <input class="in" id="au_pass" type="password" autocomplete="current-password"
+          placeholder="pelo menos 6 caracteres"></div>
+      <div class="okbox">Entrar com senha <b>não manda e-mail nenhum</b>: não esbarra em limite de
+      envio, não depende de link e funciona igual no aplicativo e no navegador.</div>
+      ${SB.anon ? '<div class="okbox">Tudo o que já está neste aparelho sobe para a conta assim que você entrar.</div>' : ''}
+      <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+        <button class="btn pri" data-a="entrarSenha">Entrar</button></div>
+      <button class="btn gh full sm" style="margin-top:9px" data-a="criarSenha">
+        Ainda não tenho conta — criar com esta senha</button>
+      <p class="mini" style="margin-top:9px">Se você já entra no computador sem senha, defina uma lá
+      em <b>Configurações → Conta → Definir uma senha</b> e use a mesma aqui.</p>`
+
+    : `<div class="warnbox">O e-mail sai pelo serviço de teste do Supabase, limitado a
+      <b>poucas mensagens por hora</b> no projeto inteiro — e só para os endereços da organização,
+      enquanto não houver um servidor de e-mail próprio configurado.</div>
+      ${SB.anon ? '<div class="okbox">Tudo o que já está neste aparelho sobe para a conta assim que você entrar.</div>' : ''}
+      <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
+        <button class="btn pri" data-a="enviarCodigo">${espera ? `Aguarde ${espera}s` : 'Enviar acesso'}</button></div>`}`);
+}
+ACT.entrarSenha = async e => {
+  authCapturar();
+  const email = valOf('au_mail').trim().toLowerCase(), senha = valOf('au_pass');
+  if (!emailOk(email)) return toast('E-mail inválido');
+  if (!senha) return toast('Digite a senha');
   if (!SB.client) await iniciarSupabase(false);
-  e.textContent = 'Enviando…';
+  if (!SB.client) return toast('Sem conexão com o Supabase');
+  const rot = e.textContent; e.textContent = 'Entrando…';
+  const { data, error } = await SB.client.auth.signInWithPassword({ email, password: senha });
+  if (error || !data || !data.session) { e.textContent = rot; return toast(erroAuth(error)); }
+  DB.cfg.ultimoEmail = email; SUB.authTmp = null; save(false);
+  aplicarSessao(data.session); fechar(); toast('Conectado como ' + email);
+  await syncAll(true);
+};
+ACT.criarSenha = async e => {
+  authCapturar();
+  const email = valOf('au_mail').trim().toLowerCase(), senha = valOf('au_pass');
+  if (!emailOk(email)) return toast('E-mail inválido');
+  if (senha.length < 6) return toast('A senha precisa ter pelo menos 6 caracteres');
+  if (!SB.client) await iniciarSupabase(false);
+  if (!SB.client) return toast('Sem conexão com o Supabase');
+  const rot = e.textContent; e.textContent = 'Criando…';
+  const { data, error } = await SB.client.auth.signUp({ email, password: senha });
+  if (error) { e.textContent = rot; return toast(erroAuth(error)); }
+  DB.cfg.ultimoEmail = email; save(false);
+  /* Sem sessão = o projeto está exigindo confirmação por e-mail. Aí a conta
+     existe, mas só entra depois de confirmar — e o e-mail entra na cota. */
+  if (!data || !data.session) {
+    e.textContent = rot;
+    return toast('Conta criada. O Supabase pediu confirmação por e-mail: confirme e depois entre com a senha');
+  }
+  SUB.authTmp = null;
+  aplicarSessao(data.session); fechar(); toast('Conta criada — conectado como ' + email);
+  await syncAll(true);
+};
+
+/* ---------- definir senha estando logado ---------- */
+ACT.definirSenha = () => sheet(`<h3>Definir uma senha</h3>
+  <p class="hint">Com senha você entra em qualquer aparelho na hora: sem link, sem código de
+  6 dígitos e sem depender do serviço de e-mail do Supabase.</p>
+  <div class="f"><label>Nova senha</label>
+    <input class="in" id="au_nova" type="password" autocomplete="new-password" placeholder="pelo menos 6 caracteres"></div>
+  <div class="f"><label>Repita a senha</label>
+    <input class="in" id="au_nova2" type="password" autocomplete="new-password"></div>
+  <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
+    <button class="btn pri" data-a="salvarSenha">Salvar senha</button></div>`);
+ACT.salvarSenha = async e => {
+  const a = valOf('au_nova'), b = valOf('au_nova2');
+  if (a.length < 6) return toast('A senha precisa ter pelo menos 6 caracteres');
+  if (a !== b) return toast('As duas senhas não são iguais');
+  if (!SB.client || !SB.user) return toast('Entre na conta primeiro');
+  const rot = e.textContent; e.textContent = 'Salvando…';
+  const { error } = await SB.client.auth.updateUser({ password: a });
+  if (error) { e.textContent = rot; return toast(erroAuth(error)); }
+  DB.cfg.temSenha = true; save(false);
+  fechar(); render(); toast('Senha definida — use ela para entrar nos outros aparelhos');
+};
+
+ACT.enviarCodigo = async e => {
+  authCapturar();
+  const email = valOf('au_mail').trim().toLowerCase();
+  if (!emailOk(email)) return toast('E-mail inválido');
+  const espera = faltaEsperar();
+  if (espera) return toast(`Espere ${espera} segundos antes de pedir outro e-mail`);
+  if (!SB.client) await iniciarSupabase(false);
+  if (!SB.client) return toast('Sem conexão com o Supabase');
+  const rot = e.textContent; e.textContent = 'Enviando…';
   const { error } = await SB.client.auth.signInWithOtp({
     email, options: { shouldCreateUser: true, emailRedirectTo: URL_APP() }
   });
-  if (error) { e.textContent = 'Enviar acesso'; return toast('Erro: ' + error.message); }
-  DB.cfg.ultimoEmail = email; save(false);
+  if (error) { e.textContent = rot; return toast(erroAuth(error)); }
+  DB.cfg.ultimoEmail = email; DB.cfg.ultimoEnvio = Date.now(); save(false);
   sheetCodigo(email);
 };
 function sheetCodigo(email) {
