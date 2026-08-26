@@ -125,6 +125,37 @@ a{color:var(--res)}
 .dchip.on span{color:var(--ac-tx);opacity:.85}
 .dchip.fut{opacity:.45}
 
+/* Datas do dia dentro do cartão verde: fundo claro por cima do verde,
+   para o feriado saltar sem brigar com o "bom dia". */
+.hero-datas{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.hero-data{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:10px;
+  font-size:12px;font-weight:600;background:color-mix(in srgb,var(--ac-tx) 20%,transparent);
+  color:var(--ac-tx);cursor:pointer;line-height:1.2}
+.hero-data:hover{background:color-mix(in srgb,var(--ac-tx) 30%,transparent)}
+
+/* ---------- calendário do mês ---------- */
+.cal-h{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px}
+.cal-h span{text-align:center;font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-v{aspect-ratio:1}
+.cal-d{position:relative;aspect-ratio:1;border-radius:10px;background:var(--bg2);border:1px solid transparent;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px;
+  transition:border-color .12s,background .12s}
+.cal-d b{font-size:12.5px;font-weight:600;line-height:1}
+.cal-d:hover{border-color:var(--line2)}
+.cal-d.fut{opacity:.4}
+.cal-d.hoje{background:var(--ac);color:var(--ac-tx)}
+.cal-d.sel{border-color:var(--ac)}
+.cal-d.fer b{color:var(--bad)}
+.cal-d.hoje.fer b{color:var(--ac-tx)}
+.cal-p{display:flex;gap:2px;height:4px;align-items:center}
+.cal-p i{width:4px;height:4px;border-radius:50%;display:block}
+.cal-e{position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%}
+.cal-leg{display:flex;flex-wrap:wrap;gap:9px;margin-top:10px;font-size:10.5px;color:var(--tx3)}
+.cal-leg span{display:inline-flex;align-items:center;gap:4px}
+.cal-leg i{width:6px;height:6px;border-radius:50%;display:block}
+@media (min-width:960px){.cal-d b{font-size:14px}.cal,.cal-h{gap:5px}}
+
 /* Linha de anéis da visão geral: cinco cabem no celular estreito
    porque cada célula encolhe junto e o rótulo é uma palavra só. */
 .aneis{display:flex;gap:4px;justify-content:space-between;text-align:center}
@@ -570,7 +601,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-26d';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-26e';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -691,9 +722,9 @@ function novoDB() {
       objetivo: 'manter', ajuste: 0, protKg: 1.8, gordPct: 25,
       aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, metaSono: 8, upd: null
     },
-    fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], medicamentos: [], dias: {},
+    fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], medicamentos: [], datas: [], dias: {},
     delFila: [],
-    cfg: { url: SB_URL, key: SB_KEY, autoSync: true, ultimoSync: null, tema: 'auto', temConta: false, pularBoasVindas: false }
+    cfg: { url: SB_URL, key: SB_KEY, autoSync: true, ultimoSync: null, tema: 'auto', temConta: false, pularBoasVindas: false, feriados: true }
   };
 }
 const SEMENTES = () => novoDB().alimentos;
@@ -803,11 +834,10 @@ let DB = (() => {
     if (!cfg.url) cfg.url = SB_URL;
     if (!cfg.key) cfg.key = SB_KEY;
     const db = Object.assign(base, d, { perfil: Object.assign(base.perfil, d.perfil || {}), cfg });
+    /* coleções que nasceram em versões posteriores: um banco salvo antes
+       delas não as tem, e o app quebraria no primeiro .filter() */
     db.delFila = db.delFila || [];
-    db.atividades = db.atividades || [];
-    db.medicamentos = db.medicamentos || [];
-    db.atividades = db.atividades || [];
-    db.medicamentos = db.medicamentos || [];
+    ['atividades', 'medicamentos', 'datas'].forEach(k => db[k] = db[k] || []);
     const lim = limparAlimentos(db.alimentos || []);
     db.alimentos = lim.lista;
     lim.remover.forEach(id => { if (!db.delFila.some(x => x.t === 'alimentos' && x.id === id)) db.delFila.push({ t: 'alimentos', id }); });
@@ -1175,7 +1205,7 @@ function lateral() {
     </div>`;
 }
 const ROTULOS_ADD = {
-  fichas: 'Nova ficha', pratos: 'Novo prato', alimentos: 'Novo alimento',
+  calendario: 'Nova data', fichas: 'Nova ficha', pratos: 'Novo prato', alimentos: 'Novo alimento',
   habitos: 'Novo hábito', lembretes: 'Novo lembrete', remedios: 'Novo medicamento',
   medicamentos: 'Novo medicamento', treino: 'Nova atividade', dieta: 'Lançar refeição'
 };
@@ -1576,6 +1606,14 @@ SCREENS.config = () => {
     </div>
     <p class="mini" style="margin-top:9px">No automático o app acompanha o tema do celular ou do
       computador, e muda sozinho de noite se o aparelho mudar. A escolha vale só neste aparelho.</p>
+  </div>
+
+  <div class="card tight">
+    <div class="row" data-a="irCalendario"><div class="g">
+      <div class="t">${ic('calendario', 15)} Ajustar meu calendário</div>
+      <div class="s">feriados, aniversários e datas que aparecem no bom-dia${
+        (DB.datas || []).length ? ' · ' + plural(DB.datas.length, 'data sua', 'datas suas') : ''}</div></div>
+      <div class="v">${ic('dir', 16, 'op')}</div></div>
   </div>
 
   <div class="card">
@@ -3811,6 +3849,342 @@ function cardSono() {
   </div>`;
 }
 /* =========================================================
+   MEU CALENDÁRIO — feriados, aniversários e datas do dia
+
+   Duas origens, de propósito:
+
+   1. FERIADOS NACIONAIS, calculados. São nove fixos e quatro que
+      andam com a Páscoa (Carnaval, Sexta-feira Santa, Corpus
+      Christi). Cadastrar isso na mão todo ano seria trabalho
+      repetido e desatualiza sozinho; aqui a data sai da conta.
+
+   2. AS SUAS DATAS, guardadas. Aniversário, feriado da sua cidade,
+      "dia da terra", a data da consulta que se repete todo ano.
+
+   Tudo o que cai no dia aparece no cartão de bom-dia da tela Hoje
+   e no calendário do resumo mensal.
+   ========================================================= */
+TITULOS.calendario = ['Meu calendário', 'feriados, aniversários e datas'];
+
+const TIPOS_DATA = [
+  ['feriado', 'Feriado', 'calendario', 'var(--bad)'],
+  ['aniversario', 'Aniversário', 'festa', 'var(--hab)'],
+  ['comemorativa', 'Data comemorativa', 'faisca', 'var(--res)'],
+  ['pessoal', 'Data pessoal', 'estrela', 'var(--ac)']
+];
+const tipoData = t => TIPOS_DATA.find(x => x[0] === t) || TIPOS_DATA[3];
+
+/* ---------- Páscoa e os feriados que andam com ela ----------
+   Algoritmo de Meeus/Butcher para o calendário gregoriano. Vale para
+   qualquer ano entre 1583 e 4099 — mais do que suficiente. */
+function pascoa(ano) {
+  const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100;
+  const d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31);
+  const dia = ((h + l - 7 * m + 114) % 31) + 1;
+  return dstr(new Date(ano, mes - 1, dia));
+}
+
+const FERIADOS_FIXOS = [
+  [0, 1, 'Confraternização Universal'], [3, 21, 'Tiradentes'],
+  [4, 1, 'Dia do Trabalho'], [8, 7, 'Independência do Brasil'],
+  [9, 12, 'Nossa Senhora Aparecida'], [10, 2, 'Finados'],
+  [10, 15, 'Proclamação da República'], [10, 20, 'Consciência Negra'],
+  [11, 25, 'Natal']
+];
+
+/* Cache por ano: a conta é barata, mas o calendário do mês chama isto
+   uma vez por célula e não faz sentido repetir 31 vezes. */
+const FERIADOS_CACHE = {};
+function feriadosNacionais(ano) {
+  if (FERIADOS_CACHE[ano]) return FERIADOS_CACHE[ano];
+  const p = pascoa(ano);
+  const lista = [
+    ...FERIADOS_FIXOS.map(([m, d, nome]) => ({ data: `${ano}-${pad(m + 1)}-${pad(d)}`, nome })),
+    { data: addDays(p, -48), nome: 'Carnaval (segunda)' },
+    { data: addDays(p, -47), nome: 'Carnaval' },
+    { data: addDays(p, -46), nome: 'Quarta-feira de Cinzas' },
+    { data: addDays(p, -2), nome: 'Sexta-feira Santa' },
+    { data: p, nome: 'Páscoa' },
+    { data: addDays(p, 60), nome: 'Corpus Christi' }
+  ].map(f => ({ id: 'nac-' + f.data, nome: f.nome, tipo: 'feriado', nacional: true, data: f.data }));
+  FERIADOS_CACHE[ano] = lista;
+  return lista;
+}
+
+/* Sugestões que a pessoa liga se quiser — nenhuma vem ligada. */
+const DATAS_SUGERIDAS = [
+  [3, 6, 'Dia Mundial da Atividade Física'], [3, 7, 'Dia Mundial da Saúde'],
+  [3, 22, 'Dia da Terra'], [4, 31, 'Dia Mundial sem Tabaco'],
+  [5, 5, 'Dia do Meio Ambiente'], [8, 10, 'Dia Mundial da Saúde Mental'],
+  [8, 29, 'Dia Mundial do Coração'], [10, 14, 'Dia Mundial do Diabetes'],
+  [2, 15, 'Dia Mundial do Sono']
+];
+
+/* ---------- o que cai neste dia ---------- */
+const dataAnual = o => o.anual !== false;
+function dataCaiEm(o, d) {
+  const p = parseD(d);
+  if (!dataAnual(o)) return o.data === d;
+  if ((+o.mes || 0) !== p.getMonth()) return false;
+  const ultimo = new Date(p.getFullYear(), p.getMonth() + 1, 0).getDate();
+  return p.getDate() === clamp(+o.dia || 1, 1, ultimo);
+}
+function datasDoDia(d) {
+  const p = parseD(d);
+  const nac = DB.cfg.feriados === false ? []
+    : feriadosNacionais(p.getFullYear()).filter(f => f.data === d);
+  const minhas = (DB.datas || []).filter(o => dataCaiEm(o, d));
+  return [...nac, ...minhas];
+}
+const temFeriado = d => datasDoDia(d).some(o => o.tipo === 'feriado');
+
+/* "Aniversário de Ana (32)" — a idade só aparece se o ano foi informado */
+function rotuloData(o, d) {
+  if (o.tipo === 'aniversario' && o.ano) {
+    const anos = parseD(d || today()).getFullYear() - (+o.ano);
+    if (anos > 0 && anos < 130) return o.nome + ' (' + anos + ')';
+  }
+  return o.nome;
+}
+const textoDatas = d => datasDoDia(d).map(o => rotuloData(o, d)).join(' · ');
+
+/* ---------- criar e editar ---------- */
+FAB.calendario = 'novaData';
+ACT.novaData = e => {
+  const id = e && e.dataset ? e.dataset.dt : null;
+  SUB.dtId = id;
+  const o = id ? (DB.datas || []).find(x => x.id === id) : null;
+  SUB.dtTipo = o ? o.tipo : 'aniversario';
+  SUB.dtAnual = o ? dataAnual(o) : true;
+  sheetData(o);
+};
+function sheetData(o) {
+  const hoje = parseD(today());
+  o = o || { nome: '', dia: hoje.getDate(), mes: hoje.getMonth(), ano: '', obs: '', data: today() };
+  sheet(`<h3>${SUB.dtId ? 'Editar' : 'Nova'} data</h3>
+    <p class="hint">Feriado da sua cidade, aniversário de quem importa, ou uma data que você quer
+    ver chegando. Ela aparece no bom-dia e no calendário do mês.</p>
+
+    <div class="f"><label>O que é</label><div class="chiprow">
+      ${TIPOS_DATA.map(t => `<button class="chip ${SUB.dtTipo === t[0] ? 'on' : ''}"
+        data-a="dtTipo" data-t="${t[0]}">${ic(t[2], 14)} ${t[1]}</button>`).join('')}
+    </div></div>
+
+    <div class="f"><label>Nome</label>
+      <input class="in" id="dt_nome" value="${esc(o.nome)}"
+        placeholder="${SUB.dtTipo === 'aniversario' ? 'ex: Aniversário da Ana' : 'ex: Aniversário da cidade'}"></div>
+
+    <div class="f"><label>Quando</label>
+      <div class="segs">
+        <button class="${SUB.dtAnual ? 'on' : ''}" data-a="dtAnual" data-v="1">Todo ano</button>
+        <button class="${SUB.dtAnual ? '' : 'on'}" data-a="dtAnual" data-v="0">Só nesta data</button>
+      </div></div>
+
+    ${SUB.dtAnual ? `<div class="grid2">
+        <div class="f"><label>Dia</label>
+          <input class="in" id="dt_dia" type="number" inputmode="numeric" min="1" max="31" value="${o.dia || hoje.getDate()}"></div>
+        <div class="f"><label>Mês</label><select class="in" id="dt_mes">${MESL.map((m, i) =>
+          `<option value="${i}" ${(+o.mes || 0) === i ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+      </div>
+      ${SUB.dtTipo === 'aniversario' ? `<div class="f"><label>Ano de nascimento (opcional)</label>
+        <input class="in" id="dt_ano" type="number" inputmode="numeric" min="1900" max="${hoje.getFullYear()}"
+          value="${o.ano || ''}" placeholder="para o app mostrar a idade"></div>` : ''}`
+      : `<div class="f"><label>Data</label>
+          <input class="in" id="dt_data" type="date" value="${esc(o.data || today())}"></div>`}
+
+    <div class="f"><label>Observação</label>
+      <input class="in" id="dt_obs" value="${esc(o.obs || '')}" placeholder="opcional"></div>
+
+    <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarData">Salvar</button></div>
+    ${SUB.dtId ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delData" data-dt="${SUB.dtId}">Excluir</button>` : ''}`);
+}
+function dtCapturar() {
+  SUB.dtTmp = SUB.dtTmp || {};
+  ['dt_nome', 'dt_dia', 'dt_mes', 'dt_ano', 'dt_data', 'dt_obs'].forEach(k => {
+    const e = document.getElementById(k); if (e) SUB.dtTmp[k] = e.value;
+  });
+}
+function dtRestaurar() {
+  if (!SUB.dtTmp) return;
+  Object.keys(SUB.dtTmp).forEach(k => { const e = document.getElementById(k); if (e) e.value = SUB.dtTmp[k]; });
+}
+const dtRedesenha = () => {
+  sheetData(SUB.dtId ? (DB.datas || []).find(x => x.id === SUB.dtId) : null);
+  dtRestaurar();
+};
+ACT.dtTipo = e => { dtCapturar(); SUB.dtTipo = e.dataset.t; dtRedesenha(); };
+ACT.dtAnual = e => { dtCapturar(); SUB.dtAnual = e.dataset.v === '1'; dtRedesenha(); };
+
+ACT.salvarData = () => {
+  dtCapturar();
+  const nome = valOf('dt_nome').trim();
+  if (!nome) return toast('Dê um nome à data');
+  const base = SUB.dtAnual ? null : (valOf('dt_data') || today());
+  const p = parseD(base || today());
+  const o = {
+    nome, tipo: SUB.dtTipo, anual: SUB.dtAnual,
+    dia: SUB.dtAnual ? clamp(Math.round(numOf('dt_dia') || 1), 1, 31) : p.getDate(),
+    mes: SUB.dtAnual ? Math.max(0, Math.min(11, Math.round(num(valOf('dt_mes', 0))))) : p.getMonth(),
+    ano: SUB.dtTipo === 'aniversario' && valOf('dt_ano') ? Math.round(numOf('dt_ano')) : null,
+    data: base, obs: valOf('dt_obs').trim(), upd: nowISO()
+  };
+  DB.datas = DB.datas || [];
+  if (SUB.dtId) Object.assign(DB.datas.find(x => x.id === SUB.dtId), o);
+  else DB.datas.push(Object.assign({ id: uid() }, o));
+  SUB.dtTmp = null; save(); fechar(); render();
+};
+ACT.delData = e => confirmar('Excluir esta data do seu calendário?', () => {
+  DB.datas = (DB.datas || []).filter(x => x.id !== e.dataset.dt);
+  enfileirarDel('datas', e.dataset.dt);
+  SUB.dtTmp = null; save(); fechar(); render();
+});
+ACT.togFeriados = () => {
+  DB.cfg.feriados = DB.cfg.feriados === false;
+  save(false); render();
+  toast(DB.cfg.feriados === false ? 'Feriados nacionais escondidos' : 'Feriados nacionais no calendário');
+};
+ACT.addSugerida = e => {
+  const [mes, dia, nome] = DATAS_SUGERIDAS[+e.dataset.i];
+  DB.datas = DB.datas || [];
+  if (DB.datas.some(x => x.nome === nome)) return toast('Essa data já está no seu calendário');
+  DB.datas.push({ id: uid(), nome, tipo: 'comemorativa', anual: true, dia, mes, ano: null, data: null, obs: '', upd: nowISO() });
+  save(); render(); toast(nome + ' adicionada');
+};
+ACT.irCalendario = () => { const b = VIEW; SUB = { _back: b }; go('calendario', true); };
+
+/* ---------- tela de ajuste ---------- */
+SCREENS.calendario = () => {
+  const minhas = (DB.datas || []).slice().sort((a, b) =>
+    (a.mes - b.mes) || (a.dia - b.dia) || a.nome.localeCompare(b.nome));
+  const ano = parseD(D).getFullYear();
+  const nac = feriadosNacionais(ano).slice().sort((a, b) => a.data.localeCompare(b.data));
+  const ligado = DB.cfg.feriados !== false;
+  const proximas = [...Array(60).keys()].map(i => addDays(today(), i))
+    .flatMap(d => datasDoDia(d).map(o => ({ d, o }))).slice(0, 6);
+
+  return `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--bad)"></span><h2>Feriados nacionais</h2>
+      <span class="sub">${ligado ? 'no calendário' : 'escondidos'}</span></div>
+    <div class="row" style="border:0;padding:0">
+      <button class="tick ${ligado ? 'on' : ''}" data-a="togFeriados">${ic('check')}</button>
+      <div class="g"><div class="t">Mostrar os feriados do Brasil</div>
+        <div class="s">${nac.length} datas em ${ano}, incluindo as que mudam com a Páscoa</div></div>
+    </div>
+    ${ligado ? `<div class="mini" style="margin-top:10px">${nac.slice(0, 4).map(f =>
+      dLabel(f.data) + ' — ' + f.nome).join('<br>')}<br>…</div>` : ''}
+  </div>
+
+  ${proximas.length ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--ac)"></span><h2>Chegando</h2>
+      <span class="sub">próximos 60 dias</span></div>
+    ${proximas.map(({ d, o }) => `<div class="row">
+      <span style="line-height:0;color:${tipoData(o.tipo)[3]};flex:none">${ic(tipoData(o.tipo)[2], 16)}</span>
+      <div class="g"><div class="t wrap">${esc(rotuloData(o, d))}</div>
+        <div class="s">${esc(dLabel(d))}${d === today() ? ' · é hoje' : ' · em ' + plural(diffDias(today(), d), 'dia', 'dias')}</div></div>
+    </div>`).join('')}
+  </div>` : ''}
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--hab)"></span><h2>Minhas datas</h2>
+      <span class="sub">${minhas.length}</span></div>
+    ${minhas.length ? minhas.map(o => `<div class="row">
+      <span style="line-height:0;color:${tipoData(o.tipo)[3]};flex:none">${ic(tipoData(o.tipo)[2], 16)}</span>
+      <div class="g" data-a="novaData" data-dt="${o.id}">
+        <div class="t wrap">${esc(o.nome)}</div>
+        <div class="s">${dataAnual(o) ? (o.dia + ' de ' + MESL[+o.mes || 0].toLowerCase() + ', todo ano')
+          : esc(dLabel(o.data))}${o.ano ? ' · desde ' + o.ano : ''}${o.obs ? ' · ' + esc(o.obs) : ''}</div></div>
+      <div class="v">${ic('dir', 16, 'op')}</div>
+    </div>`).join('')
+      : `<div class="empty" style="padding:16px"><b>${ic('calendario')}</b>
+        Nenhuma data sua ainda. Aniversários, o feriado da sua cidade, a data de um exame anual.</div>`}
+    <button class="btn pri full sm" style="margin-top:10px" data-a="novaData">${ic('mais', 15)} Adicionar data</button>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Datas de saúde</h2>
+      <span class="sub">toque para adicionar</span></div>
+    <p class="mini" style="margin-bottom:10px">Sugestões ligadas ao que o app acompanha. Nenhuma vem
+    ligada — entram só as que você escolher.</p>
+    <div class="chiprow">${DATAS_SUGERIDAS.map(([mes, dia, nome], i) => {
+      const ja = (DB.datas || []).some(x => x.nome === nome);
+      return `<button class="chip ${ja ? 'on' : ''}" data-a="addSugerida" data-i="${i}"
+        ${ja ? 'disabled style="opacity:.55"' : ''}>${esc(nome)}</button>`;
+    }).join('')}</div>
+  </div>`;
+};
+
+/* ---------- calendário do mês, no resumo ----------
+   Uma agenda de verdade: cada dia mostra o que aconteceu (treino,
+   dieta, sono, hábitos, doses) e o que a data é. Tocar num dia abre
+   o resumo daquele dia — é assim que se navega numa agenda.        */
+function calendarioMes(ano, mes) {
+  const primeiro = new Date(ano, mes, 1);
+  const dias = new Date(ano, mes + 1, 0).getDate();
+  const vazios = primeiro.getDay();                    // domingo = 0
+  const hoje = today();
+
+  let cels = '';
+  for (let i = 0; i < vazios; i++) cels += '<div class="cal-v"></div>';
+  for (let d = 1; d <= dias; d++) {
+    const data = `${ano}-${pad(mes + 1)}-${pad(d)}`;
+    const x = DB.dias[data], futuro = data > hoje;
+    const dts = datasDoDia(data);
+    const fer = dts.some(o => o.tipo === 'feriado');
+    const pontos = [];
+    if (!futuro && x) {
+      if (estadoTreino(data) === 'feito') pontos.push('var(--tre)');
+      else if (estadoTreino(data) === 'falta') pontos.push('var(--bad)');
+      if (somaDia(data).kcal > 0) pontos.push('var(--die)');
+      if (sonoDe(data)) pontos.push('var(--res)');
+      const hs = DB.habitos.filter(h => habDevidoEm(h, data));
+      if (hs.length && hs.every(h => (regHab(data, h.id) || {}).feito)) pontos.push('var(--hab)');
+      const ms = medStats(data);
+      if (ms.prev && ms.tom >= ms.prev) pontos.push('var(--lem)');
+    }
+    cels += `<button class="cal-d ${data === hoje ? 'hoje' : ''} ${data === D ? 'sel' : ''}
+      ${futuro ? 'fut' : ''} ${fer ? 'fer' : ''}" data-a="calDia" data-d="${data}"
+      title="${esc(dLabel(data) + (dts.length ? ' — ' + dts.map(o => rotuloData(o, data)).join(', ') : ''))}">
+      <b>${d}</b>
+      <span class="cal-p">${pontos.slice(0, 5).map(c => `<i style="background:${c}"></i>`).join('')}</span>
+      ${dts.length ? `<span class="cal-e" style="background:${tipoData(dts[0].tipo)[3]}"></span>` : ''}
+    </button>`;
+  }
+
+  const doMes = [];
+  for (let d = 1; d <= dias; d++) {
+    const data = `${ano}-${pad(mes + 1)}-${pad(d)}`;
+    datasDoDia(data).forEach(o => doMes.push({ d: data, o }));
+  }
+
+  return `<div class="card larga">
+    <div class="ch"><span class="dot" style="background:var(--ac)"></span><h2>Agenda de ${MESL[mes]}</h2>
+      <span class="sub">toque num dia para abrir</span></div>
+    <div class="cal-h">${['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'].map(s => `<span>${s}</span>`).join('')}</div>
+    <div class="cal">${cels}</div>
+    <div class="cal-leg">
+      ${[['var(--tre)', 'treino'], ['var(--die)', 'dieta'], ['var(--res)', 'sono'],
+         ['var(--hab)', 'hábitos'], ['var(--lem)', 'doses']].map(([c, t]) =>
+        `<span><i style="background:${c}"></i>${t}</span>`).join('')}
+    </div>
+    ${doMes.length ? `<div class="sec-title" style="margin:16px 4px 8px">Datas do mês</div>
+      ${doMes.map(({ d, o }) => `<div class="row" data-a="calDia" data-d="${d}">
+        <span style="line-height:0;color:${tipoData(o.tipo)[3]};flex:none">${ic(tipoData(o.tipo)[2], 15)}</span>
+        <div class="g"><div class="t wrap">${esc(rotuloData(o, d))}</div>
+          <div class="s">${esc(dLabel(d))}${o.obs ? ' · ' + esc(o.obs) : ''}</div></div>
+      </div>`).join('')}`
+      : `<p class="mini" style="margin-top:11px">Nenhuma data marcada neste mês.
+        <b data-a="irCalendario" style="color:var(--res);cursor:pointer">Ajustar meu calendário</b>.</p>`}
+  </div>`;
+}
+ACT.calDia = e => { D = e.dataset.d; SUB.res = 'dia'; render(); window.scrollTo(0, 0); };
+/* =========================================================
    RESUMO — relatórios diário, semanal e mensal
    O painel semanal e o mensal são o MESMO código
    (painelPeriodo): muda só a lista de dias e o cabeçalho.
@@ -4118,7 +4492,7 @@ function resumoMes() {
       <button class="btn xs" data-a="mesNav" data-v="-1">${ic('esq', 16)}</button>
       <h2 style="text-align:center">${MESL[mes]} ${ano}</h2>
       <button class="btn xs" data-a="mesNav" data-v="1">${ic('dir', 16)}</button></div>`;
-  return painelPeriodo(ds, { cabec, labels, escala: 'mes' });
+  return painelPeriodo(ds, { cabec, labels, escala: 'mes', antes: calendarioMes(ano, mes) });
 }
 
 function resumoSemana() {
@@ -4253,7 +4627,8 @@ function painelPeriodo(ds, opt) {
     };
   });
 
-  return `<div class="card larga">
+  return `${opt.antes || ''}
+  <div class="card larga">
     ${opt.cabec}
     <div class="kpi" style="margin-bottom:9px">
       <div><b style="color:var(--tre)">${treinos}</b><span>treinos</span></div>
@@ -4621,11 +4996,16 @@ SCREENS.hoje = () => {
   const sug = fichaDoDia(D);
   const rest = m.kcal - t.kcal, mAgua = metaAguaDia(D);
 
+  const dts = datasDoDia(D);
   let h = `<div class="card hero">
     <div class="ch" style="margin-bottom:6px"><h2 style="font-size:16px">${saudacao()}${esc(nome)}</h2></div>
     <p class="mini">${esc(dLabel(D))} — ${D === today() ? 'lance seus dados do dia em poucos toques.'
       : D > today() ? 'este dia ainda não chegou: o que você lançar aqui já fica guardado para ele.'
       : 'você está editando um dia anterior.'}</p>
+    ${dts.length ? `<div class="hero-datas">
+      ${dts.map(o => `<span class="hero-data" data-a="irCalendario">
+        ${ic(tipoData(o.tipo)[2], 14)} ${esc(rotuloData(o, D))}</span>`).join('')}
+    </div>` : ''}
   </div>` + dateStrip() + '<div class="colunas">';
 
   /* sono — a noite que acabou de terminar abre o dia */
@@ -4967,6 +5347,19 @@ const TABELAS = [
       id: r.id, nome: r.nome, tipo: r.tipo, dose: +r.dose || 1, unidade: r.unidade,
       freq: r.freq, dias: r.dias || [], horarios: r.horarios || [], inicio: r.inicio, fim: r.fim,
       obs: r.obs || '', motivo: r.motivo || '', ativo: r.ativo, alertado: '', upd: r.upd
+    })
+  },
+  {
+    n: 'datas', get: () => DB.datas, set: a => DB.datas = a,
+    up: o => ({
+      id: o.id, user_id: SB.user, nome: o.nome, tipo: o.tipo, anual: o.anual !== false,
+      dia: o.dia || null, mes: o.mes == null ? null : o.mes, ano: o.ano || null,
+      data: o.data || null, obs: o.obs || '', upd: o.upd
+    }),
+    down: r => ({
+      id: r.id, nome: r.nome, tipo: r.tipo, anual: r.anual !== false,
+      dia: +r.dia || 1, mes: r.mes == null ? 0 : +r.mes, ano: r.ano ? +r.ano : null,
+      data: r.data, obs: r.obs || '', upd: r.upd
     })
   },
   {
