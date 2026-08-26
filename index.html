@@ -148,13 +148,30 @@ a{color:var(--res)}
 .cal-d.sel{border-color:var(--ac)}
 .cal-d.fer b{color:var(--bad)}
 .cal-d.hoje.fer b{color:var(--ac-tx)}
+/* versão resumida: só os números, sem marcadores — o mês inteiro
+   aparece de uma vez, sem rolar */
+.cal.comp .cal-d{aspect-ratio:auto;min-height:36px;border-radius:8px}
+.cal.comp .cal-d b{font-size:12px}
+.cal.comp .cal-p{display:none}
+/* um traço fino embaixo do número diz "este dia tem registro", sem
+   ocupar a altura dos pontinhos */
+.cal.comp .cal-d.com::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
+  width:12px;height:2px;border-radius:2px;background:currentColor;opacity:.45}
 .cal-p{display:flex;gap:2px;height:4px;align-items:center}
 .cal-p i{width:4px;height:4px;border-radius:50%;display:block}
 .cal-e{position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%}
 .cal-leg{display:flex;flex-wrap:wrap;gap:9px;margin-top:10px;font-size:10.5px;color:var(--tx3)}
 .cal-leg span{display:inline-flex;align-items:center;gap:4px}
 .cal-leg i{width:6px;height:6px;border-radius:50%;display:block}
-@media (min-width:960px){.cal-d b{font-size:14px}.cal,.cal-h{gap:5px}}
+/* No monitor a célula quadrada viraria um bloco de 160px de altura:
+   a agenda ganha altura fixa e o calendário para de esticar. */
+@media (min-width:960px){
+  .cal,.cal-h{gap:5px;max-width:720px;margin-left:auto;margin-right:auto}
+  .cal-d{aspect-ratio:auto;min-height:62px}
+  .cal-d b{font-size:14px}
+  .cal-v{aspect-ratio:auto}
+  .cal-leg{justify-content:center}
+}
 
 /* Linha de anéis da visão geral: cinco cabem no celular estreito
    porque cada célula encolhe junto e o rótulo é uma palavra só. */
@@ -400,8 +417,10 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:13px 0}
   .sheet{padding-top:20px}
   .segs button{cursor:pointer}
 
-  /* o gráfico usa a largura que tem */
-  .chart{width:100%}
+  /* o gráfico usa a largura que tem — mas num cartão de largura inteira
+     ele esticava até virar um cartaz. Fora das colunas, tem teto. */
+  .chart{width:100%;max-width:760px;margin-inline:auto}
+  .colunas .chart{max-width:none}
 }
 
 /* telas bem largas: três colunas no Resumo */
@@ -601,7 +620,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-26e';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-26g';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -720,7 +739,7 @@ function novoDB() {
     perfil: {
       nome: '', sexo: 'M', peso: 75, altura: 175, idade: 30, ativ: 1.55,
       objetivo: 'manter', ajuste: 0, protKg: 1.8, gordPct: 25,
-      aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, metaSono: 8, upd: null
+      aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, metaSono: 8, diaPesagem: 1, upd: null
     },
     fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], medicamentos: [], datas: [], dias: {},
     delFila: [],
@@ -1207,7 +1226,8 @@ function lateral() {
 const ROTULOS_ADD = {
   calendario: 'Nova data', fichas: 'Nova ficha', pratos: 'Novo prato', alimentos: 'Novo alimento',
   habitos: 'Novo hábito', lembretes: 'Novo lembrete', remedios: 'Novo medicamento',
-  medicamentos: 'Novo medicamento', treino: 'Nova atividade', dieta: 'Lançar refeição'
+  medicamentos: 'Novo medicamento', treino: 'Nova atividade', dieta: 'Lançar refeição',
+  pesagens: 'Registrar pesagem'
 };
 const rotuloAdd = () => ROTULOS_ADD[VIEW] || 'Adicionar';
 
@@ -1505,6 +1525,21 @@ SCREENS.perfil = () => {
         value="${p.metaSono || 8}">
       <p class="mini" style="margin-top:6px">É a referência do cartão de sono na tela Hoje e dos
       gráficos do resumo. A recomendação para adulto fica entre 7 e 9 horas.</p></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Pesagem</h2>
+      <span class="sub">uma vez por semana</span></div>
+    <div class="f"><label>Dia em que você se pesa</label>
+      <div class="chiprow">${DOW.map((d, i) =>
+        `<button class="chip ${diaPesagem() === i ? 'on' : ''}" data-a="pDiaPeso" data-d="${i}">${d}</button>`).join('')}
+      </div></div>
+    <p class="mini" style="margin:0">O peso oscila com água, sal e o que você comeu ontem. Pesar sempre
+    no mesmo dia da semana, nas mesmas condições, é o que faz a curva do mês dizer alguma coisa.</p>
+    <div class="row" style="margin-top:4px" data-a="irPesagens"><div class="g">
+      <div class="t">${ic('balanca', 15)} Minhas pesagens</div>
+      <div class="s">${pesagens().length ? plural(pesagens().length, 'registro', 'registros') : 'nenhuma ainda'}</div></div>
+      <div class="v">${ic('dir', 16, 'op')}</div></div>
   </div>
 
   <div class="card" id="p_box">${boxMetas(p)}</div>
@@ -4124,7 +4159,18 @@ SCREENS.calendario = () => {
    Uma agenda de verdade: cada dia mostra o que aconteceu (treino,
    dieta, sono, hábitos, doses) e o que a data é. Tocar num dia abre
    o resumo daquele dia — é assim que se navega numa agenda.        */
+/* Duas versões da mesma agenda:
+   completa  — célula grande, marcadores do que foi registrado, legenda
+               e a lista das datas do mês embaixo;
+   resumida  — só a grade dos números, para quem quer ver o mês inteiro
+               sem rolar e ir direto ao dia.
+   A escolha fica guardada (DB.cfg.calCompacto): é preferência de quem
+   usa, não estado de uma visita. */
+const calCompacto = () => DB.cfg.calCompacto === true;
+ACT.calCompacto = () => { DB.cfg.calCompacto = !calCompacto(); save(false); render(); };
+
 function calendarioMes(ano, mes) {
+  const comp = calCompacto();
   const primeiro = new Date(ano, mes, 1);
   const dias = new Date(ano, mes + 1, 0).getDate();
   const vazios = primeiro.getDay();                    // domingo = 0
@@ -4149,10 +4195,10 @@ function calendarioMes(ano, mes) {
       if (ms.prev && ms.tom >= ms.prev) pontos.push('var(--lem)');
     }
     cels += `<button class="cal-d ${data === hoje ? 'hoje' : ''} ${data === D ? 'sel' : ''}
-      ${futuro ? 'fut' : ''} ${fer ? 'fer' : ''}" data-a="calDia" data-d="${data}"
+      ${futuro ? 'fut' : ''} ${fer ? 'fer' : ''} ${pontos.length ? 'com' : ''}" data-a="calDia" data-d="${data}"
       title="${esc(dLabel(data) + (dts.length ? ' — ' + dts.map(o => rotuloData(o, data)).join(', ') : ''))}">
       <b>${d}</b>
-      <span class="cal-p">${pontos.slice(0, 5).map(c => `<i style="background:${c}"></i>`).join('')}</span>
+      ${comp ? '' : `<span class="cal-p">${pontos.slice(0, 5).map(c => `<i style="background:${c}"></i>`).join('')}</span>`}
       ${dts.length ? `<span class="cal-e" style="background:${tipoData(dts[0].tipo)[3]}"></span>` : ''}
     </button>`;
   }
@@ -4165,10 +4211,15 @@ function calendarioMes(ano, mes) {
 
   return `<div class="card larga">
     <div class="ch"><span class="dot" style="background:var(--ac)"></span><h2>Agenda de ${MESL[mes]}</h2>
-      <span class="sub">toque num dia para abrir</span></div>
+      <button class="btn xs" data-a="calCompacto"
+        title="${comp ? 'Mostrar marcadores, legenda e as datas do mês' : 'Ver só a grade, sem rolar'}">
+        ${comp ? ic('mais', 13) + ' Completo' : ic('menos', 13) + ' Resumir'}</button></div>
     <div class="cal-h">${['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'].map(s => `<span>${s}</span>`).join('')}</div>
-    <div class="cal">${cels}</div>
-    <div class="cal-leg">
+    <div class="cal ${comp ? 'comp' : ''}">${cels}</div>
+    ${comp ? `<p class="mini" style="margin-top:10px">${doMes.length
+        ? plural(doMes.length, 'data marcada', 'datas marcadas') + ' neste mês · toque num dia para abrir'
+        : 'Toque num dia para abrir o resumo dele.'}</p>`
+      : `<div class="cal-leg">
       ${[['var(--tre)', 'treino'], ['var(--die)', 'dieta'], ['var(--res)', 'sono'],
          ['var(--hab)', 'hábitos'], ['var(--lem)', 'doses']].map(([c, t]) =>
         `<span><i style="background:${c}"></i>${t}</span>`).join('')}
@@ -4180,10 +4231,212 @@ function calendarioMes(ano, mes) {
           <div class="s">${esc(dLabel(d))}${o.obs ? ' · ' + esc(o.obs) : ''}</div></div>
       </div>`).join('')}`
       : `<p class="mini" style="margin-top:11px">Nenhuma data marcada neste mês.
-        <b data-a="irCalendario" style="color:var(--res);cursor:pointer">Ajustar meu calendário</b>.</p>`}
+        <b data-a="irCalendario" style="color:var(--res);cursor:pointer">Ajustar meu calendário</b>.</p>`}`}
   </div>`;
 }
 ACT.calDia = e => { D = e.dataset.d; SUB.res = 'dia'; render(); window.scrollTo(0, 0); };
+/* =========================================================
+   PESAGEM DA SEMANA
+
+   O peso já era guardado por dia. O que faltava era o RITMO:
+   pesar todo dia mostra ruído — água, sal, o que você comeu
+   ontem — e não evolução. Uma vez por semana, no mesmo dia e
+   nas mesmas condições, é o que deixa a curva dizer alguma
+   coisa.
+
+   Por isso este módulo não inventa um dado novo: ele organiza
+   o que já existe em semanas, mostra se a desta semana já foi
+   feita e leva a diferença para o relatório mensal.
+   ========================================================= */
+
+/* dia da semana em que você se pesa (0 = domingo). Padrão: segunda. */
+const diaPesagem = () => {
+  const v = DB.perfil.diaPesagem;
+  return v == null ? 1 : clamp(Math.round(+v), 0, 6);
+};
+
+/* Todas as pesagens, da mais nova para a mais velha. */
+function pesagens() {
+  return Object.keys(DB.dias)
+    .filter(d => num(DB.dias[d].peso) > 0)
+    .sort((a, b) => b.localeCompare(a))
+    .map(d => ({ d, kg: num(DB.dias[d].peso) }));
+}
+const ultimaPesagem = () => pesagens()[0] || null;
+
+/* A pesagem desta semana (segunda a domingo), se já houver. */
+function pesagemDaSemana(ref = today()) {
+  const ini = segundaDe(ref), fim = addDays(ini, 6);
+  return pesagens().find(p => p.d >= ini && p.d <= fim) || null;
+}
+/* Próxima data de pesagem: o seu dia da semana, desta semana ou da
+   próxima se o desta já passou e você já se pesou. */
+function proximaPesagem() {
+  const ini = segundaDe(today());
+  const alvo = addDays(ini, (diaPesagem() + 6) % 7);      // dom=0 vira o 7º dia
+  if (alvo >= today()) return alvo;
+  return pesagemDaSemana() ? addDays(alvo, 7) : today();
+}
+/* Diferença para a pesagem anterior a uma dada. */
+function variacaoPeso(p) {
+  if (!p) return null;
+  const ant = pesagens().find(x => x.d < p.d);
+  return ant ? { kg: p.kg - ant.kg, de: ant } : null;
+}
+/* Bom é ir na direção do objetivo — e "manter" quer dizer ficar parado. */
+function corVariacao(delta) {
+  if (delta == null || Math.abs(delta) < 0.2) return 'var(--tx2)';
+  const obj = DB.perfil.objetivo;
+  if (obj === 'perder') return delta < 0 ? 'var(--ac)' : 'var(--warn)';
+  if (obj === 'ganhar') return delta > 0 ? 'var(--ac)' : 'var(--warn)';
+  return 'var(--tx2)';
+}
+const sinal = v => (v > 0 ? '+' : '') + n1(v);
+
+/* ---------- registrar ---------- */
+ACT.pesar = e => {
+  SUB.pesoData = (e && e.dataset && e.dataset.d) || today();
+  sheetPeso();
+};
+function sheetPeso() {
+  const d = SUB.pesoData || today();
+  const atual = num((DB.dias[d] || {}).peso) || '';
+  const ant = pesagens().find(x => x.d < d);
+  const eUltima = !pesagens().some(x => x.d > d);
+  sheet(`<h3>${ic('balanca', 18)} Pesagem</h3>
+    <p class="hint">Uma vez por semana basta. No mesmo dia, na mesma hora, de preferência em jejum
+    e depois do banheiro — é a comparação que importa, não o número solto.</p>
+
+    <div class="grid2">
+      <div class="f"><label>Peso (kg)</label>
+        <input class="in" id="pe_kg" type="number" inputmode="decimal" step="0.1" min="20" max="350"
+          value="${atual}" placeholder="0,0"></div>
+      <div class="f"><label>Dia</label>
+        <input class="in" id="pe_d" type="date" max="${today()}" value="${esc(d)}"></div>
+    </div>
+
+    ${ant ? `<div class="okbox">Sua última pesagem foi <b>${n1(ant.kg)} kg</b> em ${esc(dLabel(ant.d))}.</div>` : ''}
+    ${eUltima ? `<p class="mini" style="margin:-4px 0 12px">Esta é a sua pesagem mais recente, então ela
+      também atualiza o peso das suas medidas — é o que mantém a TMB e as metas de caloria certas.</p>` : ''}
+
+    <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarPesagem">Salvar</button></div>
+    ${atual ? `<button class="btn danger full sm" style="margin-top:9px" data-a="apagarPesagem" data-d="${esc(d)}">
+      Apagar esta pesagem</button>` : ''}`);
+}
+ACT.salvarPesagem = () => {
+  const kg = numOf('pe_kg');
+  if (!kg) return toast('Informe o peso');
+  if (kg < 20 || kg > 350) return toast('Peso fora do que uma balança mostra');
+  const d = valOf('pe_d') || today();
+  if (d > today()) return toast('Não dá para pesar num dia que ainda não chegou');
+
+  const x = dia(d);
+  x.peso = Math.round(kg * 10) / 10;
+  tocaDia(d);
+  /* A pesagem mais recente é a que vale para a TMB. Sem isto, o peso
+     das medidas envelhece e as metas de caloria vão ficando erradas. */
+  const u = ultimaPesagem();
+  if (u && u.d === d) DB.perfil = Object.assign(DB.perfil, { peso: x.peso, upd: nowISO() });
+  save(); fechar(); render();
+  const v = variacaoPeso({ d, kg: x.peso });
+  toast(v ? `Pesagem salva — ${sinal(v.kg)} kg desde ${dLabel(v.de.d)}` : 'Pesagem salva');
+};
+ACT.apagarPesagem = e => confirmar('Apagar esta pesagem?', () => {
+  const x = dia(e.dataset.d); x.peso = null;
+  tocaDia(e.dataset.d); save(); fechar(); render();
+});
+ACT.irPesagens = () => { const b = VIEW; SUB = { _back: b }; go('pesagens', true); };
+ACT.pDiaPeso = e => {
+  if (typeof pGuardar === 'function') pGuardar();
+  DB.perfil.diaPesagem = clamp(+e.dataset.d, 0, 6);
+  DB.perfil.upd = nowISO();
+  save(); render();
+};
+
+/* ---------- cartão da tela Hoje ---------- */
+function cardPeso() {
+  const daSemana = pesagemDaSemana();
+  const u = ultimaPesagem();
+  const v = variacaoPeso(daSemana || u);
+  const prox = proximaPesagem();
+  const hoje = today();
+
+  return `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Pesagem da semana</h2>
+      <span class="sub">${daSemana ? 'feita' : 'toda ' + DOW[diaPesagem()]}</span></div>
+
+    ${daSemana ? `<div class="row" style="border:0;padding:0 0 4px" data-a="pesar" data-d="${daSemana.d}">
+        <div class="g">
+          <div class="t" style="font-size:19px">${n1(daSemana.kg)} kg</div>
+          <div class="s">${esc(dLabel(daSemana.d))}${v ? ' · desde ' + esc(dLabel(v.de.d)) : ''}</div>
+        </div>
+        ${v ? `<div class="v" style="color:${corVariacao(v.kg)}">${sinal(v.kg)} kg</div>`
+            : '<div class="v">' + ic('lapis', 15, 'op') + '</div>'}
+      </div>
+      <p class="mini" style="margin-top:8px">Próxima: ${esc(dLabel(prox))}.</p>`
+
+      : `${u ? `<div class="row" style="border:0;padding:0 0 10px">
+          <div class="g"><div class="t">${n1(u.kg)} kg na última pesagem</div>
+            <div class="s">${esc(dLabel(u.d))} · ${plural(diffDias(u.d, hoje), 'dia atrás', 'dias atrás')}</div></div>
+        </div>`
+        : `<p class="mini" style="margin-bottom:10px">Pesar uma vez por semana, sempre nas mesmas
+          condições, é o que transforma o número numa curva que quer dizer algo.</p>`}
+        <button class="btn pri full sm" data-a="pesar">${ic('balanca', 15)}
+          ${prox === hoje ? 'Pesar hoje' : 'Registrar minha pesagem'}</button>`}
+
+    <div class="row" style="margin-top:9px" data-a="irPesagens">
+      <div class="g"><div class="t">Histórico de pesagens</div>
+        <div class="s">${pesagens().length ? plural(pesagens().length, 'registro', 'registros') : 'nenhuma ainda'}</div></div>
+      <div class="v">${ic('dir', 16, 'op')}</div>
+    </div>
+  </div>`;
+}
+
+/* ---------- histórico ---------- */
+TITULOS.pesagens = ['Minhas pesagens', 'a curva do peso, semana a semana'];
+FAB.pesagens = 'pesar';
+SCREENS.pesagens = () => {
+  const lista = pesagens();
+  if (!lista.length) {
+    return `<div class="card"><div class="empty"><b>${ic('balanca')}</b>
+      Nenhuma pesagem registrada. Uma por semana, no mesmo dia e nas mesmas condições.</div>
+      <button class="btn pri full" data-a="pesar">${ic('mais', 15)} Registrar pesagem</button></div>`;
+  }
+  const primeira = lista[lista.length - 1], ultima = lista[0];
+  const total = ultima.kg - primeira.kg;
+  const semanas = Math.max(1, diffDias(primeira.d, ultima.d) / 7);
+  const pontos = lista.slice().reverse().map((p, i) => ({ i, v: p.kg }));
+
+  return `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Do começo até agora</h2>
+      <span class="sub">${plural(lista.length, 'pesagem', 'pesagens')}</span></div>
+    <div class="kpi">
+      <div><b>${n1(primeira.kg)}</b><span>na primeira</span></div>
+      <div><b>${n1(ultima.kg)}</b><span>na última</span></div>
+      <div><b style="color:${corVariacao(total)}">${sinal(total)}</b><span>kg no total</span></div>
+    </div>
+    ${lista.length > 1 ? `<p class="mini" style="margin-top:9px">São ${n1(semanas)} semanas entre a
+      primeira e a última — uma média de ${sinal(total / semanas)} kg por semana.</p>` : ''}
+  </div>
+
+  ${lista.length > 1 ? `<div class="card">
+    <div class="ch"><h2>A curva</h2><span class="sub">cada ponto é uma pesagem</span></div>
+    ${chartLine(pontos, { cor: 'var(--res)', n: pontos.length, minRange: 2 })}
+  </div>` : ''}
+
+  <div class="card tight">
+    ${lista.map(p => {
+      const v = variacaoPeso(p);
+      return `<div class="row" data-a="pesar" data-d="${p.d}">
+        <div class="g"><div class="t">${n1(p.kg)} kg</div>
+          <div class="s">${esc(dLabel(p.d))} · ${esc(String(parseD(p.d).getFullYear()))}</div></div>
+        ${v ? `<div class="v" style="color:${corVariacao(v.kg)}">${sinal(v.kg)}</div>` : '<div class="v s">1ª</div>'}
+      </div>`;
+    }).join('')}
+  </div>
+  <button class="btn pri full" data-a="pesar" style="margin-bottom:14px">${ic('mais', 15)} Registrar pesagem</button>`;
+};
 /* =========================================================
    RESUMO — relatórios diário, semanal e mensal
    O painel semanal e o mensal são o MESMO código
@@ -4480,7 +4733,15 @@ function resumoDia() {
     </div>
   </div></div>`;
 }
-ACT.salvarPeso = e => { const x = dia(D); x.peso = num(e.value) || null; tocaDia(D); save(); toast('Peso registrado'); };
+ACT.salvarPeso = e => {
+  const kg = num(e.value);
+  if (kg && (kg < 20 || kg > 350)) return toast('Peso fora do que uma balança mostra');
+  const x = dia(D); x.peso = kg ? Math.round(kg * 10) / 10 : null; tocaDia(D);
+  /* mesma regra da folha de pesagem: a mais recente é a que vale para a TMB */
+  const u = typeof ultimaPesagem === 'function' ? ultimaPesagem() : null;
+  if (u && u.d === D) DB.perfil = Object.assign(DB.perfil, { peso: u.kg, upd: nowISO() });
+  save(); toast(kg ? 'Peso registrado' : 'Peso apagado');
+};
 ACT.salvarNota = e => { const x = dia(D); x.nota = e.value; tocaDia(D); save(); };
 
 function resumoMes() {
@@ -4689,7 +4950,8 @@ function painelPeriodo(ds, opt) {
     A estimativa usa 7700 kcal por quilo de gordura — é uma referência, não uma promessa:
     ${balTot < 0 ? 'no ritmo atual você caminha para perder peso.'
       : balTot > 0 ? 'no ritmo atual você caminha para ganhar peso.' : 'você está no equilíbrio.'}
-    ${pesos.length > 1 ? ` Na balança, a variação registrada ${per} foi de ${n1(pesos[pesos.length - 1].v - pesos[0].v)} kg.` : ''}</p>
+    ${pesos.length > 1 ? (() => { const dl = pesos[pesos.length - 1].v - pesos[0].v;
+      return ` Na balança, a variação registrada ${per} foi de ${(dl > 0 ? '+' : '') + n1(dl)} kg.`; })() : ''}</p>
   </div>
 
   <div class="card">
@@ -4737,7 +4999,30 @@ function painelPeriodo(ds, opt) {
     <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Peso (kg)</h2>
       <span class="sub trend ${tPeso.cls}">${tPeso.txt}</span></div>
     ${pesos.length ? chartLine(pesos, { cor: 'var(--res)', n: ds.length, minRange: 2 })
-      : '<div class="empty">Registre seu peso no Resumo diário para ver a curva.</div>'}
+      : `<div class="empty">Nenhuma pesagem ${per}. Uma por semana já desenha a curva.</div>`}
+    ${(() => {
+      /* A curva sozinha não responde a pergunta que se faz olhando pra ela:
+         quanto mudou, em quanto tempo, e em que ritmo por semana. */
+      if (pesos.length < 2) return pesos.length
+        ? `<p class="mini" style="margin-top:6px">${n1(pesos[0].v)} kg em ${esc(dLabel(ds[pesos[0].i]))} —
+           é a única pesagem ${per}. Com duas dá para ver o ritmo.</p>` : '';
+      const pri = pesos[0], ult = pesos[pesos.length - 1];
+      const delta = ult.v - pri.v;
+      const dias = Math.max(1, diffDias(ds[pri.i], ds[ult.i]));
+      const porSem = delta / (dias / 7);
+      const cor = typeof corVariacao === 'function' ? corVariacao(delta) : 'var(--tx2)';
+      return `<div class="kpi" style="margin-top:4px">
+        <div><b style="color:${cor}">${(delta > 0 ? '+' : '') + n1(delta)}</b><span>kg ${per}</span></div>
+        <div><b>${(porSem > 0 ? '+' : '') + n1(porSem)}</b><span>kg/semana</span></div>
+        <div><b>${pesos.length}</b><span>${pesos.length === 1 ? 'pesagem' : 'pesagens'}</span></div>
+      </div>
+      <p class="mini" style="margin-top:7px">De <b>${n1(pri.v)} kg</b> em ${esc(dLabel(ds[pri.i]))}
+        para <b>${n1(ult.v)} kg</b> em ${esc(dLabel(ds[ult.i]))} — ${plural(dias, 'dia', 'dias')} entre as duas.</p>`;
+    })()}
+    <div class="row" style="margin-top:4px" data-a="irPesagens"><div class="g">
+      <div class="t">Todas as minhas pesagens</div>
+      <div class="s">a curva completa, desde a primeira</div></div>
+      <div class="v">${ic('dir', 16, 'op')}</div></div>
   </div>
 
   ${noites.length ? `<div class="card">
@@ -5118,6 +5403,8 @@ SCREENS.hoje = () => {
       }).join('') : `<div class="empty" style="padding:14px"><b>${ic('faisca')}</b>Nenhum hábito ativo.</div>
         <button class="btn pri full sm" data-a="ir" data-v="habitos">Criar hábito</button>`}
   </div>
+
+  ${cardPeso()}
 
   <div class="card">
     <div class="ch"><span class="dot" style="background:var(--ac)"></span><h2>Resumo e evolução</h2>
