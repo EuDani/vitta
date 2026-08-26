@@ -184,7 +184,8 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .kpi span{font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.6px}
 .macro{display:flex;gap:8px;margin-top:11px}
 .macro>div{flex:1}
-.macro .mt{display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:4px;font-weight:600}
+.mt{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--tx2);margin-bottom:4px;font-weight:600}
+.mt>span:last-child{flex:none;white-space:nowrap}
 .pill{display:inline-block;padding:3px 8px;border-radius:8px;font-size:10.5px;font-weight:700;letter-spacing:.3px}
 .pill.esc{background:color-mix(in srgb,var(--tre) 16%,transparent);color:var(--tre)}
 .pill.ok{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac-d)}
@@ -408,7 +409,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-25i';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-25j';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -527,7 +528,7 @@ function novoDB() {
       objetivo: 'manter', ajuste: 0, protKg: 1.8, gordPct: 25,
       aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, upd: null
     },
-    fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], dias: {},
+    fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], medicamentos: [], dias: {},
     delFila: [],
     cfg: { url: SB_URL, key: SB_KEY, autoSync: true, ultimoSync: null, tema: 'auto', temConta: false, pularBoasVindas: false }
   };
@@ -580,7 +581,9 @@ let DB = (() => {
     const db = Object.assign(base, d, { perfil: Object.assign(base.perfil, d.perfil || {}), cfg });
     db.delFila = db.delFila || [];
     db.atividades = db.atividades || [];
+    db.medicamentos = db.medicamentos || [];
     db.atividades = db.atividades || [];
+    db.medicamentos = db.medicamentos || [];
     const lim = limparAlimentos(db.alimentos || []);
     db.alimentos = lim.lista;
     lim.remover.forEach(id => { if (!db.delFila.some(x => x.t === 'alimentos' && x.id === id)) db.delFila.push({ t: 'alimentos', id }); });
@@ -601,12 +604,14 @@ function diaVazio(x) {
   return !x.treino && !(x.esportes || []).length
     && !Object.values(x.refeicoes || {}).some(l => l && l.length)
     && !x.agua && !Object.keys(x.habitos || {}).length
+    && !Object.keys(x.meds || {}).length
     && !x.peso && !x.nota && !x.ajusteKcal && !x.ajusteAgua;
 }
 function dia(d) {
-  if (!DB.dias[d]) DB.dias[d] = { treino: null, esportes: [], refeicoes: {}, agua: 0, habitos: {}, peso: null, nota: '', ajusteKcal: 0, ajusteAgua: 0, upd: null };
+  if (!DB.dias[d]) DB.dias[d] = { treino: null, esportes: [], refeicoes: {}, agua: 0, habitos: {}, meds: {}, peso: null, nota: '', ajusteKcal: 0, ajusteAgua: 0, upd: null };
   const x = DB.dias[d];
   x.esportes = x.esportes || []; x.refeicoes = x.refeicoes || {}; x.habitos = x.habitos || {};
+  x.meds = x.meds || {};
   x.ajusteKcal = x.ajusteKcal || 0; x.ajusteAgua = x.ajusteAgua || 0;
   return x;
 }
@@ -803,12 +808,12 @@ let SUB = {};   // estado auxiliar por tela (aba interna, item em edição...)
 
 const NAVITENS = [
   ['hoje', 'hoje', 'Hoje'], ['treino', 'treino', 'Treino'], ['dieta', 'dieta', 'Dieta'],
-  ['habitos', 'habitos', 'Hábitos'], ['lembretes', 'lembretes', 'Lembretes'], ['resumo', 'resumo', 'Resumo']
+  ['habitos', 'habitos', 'Hábitos'], ['remedios', 'remedio', 'Remédios'], ['lembretes', 'lembretes', 'Lembretes']
 ];
 const TITULOS = {
   hoje: ['Hoje', ''], treino: ['Exercícios', 'fichas, treinos e esportes'],
   dieta: ['Dieta', 'refeições, macros e água'], habitos: ['Hábitos', 'construção e acompanhamento'],
-  resumo: ['Resumo', 'evolução diária e mensal'], perfil: ['Minhas medidas', 'TMB, gasto calórico, macros e água'],
+  resumo: ['Resumo', 'evolução diária, semanal e mensal'], remedios: ['Medicamentos', 'remédios, vitaminas e suplementos'], perfil: ['Minhas medidas', 'TMB, gasto calórico, macros e água'],
   config: ['Configurações', 'sincronização e dados'], fichas: ['Minhas fichas', 'monte seus treinos'],
   alimentos: ['Alimentos', 'sua biblioteca'], pratos: ['Pratos', 'combinações prontas']
 };
@@ -2606,7 +2611,18 @@ function checarLembretes() {
     avisar('Hábito de hoje', h.nome + ' — ainda falta o check de hoje.', 'hab-' + h.id);
   });
 
-  if (mudou) { save(false); if (VIEW === 'lembretes' || VIEW === 'hoje' || VIEW === 'habitos') render(); }
+  (DB.medicamentos || []).forEach(m => {
+    if (!medDevidoEm(m, d)) return;
+    /* avisa a primeira dose vencida que ainda não foi marcada */
+    const pend = dosesDe(m).filter(hh => hh !== '—' && mn >= minutos(hh) && !medTomado(d, m.id, hh)).sort();
+    if (!pend.length) return;
+    const hora = pend[pend.length - 1], marca = d + 'T' + hora;
+    if (m.alertado === marca) return;
+    m.alertado = marca; mudou = true;
+    avisar('Hora do medicamento', m.nome + ' — ' + medRotulo(m) + (m.obs ? ' (' + m.obs + ')' : ''), 'med-' + m.id);
+  });
+
+  if (mudou) { save(false); if (['lembretes', 'hoje', 'habitos', 'remedios'].includes(VIEW)) render(); }
 }
 
 /* ---------- criar / editar ---------- */
@@ -2752,7 +2768,289 @@ SCREENS.lembretes = () => {
   return h + `<button class="btn pri full" data-a="novoLembrete" style="margin-bottom:14px">${ic('mais',15)} Novo lembrete</button>`;
 };
 /* =========================================================
-   RESUMO — relatórios diário e mensal
+   MÓDULO 5 — MEDICAMENTOS
+   Remédio, vitamina, suplemento: tudo que se toma em dose e
+   horário. Três formas de repetir:
+     diario     — todo dia
+     dias       — dias fixos da semana
+     necessario — sem rotina, você registra quando toma
+   Com data de fim, some sozinho quando o tratamento acaba.
+   ========================================================= */
+TITULOS.medicamentos = ['Meus medicamentos', 'o que você toma e quando'];
+
+const UNIDADES = ['comprimido(s)', 'cápsula(s)', 'gota(s)', 'ml', 'mg', 'g', 'sachê(s)',
+  'colher(es)', 'scoop(s)', 'aplicação(ões)', 'unidade(s)'];
+const TIPOS_MED = [['remedio', 'Remédio'], ['vitamina', 'Vitamina'],
+  ['suplemento', 'Suplemento'], ['outro', 'Outro']];
+
+const medById = id => (DB.medicamentos || []).find(m => m.id === id);
+
+function medDevidoEm(m, d) {
+  if (m.ativo === false) return false;
+  if (m.inicio && d < m.inicio) return false;
+  if (m.fim && d > m.fim) return false;
+  if (m.freq === 'necessario') return false;          // aparece na seção própria
+  if (m.freq === 'dias') return (m.dias || []).includes(parseD(d).getDay());
+  return true;
+}
+/* horários previstos; sem horário marcado, uma dose solta no dia */
+const dosesDe = m => (m.horarios && m.horarios.length) ? m.horarios : ['—'];
+/* leitura pura: não cria o dia, para não sujar o histórico ao gerar relatório */
+const medsDe = d => (DB.dias[d] || {}).meds || {};
+const medTomado = (d, id, hora) => ((medsDe(d)[id] || {}).tomados || []).includes(hora);
+function medsDoDia(d) { return (DB.medicamentos || []).filter(m => medDevidoEm(m, d)); }
+function medsSN(d) {
+  return (DB.medicamentos || []).filter(m => m.ativo !== false && m.freq === 'necessario'
+    && (!m.inicio || d >= m.inicio) && (!m.fim || d <= m.fim));
+}
+function medStats(d) {
+  let prev = 0, tom = 0;
+  medsDoDia(d).forEach(m => dosesDe(m).forEach(h => { prev++; if (medTomado(d, m.id, h)) tom++; }));
+  return { prev, tom };
+}
+const medRotulo = m => `${m.dose ? n1(m.dose) + ' ' : ''}${m.unidade || ''}`.trim();
+function medQuando(m) {
+  const per = m.fim ? ` · até ${dLabel(m.fim)}` : '';
+  if (m.freq === 'necessario') return 'se necessário' + per;
+  if (m.freq === 'dias') return ((m.dias || []).slice().sort().map(i => DOW[i]).join(', ') || 'sem dias') + per;
+  return 'todo dia' + per;
+}
+
+/* ---------- marcar dose ---------- */
+ACT.medTick = e => {
+  const id = e.dataset.m, hora = e.dataset.h, x = dia(D);
+  const r = x.meds[id] = x.meds[id] || { tomados: [] };
+  const i = r.tomados.indexOf(hora);
+  i < 0 ? r.tomados.push(hora) : r.tomados.splice(i, 1);
+  if (!r.tomados.length) delete x.meds[id];
+  tocaDia(D); save(); render();
+};
+/* dose avulsa: registra a hora do relógio */
+ACT.medAvulso = e => {
+  const m = medById(e.dataset.m), x = dia(D);
+  const agora = new Date();
+  const hora = pad(agora.getHours()) + ':' + pad(agora.getMinutes());
+  const r = x.meds[m.id] = x.meds[m.id] || { tomados: [] };
+  r.tomados.push(hora);
+  tocaDia(D); save(); render(); toast(`${m.nome} registrado às ${hora}`);
+};
+ACT.medDesfazAvulso = e => {
+  const x = dia(D), r = x.meds[e.dataset.m];
+  if (!r) return;
+  r.tomados.splice(+e.dataset.i, 1);
+  if (!r.tomados.length) delete x.meds[e.dataset.m];
+  tocaDia(D); save(); render();
+};
+
+/* ---------- cadastro ---------- */
+FAB.remedios = 'novoMed';
+ACT.novoMed = e => {
+  const id = e && e.dataset ? e.dataset.m : null;
+  SUB.medId = id;
+  const m = id ? medById(id) : null;
+  SUB.medFreq = m ? m.freq : 'diario';
+  SUB.medDias = m ? (m.dias || []).slice() : [1, 2, 3, 4, 5];
+  SUB.medHoras = m ? (m.horarios || []).slice() : ['08:00'];
+  SUB.medTipo = m ? m.tipo : 'remedio';
+  sheetMed(m);
+};
+function sheetMed(m) {
+  m = m || { nome: '', dose: 1, unidade: 'comprimido(s)', inicio: today(), fim: '', obs: '' };
+  sheet(`<h3>${SUB.medId ? 'Editar' : 'Novo'} medicamento</h3>
+    <p class="hint">Vale para remédio, vitamina, suplemento — qualquer coisa que você toma em dose.</p>
+
+    <div class="f"><label>Nome</label>
+      <input class="in" id="md_nome" value="${esc(m.nome)}" placeholder="ex: Vitamina D, Losartana, Creatina"></div>
+
+    <div class="f"><label>Tipo</label><div class="chiprow">
+      ${TIPOS_MED.map(t => `<button class="chip ${SUB.medTipo === t[0] ? 'on' : ''}"
+        data-a="medTipo" data-t="${t[0]}">${t[1]}</button>`).join('')}
+    </div></div>
+
+    <div class="grid2">
+      <div class="f"><label>Quantidade por dose</label>
+        <input class="in" id="md_dose" type="number" inputmode="decimal" step="0.5" value="${m.dose || 1}"></div>
+      <div class="f"><label>Unidade</label>
+        <select class="in" id="md_un">${UNIDADES.map(u =>
+          `<option ${m.unidade === u ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
+    </div>
+
+    <div class="f"><label>Com que frequência</label>
+      <div class="segs">${[['diario', 'Todo dia'], ['dias', 'Dias fixos'], ['necessario', 'Se precisar']].map(t =>
+        `<button class="${SUB.medFreq === t[0] ? 'on' : ''}" data-a="medFreq" data-t="${t[0]}">${t[1]}</button>`).join('')}</div></div>
+
+    ${SUB.medFreq === 'dias' ? `<div class="f"><div class="chiprow">
+      ${DOW.map((d, i) => `<button class="chip ${SUB.medDias.includes(i) ? 'on' : ''}"
+        data-a="medDia" data-d="${i}">${d}</button>`).join('')}</div></div>` : ''}
+
+    ${SUB.medFreq !== 'necessario' ? `<div class="f"><label>Horários do dia</label>
+      ${SUB.medHoras.map((h, i) => `<div class="row" style="gap:8px;border:0;padding:5px 0">
+        <input class="in" type="time" value="${esc(h)}" id="md_h${i}" style="flex:1">
+        ${SUB.medHoras.length > 1 ? `<button class="btn xs danger" data-a="medDelHora" data-i="${i}">${ic('x', 13)}</button>` : ''}
+      </div>`).join('')}
+      <button class="btn gh full sm" style="margin-top:6px" data-a="medAddHora">${ic('mais', 14)} Outro horário</button>
+      <p class="mini" style="margin-top:6px">Com horário preenchido você recebe uma notificação na hora
+      (se tiver autorizado em Configurações).</p></div>` : ''}
+
+    <div class="grid2">
+      <div class="f"><label>Começa em</label>
+        <input class="in" id="md_ini" type="date" value="${esc(m.inicio || today())}"></div>
+      <div class="f"><label>Termina em (opcional)</label>
+        <input class="in" id="md_fim" type="date" value="${esc(m.fim || '')}"></div>
+    </div>
+    <p class="mini" style="margin:-4px 0 12px">Tratamento com prazo — antibiótico, por exemplo — some
+    sozinho da lista quando a data de fim passa.</p>
+
+    <div class="f"><label>Observação</label>
+      <input class="in" id="md_obs" value="${esc(m.obs || '')}" placeholder="ex: tomar em jejum, com gordura, longe do café"></div>
+
+    <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarMed">Salvar</button></div>
+    ${SUB.medId ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delMed" data-m="${SUB.medId}">Excluir</button>` : ''}`);
+}
+function medCapturar() {
+  SUB.medTmp = SUB.medTmp || {};
+  ['md_nome', 'md_dose', 'md_un', 'md_ini', 'md_fim', 'md_obs'].forEach(k => {
+    const e = document.getElementById(k); if (e) SUB.medTmp[k] = e.value;
+  });
+  SUB.medHoras = SUB.medHoras.map((h, i) => {
+    const e = document.getElementById('md_h' + i); return e ? e.value : h;
+  });
+}
+function medRestaurar() {
+  if (!SUB.medTmp) return;
+  Object.keys(SUB.medTmp).forEach(k => { const e = document.getElementById(k); if (e) e.value = SUB.medTmp[k]; });
+}
+const medRedesenha = () => { sheetMed(SUB.medId ? medById(SUB.medId) : null); medRestaurar(); };
+ACT.medTipo = e => { medCapturar(); SUB.medTipo = e.dataset.t; medRedesenha(); };
+ACT.medFreq = e => { medCapturar(); SUB.medFreq = e.dataset.t; medRedesenha(); };
+ACT.medDia = e => {
+  medCapturar(); const d = +e.dataset.d, i = SUB.medDias.indexOf(d);
+  i < 0 ? SUB.medDias.push(d) : SUB.medDias.splice(i, 1); medRedesenha();
+};
+ACT.medAddHora = () => { medCapturar(); SUB.medHoras.push('20:00'); medRedesenha(); };
+ACT.medDelHora = e => { medCapturar(); SUB.medHoras.splice(+e.dataset.i, 1); medRedesenha(); };
+
+ACT.salvarMed = () => {
+  medCapturar();
+  const nome = valOf('md_nome').trim();
+  if (!nome) return toast('Dê um nome ao medicamento');
+  if (SUB.medFreq === 'dias' && !SUB.medDias.length) return toast('Escolha ao menos um dia');
+  const o = {
+    nome, tipo: SUB.medTipo, dose: numOf('md_dose') || 1, unidade: valOf('md_un'),
+    freq: SUB.medFreq, dias: SUB.medFreq === 'dias' ? SUB.medDias : [],
+    horarios: SUB.medFreq === 'necessario' ? [] : SUB.medHoras.filter(Boolean),
+    inicio: valOf('md_ini') || today(), fim: valOf('md_fim') || null,
+    obs: valOf('md_obs'), ativo: true, upd: nowISO()
+  };
+  if (SUB.medId) Object.assign(medById(SUB.medId), o);
+  else (DB.medicamentos = DB.medicamentos || []).push(Object.assign({ id: uid() }, o));
+  SUB.medTmp = null; save(); fechar(); render();
+};
+ACT.delMed = e => confirmar('Excluir este medicamento? As doses já registradas nos dias continuam no histórico.', () => {
+  const id = e.dataset.m;
+  DB.medicamentos = DB.medicamentos.filter(m => m.id !== id);
+  enfileirarDel('medicamentos', id); SUB.medTmp = null; save(); fechar(); render();
+});
+ACT.medPausa = e => {
+  const m = medById(e.dataset.m);
+  m.ativo = m.ativo === false; m.upd = nowISO(); save(); render();
+  toast(m.ativo === false ? 'Medicamento pausado' : 'Reativado');
+};
+ACT.irMeds = () => { const b = VIEW; SUB = { _back: b }; go('medicamentos', true); };
+
+/* ---------- tela do dia ---------- */
+SCREENS.remedios = () => {
+  const doDia = medsDoDia(D), sn = medsSN(D), st = medStats(D);
+  const x = dia(D);
+  let h = dateStrip();
+
+  if (!(DB.medicamentos || []).length) {
+    return h + `<div class="card"><div class="empty"><b>${ic('remedio')}</b>
+      Cadastre o que você toma — remédio, vitamina ou suplemento — com a dose, os dias e os horários.
+      Todo dia a lista aparece aqui para você marcar.</div>
+      <button class="btn pri full" data-a="novoMed">${ic('mais', 15)} Adicionar medicamento</button></div>`;
+  }
+
+  h += `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--lem)"></span><h2>${esc(dLabel(D))}</h2>
+      <span class="sub">${st.tom}/${st.prev} doses</span></div>
+    ${bar(st.tom, Math.max(st.prev, 1), 'var(--lem)')}
+  </div>`;
+
+  if (doDia.length) {
+    /* agrupa por horário, que é como a pessoa realmente toma */
+    const porHora = {};
+    doDia.forEach(m => dosesDe(m).forEach(hh => (porHora[hh] = porHora[hh] || []).push(m)));
+    Object.keys(porHora).sort().forEach(hh => {
+      h += `<div class="card tight">
+        <div class="ch"><span style="line-height:0;color:var(--tx2)">${ic('relogio', 15)}</span>
+          <h2>${hh === '—' ? 'Sem horário definido' : hh}</h2></div>
+        ${porHora[hh].map(m => {
+          const feito = medTomado(D, m.id, hh);
+          return `<div class="row">
+            <button class="tick ${feito ? 'on' : ''}" data-a="medTick" data-m="${m.id}" data-h="${hh}">${ic('check')}</button>
+            <div class="g" data-a="novoMed" data-m="${m.id}">
+              <div class="t wrap">${esc(m.nome)}</div>
+              <div class="s">${esc(medRotulo(m))}${m.obs ? ' · ' + esc(m.obs) : ''}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    });
+  } else {
+    h += `<div class="card"><div class="empty" style="padding:18px">Nada marcado para ${esc(dLabel(D))}.</div></div>`;
+  }
+
+  if (sn.length) {
+    h += `<div class="sec-title">Se precisar</div><div class="card tight">
+      ${sn.map(m => {
+        const tomados = ((x.meds[m.id] || {}).tomados || []);
+        return `<div class="row">
+          <div class="g" data-a="novoMed" data-m="${m.id}">
+            <div class="t wrap">${esc(m.nome)}</div>
+            <div class="s">${esc(medRotulo(m))}${tomados.length
+              ? ' · hoje às ' + tomados.map(esc).join(', ') : ' · não tomou hoje'}</div></div>
+          <button class="btn xs pri" data-a="medAvulso" data-m="${m.id}">Tomei</button>
+          ${tomados.length ? `<button class="btn xs" data-a="medDesfazAvulso" data-m="${m.id}"
+            data-i="${tomados.length - 1}">${ic('x', 13)}</button>` : ''}
+        </div>`;
+      }).join('')}</div>`;
+  }
+
+  return h + `<div class="card tight" style="margin-bottom:14px">
+    <div class="row" data-a="irMeds"><div class="g"><div class="t">Meus medicamentos</div>
+      <div class="s">${(DB.medicamentos || []).filter(m => m.ativo !== false).length} ativo(s)</div></div>
+      <div class="v">${ic('dir', 16, 'op')}</div></div>
+  </div>`;
+};
+
+/* ---------- gerenciar ---------- */
+FAB.medicamentos = 'novoMed';
+SCREENS.medicamentos = () => {
+  const M = DB.medicamentos || [];
+  const ativos = M.filter(m => m.ativo !== false), pausados = M.filter(m => m.ativo === false);
+  const linha = m => `<div class="row">
+    <div class="g" data-a="novoMed" data-m="${m.id}">
+      <div class="t wrap">${esc(m.nome)} <span class="pill mut">${esc((TIPOS_MED.find(t => t[0] === m.tipo) || [, 'Outro'])[1])}</span></div>
+      <div class="s">${esc(medRotulo(m))} · ${esc(medQuando(m))}${(m.horarios || []).length ? ' · ' + m.horarios.join(', ') : ''}</div>
+    </div>
+    <button class="btn xs" data-a="medPausa" data-m="${m.id}">${m.ativo === false ? ic('play', 13) : ic('pausa', 13)}</button>
+  </div>`;
+  if (!M.length) return `<div class="card"><div class="empty"><b>${ic('remedio')}</b>
+    Nada cadastrado ainda.</div>
+    <button class="btn pri full" data-a="novoMed">${ic('mais', 15)} Adicionar medicamento</button></div>`;
+  return `${ativos.length ? `<div class="card">
+      <div class="ch"><span class="dot" style="background:var(--lem)"></span><h2>Em uso</h2>
+        <span class="sub">${ativos.length}</span></div>${ativos.map(linha).join('')}</div>` : ''}
+    ${pausados.length ? `<div class="sec-title">Pausados</div>
+      <div class="card tight">${pausados.map(linha).join('')}</div>` : ''}
+    <button class="btn pri full" data-a="novoMed" style="margin-bottom:14px">${ic('mais', 15)} Adicionar medicamento</button>`;
+};
+/* =========================================================
+   RESUMO — relatórios diário, semanal e mensal
+   O painel semanal e o mensal são o MESMO código
+   (painelPeriodo): muda só a lista de dias e o cabeçalho.
    ========================================================= */
 const W = 320;
 
@@ -2828,15 +3126,49 @@ function serieMes(ds) {
     const s = x ? somaDia(d) : Z();
     const habs = DB.habitos.filter(h => habDevidoEm(h, d));
     const hf = habs.filter(h => ((x && x.habitos[h.id]) || {}).feito).length;
+    const md = medStats(d);
     return {
       d, kcal: s.kcal, c: s.c, p: s.p, g: s.g, escape: s.escape || 0,
       agua: x ? x.agua || 0 : 0, peso: x && x.peso ? num(x.peso) : null,
       treino: estadoTreino(d) === 'feito', falta: estadoTreino(d) === 'falta',
       motivo: (faltaDoDia(d) || {}).motivo || '', vol: volDia(d),
       esporte: x ? (x.esportes || []).reduce((a, e) => a + e.kcal, 0) : 0,
-      habPrev: habs.length, habFeito: hf, temDado: !!x
+      habPrev: habs.length, habFeito: hf, temDado: !!x,
+      medPrev: md.prev, medTom: md.tom,
+      dur: x && x.treino && x.treino.feito ? +x.treino.duracao || 0 : 0,
+      espMin: x ? (x.esportes || []).reduce((a, e) => a + (+e.min || 0), 0) : 0,
+      refs: refsDoDia(d), metaAgua: metaAguaDia(d), gasto: x ? gastoDia(d).total : 0
     };
   });
+}
+/* kcal por refeição, para o gráfico de distribuição */
+function refsDoDia(d) {
+  const x = DB.dias[d], o = {};
+  REFS.forEach(r => o[r[0]] = 0);
+  if (x) REFS.forEach(r => { o[r[0]] = somaItens(x.refeicoes[r[0]] || []).kcal; });
+  return o;
+}
+
+/* ---------- semanas ---------- */
+function segundaDe(d) {                 // segunda-feira da semana de d
+  const p = parseD(d), dw = (p.getDay() + 6) % 7;
+  return addDays(d, -dw);
+}
+function diasDaSemana(ini) { const o = []; for (let i = 0; i < 7; i++) o.push(addDays(ini, i)); return o; }
+const semanaAtual = () => SUB.sem || segundaDe(D);
+function rotuloSemana(ini) {
+  const fim = addDays(ini, 6), a = parseD(ini), b = parseD(fim);
+  const mesmoMes = a.getMonth() === b.getMonth();
+  return `${a.getDate()} ${mesmoMes ? '' : MESL[a.getMonth()].slice(0, 3).toLowerCase() + ' '}– ${b.getDate()} ${MESL[b.getMonth()].slice(0, 3).toLowerCase()}`;
+}
+
+/* sequência de dias seguidos (até hoje) em que a condição foi verdadeira */
+function sequencia(cond) {
+  let n = 0, d = today();
+  /* o dia de hoje ainda está em curso: se falhou hoje, olho a partir de ontem */
+  if (!cond(d)) d = addDays(d, -1);
+  for (let i = 0; i < 400; i++) { if (!cond(d)) break; n++; d = addDays(d, -1); }
+  return n;
 }
 
 /* ---------- tela ---------- */
@@ -2846,17 +3178,21 @@ ACT.mesNav = e => {
   cur.setMonth(cur.getMonth() + (+e.dataset.v));
   SUB.mes = cur.getFullYear() + '-' + pad(cur.getMonth() + 1); SUB.res = 'mes'; render();
 };
+ACT.semNav = e => { SUB.sem = addDays(semanaAtual(), 7 * (+e.dataset.v)); SUB.res = 'sem'; render(); };
+ACT.semHoje = () => { SUB.sem = segundaDe(today()); render(); };
 
 SCREENS.resumo = () => {
   const aba = SUB.res || 'dia';
+  const corpo = aba === 'dia' ? resumoDia() : aba === 'sem' ? resumoSemana() : resumoMes();
   let h = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:13px">
     <div class="segs" style="flex:1;margin:0">
       <button class="${aba === 'dia' ? 'on' : ''}" data-a="resAba" data-t="dia">Diário</button>
+      <button class="${aba === 'sem' ? 'on' : ''}" data-a="resAba" data-t="sem">Semanal</button>
       <button class="${aba === 'mes' ? 'on' : ''}" data-a="resAba" data-t="mes">Mensal</button>
     </div>
     <button class="iconbtn" data-a="planilha" title="Exportar planilha">${ic('baixar')}</button>
   </div>`;
-  return h + (aba === 'dia' ? resumoDia() : resumoMes())
+  return h + corpo
     + `<button class="btn full" data-a="planilha" style="margin-bottom:14px">${ic('baixar',15)} Exportar planilha</button>`;
 };
 
@@ -2866,6 +3202,17 @@ function resumoDia() {
   const hf = habs.filter(hh => (x.habitos[hh.id] || {}).feito).length;
   const estT = estadoTreino(D), treinoOk = estT === 'feito';
   const bal = t.kcal - gd.total;
+
+  /* comparação com os 7 dias anteriores, para o número de hoje ter contexto */
+  const ant = [];
+  for (let i = 1; i <= 7; i++) { const d = addDays(D, -i); if (DB.dias[d] && !diaVazio(DB.dias[d])) ant.push(d); }
+  const md = f => ant.length ? ant.reduce((a, d) => a + f(d), 0) / ant.length : 0;
+  const mKcal = md(d => somaDia(d).kcal), mAgua7 = md(d => DB.dias[d].agua || 0), mVol = md(d => volDia(d));
+  const dif = (v, base) => !base ? '' : `<span class="trend ${v >= base ? 'up' : 'down'}">${v >= base ? '▲' : '▼'} ${n0(Math.abs(v - base) / base * 100)}%</span>`;
+
+  /* refeições do dia */
+  const refDia = REFS.map(r => [r, somaItens(x.refeicoes[r[0]] || [])]).filter(r => r[1].kcal > 0);
+  const maiorRef = Math.max(1, ...refDia.map(r => r[1].kcal));
 
   return dateStrip() + `<div class="card">
     <div class="ch"><h2>${esc(dLabel(D))}</h2><span class="sub">visão geral</span></div>
@@ -2880,6 +3227,14 @@ function resumoDia() {
       <div>${ring(habs.length ? hf / habs.length : 0, 'var(--hab)', 62, `${hf}/${habs.length}`)}
         <div class="mini" style="margin-top:4px">Hábitos</div></div>
     </div>
+    ${ant.length ? `<div class="sec-title" style="margin:16px 4px 8px">Comparado com a sua média dos últimos ${ant.length} dias</div>
+      <div class="row"><div class="g"><div class="t">Calorias</div>
+        <div class="s">média ${n0(mKcal)} kcal</div></div><div class="v">${n0(t.kcal)} ${dif(t.kcal, mKcal)}</div></div>
+      <div class="row"><div class="g"><div class="t">Água</div>
+        <div class="s">média ${n1(mAgua7 / 1000)} L</div></div><div class="v">${n1((x.agua || 0) / 1000)} L ${dif(x.agua || 0, mAgua7)}</div></div>
+      ${mVol ? `<div class="row"><div class="g"><div class="t">Volume de treino</div>
+        <div class="s">média ${n0(mVol)} kg</div></div><div class="v">${n0(volDia(D))} kg ${dif(volDia(D), mVol)}</div></div>` : ''}`
+      : '<p class="mini" style="margin-top:12px">A partir de alguns dias lançados, este cartão passa a comparar o dia de hoje com a sua própria média.</p>'}
   </div>
 
   <div class="card">
@@ -2901,8 +3256,22 @@ function resumoDia() {
       ${[['Carboidrato', t.c, m.c, 'var(--carb)'], ['Proteína', t.p, m.p, 'var(--prot)'], ['Gordura', t.g, m.g, 'var(--gord)']].map(r =>
     `<div><div class="mt"><span>${r[0]}</span><span>${n1(r[1])} / ${n0(r[2])} g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}
     </div>
+    ${t.kcal ? `<div class="mini" style="margin-top:11px">Divisão de hoje:
+      ${n0(t.c * 4 / t.kcal * 100)}% carboidrato · ${n0(t.p * 4 / t.kcal * 100)}% proteína ·
+      ${n0(t.g * 9 / t.kcal * 100)}% gordura. Alvo do seu plano:
+      ${n0(m.c * 4 / m.kcal * 100)}/${n0(m.p * 4 / m.kcal * 100)}/${n0(m.g * 9 / m.kcal * 100)}.</div>` : ''}
     ${t.escape ? `<div class="warnbox" style="margin:11px 0 0">Escapes hoje: <b>${n0(t.escape)} kcal</b> (${n0(t.kcal ? t.escape / t.kcal * 100 : 0)}% do total).</div>` : ''}
   </div>
+
+  ${refDia.length ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>Refeições de hoje</h2>
+      <span class="sub">${refDia.length} refeição(ões)</span></div>
+    ${refDia.map(([r, s]) => `<div style="margin-bottom:9px">
+      <div class="mt"><span>${ic(r[2], 13)} ${r[1]}</span>
+        <span>${n0(s.kcal)} kcal · ${n0(t.kcal ? s.kcal / t.kcal * 100 : 0)}%</span></div>
+      ${bar(s.kcal, maiorRef, r[0] === 'livre' ? 'var(--warn)' : 'var(--die)')}
+      <div class="mini">C ${n0(s.c)}g · P ${n0(s.p)}g · G ${n0(s.g)}g</div></div>`).join('')}
+  </div>` : ''}
 
   ${faltaDoDia(D) ? `<div class="card">
     <div class="ch"><span class="dot" style="background:var(--bad)"></span><h2>Sem treino</h2>
@@ -2917,6 +3286,20 @@ function resumoDia() {
       <div><b>${n0(volDia(D))}</b><span>kg volume</span></div>
       <div><b>${n0(x.treino.itens.reduce((a, i) => a + i.sets.length, 0))}</b><span>séries</span></div>
     </div></div>` : ''}
+
+  ${(() => {
+    const st = medStats(D), sn = medsSN(D);
+    const avulsas = sn.reduce((a, mm) => a + ((medsDe(D)[mm.id] || {}).tomados || []).length, 0);
+    if (!st.prev && !avulsas) return '';
+    return `<div class="card">
+      <div class="ch"><span class="dot" style="background:var(--lem)"></span><h2>Medicamentos</h2>
+        <span class="pill ${st.prev && st.tom >= st.prev ? 'ok' : st.tom ? 'mut' : 'bad'}">${st.tom}/${st.prev} doses</span></div>
+      ${st.prev ? bar(st.tom, st.prev, 'var(--lem)') : ''}
+      <p class="mini" style="margin-top:9px">${st.prev
+        ? (st.tom >= st.prev ? 'Tudo em dia.' : `Faltaram ${st.prev - st.tom} dose(s) previstas.`)
+        : 'Sem doses programadas.'}${avulsas ? ` ${avulsas} dose(s) "se precisar" registradas.` : ''}</p>
+    </div>`;
+  })()}
 
   <div class="card">
     <div class="ch"><h2>Registro do dia</h2></div>
@@ -2934,11 +3317,34 @@ ACT.salvarNota = e => { const x = dia(D); x.nota = e.value; tocaDia(D); save(); 
 function resumoMes() {
   const ref = SUB.mes ? parseD(SUB.mes + '-01') : parseD(D);
   const ano = ref.getFullYear(), mes = ref.getMonth();
-  const ds = diasDoMes(ano, mes), S = serieMes(ds), m = metas();
+  const ds = diasDoMes(ano, mes);
+  const labels = ds.map((d, i) => (i % 5 === 0 || i === ds.length - 1) ? String(i + 1) : '');
+  const cabec = `<div class="ch">
+      <button class="btn xs" data-a="mesNav" data-v="-1">${ic('esq', 16)}</button>
+      <h2 style="text-align:center">${MESL[mes]} ${ano}</h2>
+      <button class="btn xs" data-a="mesNav" data-v="1">${ic('dir', 16)}</button></div>`;
+  return painelPeriodo(ds, { cabec, labels, escala: 'mes' });
+}
+
+function resumoSemana() {
+  const ini = semanaAtual(), ds = diasDaSemana(ini);
+  const labels = ds.map(d => DOW[parseD(d).getDay()]);
+  const atual = ini === segundaDe(today());
+  const cabec = `<div class="ch">
+      <button class="btn xs" data-a="semNav" data-v="-1">${ic('esq', 16)}</button>
+      <h2 style="text-align:center">${rotuloSemana(ini)}
+        <small style="display:block;font-weight:600;color:var(--tx3);font-size:10.5px">
+          ${atual ? 'semana atual' : 'semana de ' + parseD(ini).getFullYear()}</small></h2>
+      <button class="btn xs" data-a="semNav" data-v="1">${ic('dir', 16)}</button></div>`;
+  return painelPeriodo(ds, { cabec, labels, escala: 'sem', semana: ini, atual });
+}
+
+function painelPeriodo(ds, opt) {
+  const S = serieMes(ds), m = metas();
+  const labels = opt.labels;
   const hoje = today();
   const passados = S.filter(s => s.d <= hoje);
   const comDado = passados.filter(s => s.temDado);
-  const labels = ds.map((d, i) => (i % 5 === 0 || i === ds.length - 1) ? String(i + 1) : '');
 
   const kcalDias = passados.filter(s => s.kcal > 0).map(s => s.kcal);
   const mediaKcal = kcalDias.length ? kcalDias.reduce((a, b) => a + b, 0) / kcalDias.length : 0;
@@ -2955,6 +3361,8 @@ function resumoMes() {
   const habPrev = passados.reduce((a, s) => a + s.habPrev, 0);
   const habFeito = passados.reduce((a, s) => a + s.habFeito, 0);
   const escapes = passados.reduce((a, s) => a + s.escape, 0);
+  const medPrev = passados.reduce((a, s) => a + s.medPrev, 0);
+  const medTom = passados.reduce((a, s) => a + s.medTom, 0);
   const pesos = S.map((s, i) => s.peso ? { i, v: s.peso } : null).filter(Boolean);
 
   const tKcal = tendencia(kcalDias, DB.perfil.objetivo === 'perder');
@@ -2962,22 +3370,136 @@ function resumoMes() {
   const tPeso = tendencia(pesos.map(p => p.v), DB.perfil.objetivo === 'perder', 0.4);
   const tAgua = tendencia(passados.map(s => s.agua));
   const tHab = tendencia(passados.map(s => s.habPrev ? s.habFeito / s.habPrev * 100 : null));
+  const tMed = tendencia(passados.map(s => s.medPrev ? s.medTom / s.medPrev * 100 : null));
 
   const linha = (nome, val, t) => `<div class="row"><div class="g"><div class="t">${nome}</div><div class="s">${val}</div></div>
     <div class="v trend ${t.cls}">${t.txt}</div></div>`;
 
+  /* ---------- números extras do painel ---------- */
+  const per = opt.escala === 'sem' ? 'na semana' : 'no mês';
+  const perDo = opt.escala === 'sem' ? 'da semana' : 'do mês';
+
+  const kcalTot = passados.reduce((a, s) => a + s.kcal, 0);
+  const gastoTot = passados.filter(s => s.temDado).reduce((a, s) => a + s.gasto, 0);
+  const balTot = kcalTot - gastoTot;
+  const kgEst = balTot / 7700;                       // ~7700 kcal por kg de gordura
+
+  const naMeta = passados.filter(s => s.kcal > 0 && Math.abs(s.kcal - m.kcal) <= m.kcal * .1).length;
+  const aguaOk = passados.filter(s => s.agua >= s.metaAgua && s.metaAgua > 0).length;
+  const habOk = passados.filter(s => s.habPrev && s.habFeito >= s.habPrev).length;
+  const medOk = passados.filter(s => s.medPrev && s.medTom >= s.medPrev).length;
+  const diasComHab = passados.filter(s => s.habPrev).length;
+  const diasComMed = passados.filter(s => s.medPrev).length;
+
+  const seqReg = sequencia(d => !!DB.dias[d] && !diaVazio(DB.dias[d]));
+  const seqHab = sequencia(d => {
+    const hs = DB.habitos.filter(h => habDevidoEm(h, d));
+    return hs.length > 0 && hs.every(h => ((DB.dias[d] || { habitos: {} }).habitos[h.id] || {}).feito);
+  });
+  /* "sem furar treino" só conta dias registrados: sem registro a sequência quebra,
+     senão o passado vazio viraria uma sequência infinita de dias perfeitos */
+  const seqTre = sequencia(d => {
+    const x = DB.dias[d]; if (!x || diaVazio(x)) return false;
+    const e = estadoTreino(d);
+    return e === 'feito' || (e !== 'falta' && !fichaDoDia(d));
+  });
+
+  /* média de kcal por refeição */
+  const refMedia = {};
+  REFS.forEach(r => {
+    const dd = comDado.filter(s => s.refs[r[0]] > 0);
+    refMedia[r[0]] = dd.length ? dd.reduce((a, s) => a + s.refs[r[0]], 0) / dd.length : 0;
+  });
+  const refTotal = REFS.reduce((a, r) => a + passados.reduce((b, s) => b + s.refs[r[0]], 0), 0);
+
+  /* esportes somados por nome */
+  const espTot = {};
+  passados.forEach(s => {
+    const x = DB.dias[s.d]; if (!x) return;
+    (x.esportes || []).forEach(e => {
+      const k = e.nome || 'Atividade';
+      espTot[k] = espTot[k] || { min: 0, kcal: 0, n: 0 };
+      espTot[k].min += +e.min || 0; espTot[k].kcal += +e.kcal || 0; espTot[k].n++;
+    });
+  });
+  const espLista = Object.entries(espTot).sort((a, b) => b[1].min - a[1].min);
+  const espMinTot = espLista.reduce((a, e) => a + e[1].min, 0);
+
+  /* melhor e pior dia por "pontos do dia" */
+  const pontos = s => {
+    let p = 0, n = 0;
+    if (s.treino) p += 1; if (s.falta) p += 0;
+    n++;                                              // treino sempre conta
+    if (s.kcal > 0) { p += Math.max(0, 1 - Math.abs(s.kcal - m.kcal) / m.kcal); n++; }
+    if (s.metaAgua) { p += Math.min(1, s.agua / s.metaAgua); n++; }
+    if (s.habPrev) { p += s.habFeito / s.habPrev; n++; }
+    if (s.medPrev) { p += s.medTom / s.medPrev; n++; }
+    return n ? p / n * 100 : 0;
+  };
+  const comNota = comDado.map(s => ({ d: s.d, v: pontos(s) })).sort((a, b) => b.v - a.v);
+  const melhor = comNota[0], pior = comNota.length > 1 ? comNota[comNota.length - 1] : null;
+  const notaMedia = comNota.length ? comNota.reduce((a, s) => a + s.v, 0) / comNota.length : 0;
+
+  /* desempenho por dia da semana (só faz sentido no mês) */
+  const porDow = DOW.map((nome, i) => {
+    const dd = passados.filter(s => parseD(s.d).getDay() === i);
+    const tre = dd.filter(s => s.treino).length;
+    const kc = dd.filter(s => s.kcal > 0);
+    return {
+      nome, n: dd.length, tre,
+      kcal: kc.length ? kc.reduce((a, s) => a + s.kcal, 0) / kc.length : 0
+    };
+  });
+
   return `<div class="card">
-    <div class="ch">
-      <button class="btn xs" data-a="mesNav" data-v="-1">${ic('esq',16)}</button>
-      <h2 style="text-align:center">${MESL[mes]} ${ano}</h2>
-      <button class="btn xs" data-a="mesNav" data-v="1">${ic('dir',16)}</button></div>
+    ${opt.cabec}
     <div class="kpi" style="margin-bottom:9px">
       <div><b style="color:var(--tre)">${treinos}</b><span>treinos</span></div>
       <div><b style="color:var(--die)">${n0(mediaKcal)}</b><span>kcal/dia</span></div>
       <div><b style="color:var(--agua)">${n1(mediaAgua / 1000)}</b><span>água L</span></div>
       <div><b style="color:var(--hab)">${habPrev ? n0(habFeito / habPrev * 100) : 0}%</b><span>hábitos</span></div>
     </div>
-    <p class="mini">${comDado.length} de ${passados.length} dias com registro · volume total ${n0(volTot)} kg · escapes ${n0(escapes)} kcal</p>
+    <div class="mt" style="margin-top:4px"><span>Nota média ${perDo}</span><span>${n0(notaMedia)}/100</span></div>
+    ${bar(notaMedia, 100, notaMedia >= 70 ? 'var(--ac)' : notaMedia >= 40 ? 'var(--warn)' : 'var(--bad)')}
+    <p class="mini" style="margin-top:9px">${comDado.length} de ${passados.length} dias com registro · volume total ${n0(volTot)} kg · escapes ${n0(escapes)} kcal</p>
+    ${melhor ? `<div class="row" style="margin-top:6px"><div class="g">
+        <div class="t">Melhor dia: ${esc(dLabel(melhor.d))}</div>
+        <div class="s">${pior ? 'mais fraco: ' + esc(dLabel(pior.d)) + ' (' + n0(pior.v) + '/100)' : 'único dia avaliado'}</div></div>
+      <div class="v">${n0(melhor.v)}/100</div></div>` : ''}
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--ac)"></span><h2>Consistência</h2>
+      <span class="sub">dias que bateram a meta</span></div>
+    ${[['Calorias na faixa da meta', naMeta, passados.filter(s => s.kcal > 0).length, 'var(--die)'],
+       ['Água completa', aguaOk, passados.length, 'var(--agua)'],
+       ['Todos os hábitos do dia', habOk, diasComHab, 'var(--hab)'],
+       ['Todas as doses do dia', medOk, diasComMed, 'var(--lem)']]
+      .filter(r => r[2] > 0).map(r => `<div style="margin-bottom:9px">
+        <div class="mt"><span>${r[0]}</span><span>${r[1]}/${r[2]} dias</span></div>
+        ${bar(r[1], r[2], r[3])}</div>`).join('') || '<p class="mini">Ainda sem dados suficientes.</p>'}
+    <div class="kpi" style="margin-top:6px">
+      <div><b style="color:var(--ac)">${seqReg}</b><span>dias com registro</span></div>
+      <div><b style="color:var(--tre)">${seqTre}</b><span>sem furar treino</span></div>
+      <div><b style="color:var(--hab)">${seqHab}</b><span>hábitos em dia</span></div>
+    </div>
+    <p class="mini" style="margin-top:7px">Sequências = dias seguidos, contados de hoje para trás
+    em todo o histórico (não só ${per}). Um dia sem registro quebra a sequência.</p>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>Balanço do período</h2>
+      <span class="pill ${balTot < 0 ? 'ok' : balTot > 0 ? 'esc' : 'mut'}">${balTot > 0 ? '+' : ''}${n0(balTot)} kcal</span></div>
+    <div class="kpi">
+      <div><b style="color:var(--die)">${n0(kcalTot)}</b><span>kcal consumidas</span></div>
+      <div><b style="color:var(--tre)">${n0(gastoTot)}</b><span>kcal gastas</span></div>
+      <div><b style="color:${balTot < 0 ? 'var(--ac)' : 'var(--warn)'}">${kgEst > 0 ? '+' : ''}${n1(kgEst)}</b><span>kg estimados</span></div>
+    </div>
+    <p class="mini" style="margin-top:9px">Soma apenas os ${comDado.length} dia(s) com registro.
+    A estimativa usa 7700 kcal por quilo de gordura — é uma referência, não uma promessa:
+    ${balTot < 0 ? 'no ritmo atual você caminha para perder peso.'
+      : balTot > 0 ? 'no ritmo atual você caminha para ganhar peso.' : 'você está no equilíbrio.'}
+    ${pesos.length > 1 ? ` Na balança, a variação registrada ${per} foi de ${n1(pesos[pesos.length - 1].v - pesos[0].v)} kg.` : ''}</p>
   </div>
 
   <div class="card">
@@ -2996,13 +3518,14 @@ function resumoMes() {
         : 'Nenhuma falta registrada. Dias sem registro contam como dias sem treino — marcar a falta com o motivo deixa o resumo mais honesto.'}</p>`}
   </div>
 
-  <div class="sec-title">Tendências do mês</div>
+  <div class="sec-title">Tendências ${perDo}</div>
   <div class="card tight">
     ${linha('Calorias consumidas', `média ${n0(mediaKcal)} kcal · meta ${n0(m.kcal)}`, tKcal)}
-    ${linha('Volume de treino', `${n0(volTot)} kg no mês`, tVol)}
+    ${linha('Volume de treino', `${n0(volTot)} kg ${per}`, tVol)}
     ${linha('Peso', pesos.length ? `${n1(pesos[pesos.length - 1].v)} kg no último registro` : 'sem registros', tPeso)}
     ${linha('Água', `média ${n1(mediaAgua / 1000)} L de ${n1(m.agua / 1000)} L`, tAgua)}
     ${linha('Adesão a hábitos', `${habFeito} de ${habPrev} check-ins`, tHab)}
+    ${medPrev ? linha('Medicamentos', `${medTom} de ${medPrev} doses tomadas`, tMed) : ''}
     <p class="mini" style="margin-top:8px">A tendência compara a média da 2ª metade do período com a da 1ª metade. Verde = evoluindo na direção do seu objetivo.</p>
   </div>
 
@@ -3016,7 +3539,7 @@ function resumoMes() {
     <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>Volume de treino (kg)</h2>
       <span class="sub trend ${tVol.cls}">${tVol.txt}</span></div>
     ${chartBar(S.map(s => s.vol), { cor: 'var(--tre)', labels })}
-    <div class="legend"><span>${treinos} treino${treinos===1?'':'s'} concluído${treinos===1?'':'s'} no mês</span></div>
+    <div class="legend"><span>${treinos} treino${treinos===1?'':'s'} concluído${treinos===1?'':'s'} ${per}</span></div>
   </div>
 
   <div class="card">
@@ -3045,8 +3568,59 @@ function resumoMes() {
       }).join('')}
   </div>
 
+  ${medPrev ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--lem)"></span><h2>Medicamentos tomados (%)</h2>
+      <span class="sub trend ${tMed.cls}">${tMed.txt}</span></div>
+    ${chartBar(S.map(s => s.medPrev ? s.medTom / s.medPrev * 100 : 0), { cor: 'var(--lem)', max: 100, meta: 100, labels })}
+    ${(DB.medicamentos || []).filter(mm => mm.ativo !== false).map(mm => {
+        let prev = 0, tom = 0;
+        passados.forEach(s => {
+          if (!medDevidoEm(mm, s.d)) return;
+          dosesDe(mm).forEach(hh => { prev++; if (medTomado(s.d, mm.id, hh)) tom++; });
+        });
+        if (!prev) return '';
+        return `<div class="row"><div class="g"><div class="t wrap">${esc(mm.nome)}</div>
+          <div class="s">${tom} de ${prev} doses</div></div>
+          <div class="v">${n0(tom / prev * 100)}%</div></div>`;
+      }).join('')}
+    <div class="legend"><span>Dias sem registro contam como dose não tomada.</span></div>
+  </div>` : ''}
+
+  ${refTotal ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>Calorias por refeição</h2>
+      <span class="sub">média dos dias com registro</span></div>
+    ${REFS.filter(r => refMedia[r[0]] > 0).map(r => {
+        const tot = passados.reduce((a, s) => a + s.refs[r[0]], 0);
+        return `<div style="margin-bottom:9px">
+        <div class="mt"><span>${ic(r[2], 13)} ${r[1]}</span>
+          <span>${n0(refMedia[r[0]])} kcal · ${n0(tot / refTotal * 100)}%</span></div>
+        ${bar(refMedia[r[0]], Math.max(...REFS.map(q => refMedia[q[0]])), r[0] === 'livre' ? 'var(--warn)' : 'var(--die)')}</div>`;
+      }).join('')}
+    <p class="mini">O percentual é a fatia daquela refeição no total de calorias ${perDo}.</p>
+  </div>` : ''}
+
+  ${espLista.length ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--tre)"></span><h2>Atividades e esportes</h2>
+      <span class="sub">${n0(espMinTot)} min ${per}</span></div>
+    ${espLista.map(([nome, v]) => `<div class="row">
+      <div class="g"><div class="t wrap">${esc(nome)}</div>
+        <div class="s">${v.n}× · ${n0(v.kcal)} kcal</div></div>
+      <div class="v">${n0(v.min)} min</div></div>`).join('')}
+  </div>` : ''}
+
+  ${opt.escala === 'mes' ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Por dia da semana</h2>
+      <span class="sub">onde você rende mais</span></div>
+    ${porDow.filter(w => w.n).map(w => `<div class="row">
+      <div class="g"><div class="t">${w.nome}</div>
+        <div class="s">${w.tre} de ${w.n} dias com treino${w.kcal ? ' · média ' + n0(w.kcal) + ' kcal' : ''}</div></div>
+      <div class="v">${n0(w.n ? w.tre / w.n * 100 : 0)}%</div></div>`).join('')}
+    <p class="mini">Serve para escolher em que dias vale marcar treino: o dia em que você
+    mais falha costuma ser o dia errado na agenda, não falta de vontade.</p>
+  </div>` : ''}
+
   <div class="card" style="margin-bottom:14px">
-    <div class="ch"><h2>Macros médios do mês</h2></div>
+    <div class="ch"><h2>Macros médios ${perDo}</h2></div>
     ${(() => {
         const dd = passados.filter(s => s.kcal > 0), k = dd.length || 1;
         const mc = dd.reduce((a, s) => a + s.c, 0) / k, mp = dd.reduce((a, s) => a + s.p, 0) / k, mg = dd.reduce((a, s) => a + s.g, 0) / k;
@@ -3076,7 +3650,8 @@ function planilhaDias(ds) {
     'Faltou', 'Motivo da falta',
     'Atividades', 'Kcal atividades', 'Kcal consumidas', 'Meta kcal', 'Carboidrato (g)', 'Proteína (g)',
     'Gordura (g)', 'Escapes (kcal)', 'Água (ml)', 'Meta água (ml)', 'Gasto estimado (kcal)',
-    'Balanço (kcal)', 'Peso (kg)', 'Hábitos feitos', 'Hábitos previstos', 'Anotação'];
+    'Balanço (kcal)', 'Peso (kg)', 'Hábitos feitos', 'Hábitos previstos',
+    'Doses tomadas', 'Doses previstas', 'Medicamentos tomados', 'Anotação'];
   const linhas = [cab.join(';')];
   ds.forEach(d => {
     const x = DB.dias[d]; if (!x || diaVazio(x)) return;
@@ -3084,6 +3659,14 @@ function planilhaDias(ds) {
     const habs = DB.habitos.filter(h => habDevidoEm(h, d));
     const hf = habs.filter(h => (x.habitos[h.id] || {}).feito).length;
     const tr = treinoDoDia(d), fa = faltaDoDia(d);
+    const ms = medStats(d), tomList = [];
+    let tomAvulsas = 0;
+    Object.keys(x.meds || {}).forEach(id => {
+      const mm = medById(id), r = x.meds[id] || {};
+      if (!mm || !(r.tomados || []).length) return;
+      tomList.push(mm.nome + ' ' + (r.tomados || []).join(','));
+      if (!medDevidoEm(mm, d)) tomAvulsas += r.tomados.length;
+    });
     linhas.push([
       d, DOW[parseD(d).getDay()],
       csvTxt(tr ? tr.nome + (tr.feito ? '' : ' (em aberto)') : fa ? 'Falta' : ''),
@@ -3097,6 +3680,8 @@ function planilhaDias(ds) {
       Math.round(t.escape || 0) || '', x.agua || '', metaAguaDia(d),
       Math.round(g.total), Math.round(t.kcal - g.total),
       csvNum(x.peso || ''), habs.length ? hf : '', habs.length || '',
+      ms.prev || tomList.length ? ms.tom + tomAvulsas : '', ms.prev || '',
+      csvTxt(tomList.join(' | ')),
       csvTxt(x.nota || '')
     ].join(';'));
   });
@@ -3104,6 +3689,7 @@ function planilhaDias(ds) {
 }
 
 function periodoDias(tipo) {
+  if (tipo === 'sem') return diasDaSemana(semanaAtual());
   if (tipo === 'mes') {
     const ref = SUB.mes ? parseD(SUB.mes + '-01') : parseD(D);
     return diasDoMes(ref.getFullYear(), ref.getMonth());
@@ -3113,7 +3699,7 @@ function periodoDias(tipo) {
 }
 
 ACT.planilha = () => {
-  SUB.expTipo = SUB.expTipo || 'mes';
+  SUB.expTipo = SUB.expTipo || (SUB.res === 'sem' ? 'sem' : 'mes');
   sheetPlanilha();
 };
 function sheetPlanilha() {
@@ -3125,8 +3711,8 @@ function sheetPlanilha() {
     hábitos. Abre no Excel, no Google Sheets e no Numbers.</p>
     <div class="f"><label>Período</label>
       <div class="segs">
-        ${[['mes', MESL[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2)],
-          ['30', 'Últimos 30 dias'], ['tudo', 'Tudo']].map(o =>
+        ${[['sem', 'Semana'], ['mes', MESL[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2)],
+          ['30', '30 dias'], ['tudo', 'Tudo']].map(o =>
           `<button class="${tipo === o[0] ? 'on' : ''}" data-a="expTipo" data-t="${o[0]}">${o[1]}</button>`).join('')}
       </div></div>
     <div class="${ds.length ? 'okbox' : 'warnbox'}">${ds.length
@@ -3146,7 +3732,8 @@ ACT.expTipo = e => { SUB.expTipo = e.dataset.t; sheetPlanilha(); };
 function arquivoPlanilha() {
   const ds = periodoDias(SUB.expTipo);
   const nome = 'vitta-' + (SUB.expTipo === 'tudo' ? 'historico' :
-    SUB.expTipo === '30' ? 'ultimos-30-dias' : (SUB.mes || today().slice(0, 7))) + '.csv';
+    SUB.expTipo === '30' ? 'ultimos-30-dias' :
+    SUB.expTipo === 'sem' ? 'semana-' + semanaAtual() : (SUB.mes || today().slice(0, 7))) + '.csv';
   return { nome, texto: '\ufeff' + planilhaDias(ds) };
 }
 ACT.planilhaBaixar = () => {
@@ -3256,6 +3843,29 @@ SCREENS.hoje = () => {
     </div>`;
   }
 
+  /* medicamentos do dia */
+  const meds = medsDoDia(D), medSN = medsSN(D), mst = medStats(D);
+  if (meds.length || medSN.length) {
+    const pares = [];
+    meds.forEach(mm => dosesDe(mm).forEach(hh => pares.push([mm, hh])));
+    pares.sort((a, b) => (a[1] || '').localeCompare(b[1] || ''));
+    h += `<div class="card">
+      <div class="ch"><span class="dot" style="background:var(--lem)"></span><h2>Medicamentos</h2>
+        <span class="sub">${mst.prev ? mst.tom + '/' + mst.prev + ' doses' : 'se precisar'}</span></div>
+      ${mst.prev ? bar(mst.tom, mst.prev, 'var(--lem)') : ''}
+      ${pares.slice(0, 5).map(([mm, hh]) => {
+        const feito = medTomado(D, mm.id, hh);
+        return `<div class="row">
+          <button class="tick ${feito ? 'on' : ''}" data-a="medTick" data-m="${mm.id}" data-h="${hh}">${ic('check')}</button>
+          <div class="g" data-a="ir" data-v="remedios"><div class="t wrap">${esc(mm.nome)}</div>
+            <div class="s">${esc(medRotulo(mm))}${hh === '—' ? '' : ' · ' + hh}</div></div>
+        </div>`;
+      }).join('')}
+      ${pares.length > 5 || medSN.length ? `<button class="btn gh full sm" style="margin-top:9px"
+        data-a="ir" data-v="remedios">Ver todos${pares.length > 5 ? ` (+${pares.length - 5})` : ''}</button>` : ''}
+    </div>`;
+  }
+
   /* hábitos */
   h += `<div class="card">
     <div class="ch"><span class="dot" style="background:var(--hab)"></span><h2>Hábitos</h2>
@@ -3271,11 +3881,20 @@ SCREENS.hoje = () => {
         <button class="btn pri full sm" data-a="ir" data-v="habitos">Criar hábito</button>`}
   </div>
 
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--ac)"></span><h2>Resumo e evolução</h2>
+      <span class="sub">dia, semana e mês</span></div>
+    <p class="mini" style="margin:-2px 0 11px">Gráficos de treino, calorias, água, hábitos e medicamentos —
+    e a planilha para exportar.</p>
+    <button class="btn pri full" data-a="ir" data-v="resumo">${ic('resumo', 16)} Abrir resumo</button>
+  </div>
+
   <div class="card tight" style="margin-bottom:14px">
-    <div class="row" data-a="ir" data-v="resumo"><div class="g"><div class="t">${ic('resumo',15)} Ver resumo e evolução</div>
-      <div class="s">relatórios diário e mensal</div></div><div class="v">${ic('dir',16,'op')}</div></div>
     <div class="row" data-a="ir" data-v="perfil"><div class="g"><div class="t">${ic('medidas',15)} Minhas medidas e metas</div>
       <div class="s">TMB ${n0(tmb())} · gasto ${n0(get())} kcal</div></div><div class="v">${ic('dir',16,'op')}</div></div>
+    <div class="row" data-a="irMeds"><div class="g"><div class="t">${ic('remedio',15)} Meus medicamentos</div>
+      <div class="s">${(DB.medicamentos || []).filter(mm => mm.ativo !== false).length} em uso</div></div>
+      <div class="v">${ic('dir',16,'op')}</div></div>
   </div>`;
   return h;
 };
@@ -3477,6 +4096,19 @@ const TABELAS = [
     })
   },
   {
+    n: 'medicamentos', get: () => DB.medicamentos, set: a => DB.medicamentos = a,
+    up: m => ({
+      id: m.id, user_id: SB.user, nome: m.nome, tipo: m.tipo || 'remedio', dose: m.dose || 1,
+      unidade: m.unidade || '', freq: m.freq || 'diario', dias: m.dias || [], horarios: m.horarios || [],
+      inicio: m.inicio || null, fim: m.fim || null, obs: m.obs || '', ativo: m.ativo !== false, upd: m.upd
+    }),
+    down: r => ({
+      id: r.id, nome: r.nome, tipo: r.tipo, dose: +r.dose || 1, unidade: r.unidade,
+      freq: r.freq, dias: r.dias || [], horarios: r.horarios || [], inicio: r.inicio, fim: r.fim,
+      obs: r.obs || '', ativo: r.ativo, alertado: '', upd: r.upd
+    })
+  },
+  {
     n: 'atividades', get: () => DB.atividades, set: a => DB.atividades = a,
     up: a => ({ id: a.id, user_id: SB.user, nome: a.nome, met: a.met, min: a.min, intens: a.int || 1, dias: a.dias || [], upd: a.upd }),
     down: r => ({ id: r.id, nome: r.nome, met: +r.met, min: +r.min, int: +r.intens || 1, dias: r.dias || [], upd: r.upd })
@@ -3603,7 +4235,7 @@ async function syncPerfil() {
 
 const baixaDia = r => ({
   treino: r.treino, esportes: r.esportes || [], refeicoes: r.refeicoes || {}, agua: r.agua || 0,
-  habitos: r.habitos || {}, peso: r.peso, nota: r.nota || '',
+  habitos: r.habitos || {}, meds: r.meds || {}, peso: r.peso, nota: r.nota || '',
   ajusteKcal: +r.ajuste_kcal || 0, ajusteAgua: +r.ajuste_agua || 0, upd: r.upd
 });
 const diaEnviavel = x => !!(x && x.upd && !diaVazio(x));
@@ -3628,12 +4260,19 @@ async function syncDias() {
     const x = DB.dias[k];
     return {
       user_id: SB.user, data: k, treino: x.treino, esportes: x.esportes || [], refeicoes: x.refeicoes || {},
-      agua: x.agua || 0, habitos: x.habitos || {}, peso: x.peso, nota: x.nota || '',
+      agua: x.agua || 0, habitos: x.habitos || {}, meds: x.meds || {}, peso: x.peso, nota: x.nota || '',
       ajuste_kcal: x.ajusteKcal || 0, ajuste_agua: x.ajusteAgua || 0, upd: x.upd
     };
   });
   for (let i = 0; i < rows.length; i += 200) {
-    const { error: e2 } = await SB.client.from('dias').upsert(rows.slice(i, i + 200), { onConflict: 'user_id,data' });
+    let lote = rows.slice(i, i + 200);
+    let { error: e2 } = await SB.client.from('dias').upsert(lote, { onConflict: 'user_id,data' });
+    /* banco ainda sem a coluna meds: reenvio sem ela em vez de perder o dia inteiro */
+    if (e2 && /meds/i.test(e2.message || '') && /column|schema cache/i.test(e2.message || '')) {
+      lote = lote.map(r => { const c = Object.assign({}, r); delete c.meds; return c; });
+      ({ error: e2 } = await SB.client.from('dias').upsert(lote, { onConflict: 'user_id,data' }));
+      if (!e2) console.warn('[sync] coluna dias.meds ausente — rode a parte 9 do schema.sql');
+    }
     if (e2) throw e2;
   }
 }
