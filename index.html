@@ -134,7 +134,9 @@ a{color:var(--res)}
 .btn.pri:hover{background:var(--ac-d)}
 .btn.gh{background:transparent}
 .btn.sm{padding:8px 12px;font-size:13px;border-radius:11px}
-.btn.xs{padding:5px 9px;font-size:12px;border-radius:9px}
+.btn.xs{padding:5px 9px;font-size:12px;border-radius:9px;position:relative}
+/* área de toque invisível: o botão continua pequeno, o dedo acerta */
+.btn.xs::after{content:'';position:absolute;inset:-7px -5px}
 .btn.full{width:100%}
 .btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,transparent);background:color-mix(in srgb,var(--bad) 9%,transparent)}
 .btnrow{display:flex;gap:8px}
@@ -151,6 +153,11 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
   background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+/* input[type=date] tem largura mínima própria e não encolhe: em tela
+   estreita os dois campos de data vazavam para fora do celular. */
+.grid2>*,.grid3>*{min-width:0}
+.grid2 .in,.grid3 .in{max-width:100%}
+@media (max-width:345px){.grid2,.grid3{grid-template-columns:1fr}}
 .segs{display:flex;gap:6px;background:var(--bg2);padding:4px;border-radius:13px;border:1px solid var(--line)}
 .segs button{flex:1;padding:8px 4px;border-radius:10px;font-size:13px;font-weight:600;color:var(--tx2)}
 .segs button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 5px rgba(43,54,35,.12)}
@@ -166,7 +173,7 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .row .t.wrap{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
 .row .s{font-size:11.5px;color:var(--tx2);margin-top:2px}
 .row .v{font-size:14px;font-weight:700;text-align:right;flex:none}
-.tick{width:27px;height:27px;border-radius:9px;border:2px solid var(--line2);flex:none;display:grid;place-items:center;
+.tick{width:38px;height:38px;border-radius:9px;border:2px solid var(--line2);flex:none;display:grid;place-items:center;
   font-size:14px;color:transparent;transition:.12s}
 .tick .ic{width:16px;height:16px;stroke-width:2.6}
 .tick.on{background:var(--ac);border-color:var(--ac);color:var(--ac-tx)}
@@ -414,7 +421,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-26a';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-26b';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -435,6 +442,8 @@ const num = v => { const x = parseFloat(String(v).replace(',', '.')); return isN
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dLabel = s => { const d = parseD(s); return `${DOW[d.getDay()]}, ${d.getDate()} ${MES[d.getMonth()]}`; };
+/* "1 exercícios" ficava feio em três telas diferentes */
+const plural = (n, um, muitos) => n + ' ' + (n === 1 ? um : muitos);
 
 /* ---------- storage (com fallback em memória) ---------- */
 let MEM = null, STORAGE_OK = true;
@@ -562,10 +571,22 @@ function limparAlimentos(lista) {
     if (!iguais(ant, a)) { fica.push(a); return; }        // mesmo nome, valores diferentes: são dois alimentos
     remover.push(a.idAntigo || a.id);                     // duplicata de verdade
   });
-  fica.forEach(a => delete a.idAntigo);
+  /* o id sorteado antigo também some do servidor — senão ele volta no
+     próximo sync e o alimento aparece duplicado na biblioteca */
   migrada.forEach(a => { if (a.idAntigo && !remover.includes(a.idAntigo)) remover.push(a.idAntigo); });
   fica.forEach(a => delete a.idAntigo);
   return { lista: fica, remover: [...new Set(remover)].filter(Boolean) };
+}
+
+/* Backup importado é a versão que vale AGORA. Sem recarimbar, cada registro
+   volta com a data antiga do arquivo, perde o "quem editou por último" para
+   o servidor e o sync desfaz a restauração alguns segundos depois. */
+function carimbarTudo() {
+  const t = nowISO();
+  DB.perfil.upd = t;
+  ['fichas', 'alimentos', 'pratos', 'habitos', 'lembretes', 'atividades', 'medicamentos']
+    .forEach(k => (DB[k] || []).forEach(o => o.upd = t));
+  Object.values(DB.dias || {}).forEach(d => { if (!diaVazio(d)) d.upd = t; });
 }
 
 /* Exclusões esperando para serem aplicadas no servidor no próximo sync. */
@@ -670,8 +691,11 @@ function tmb(p = DB.perfil) {
 const get = (p = DB.perfil) => tmb(p) * num(p.ativ) + num(p.gastoExtra);
 function metaKcal(p = DB.perfil) {
   const g = get(p);
-  const aj = p.objetivo === 'perder' ? -(num(p.ajuste) || 400)
-    : p.objetivo === 'ganhar' ? +(num(p.ajuste) || 350) : 0;
+  /* ajuste 0 é uma escolha legítima ("quero comer no meu gasto"):
+     o valor sugerido só entra quando o campo está realmente vazio. */
+  const vazio = p.ajuste === '' || p.ajuste === null || p.ajuste === undefined;
+  const aj = p.objetivo === 'perder' ? -(vazio ? 400 : num(p.ajuste))
+    : p.objetivo === 'ganhar' ? +(vazio ? 350 : num(p.ajuste)) : 0;
   return Math.max(1000, g + aj);
 }
 function metas(p = DB.perfil) {
@@ -734,6 +758,22 @@ function toast(msg) {
      dá para tocar fora.
    ========================================================= */
 let SHEET_SUJO = false;
+const sujar = () => { SHEET_SUJO = true; };
+
+/* Ações que acontecem DENTRO da folha e não são preenchimento:
+   marcar sujo aqui daria um "descartar?" falso. */
+const SEM_SUJEIRA = new Set(['tentarFechar', 'fechar', 'voltar', 'perguntaSim', 'perguntaNao',
+  'expTipo', 'planilhaBaixar', 'planilhaEnviar', 'aba', 'abaAdd', 'resAba', 'buscaAlim',
+  'entrarEmail', 'enviarCodigo', 'confirmarCodigo', 'pedirNotif', 'testarNotif']);
+
+/* Um clique num chip, num segmentado ou num contador É preenchimento,
+   mesmo sem teclado: escolher 4 estrelas de sono é dado que se perde. */
+function cliqueSuja(b) {
+  if (!b.closest('#modal .sheet')) return false;
+  if (SEM_SUJEIRA.has(b.dataset.a)) return false;
+  return b.classList.contains('chip') || b.classList.contains('tick')
+    || !!b.closest('.segs') || b.dataset.sujo === '1';
+}
 
 function sheet(html) {
   SHEET_SUJO = false;
@@ -812,7 +852,7 @@ let D = today();
 let SUB = {};   // estado auxiliar por tela (aba interna, item em edição...)
 
 const NAVITENS = [
-  ['hoje', 'hoje', 'Hoje'], ['treino', 'treino', 'Treino'], ['dieta', 'dieta', 'Dieta'],
+  ['hoje', 'hoje', 'Hoje'], ['treino', 'treino', 'Exercícios'], ['dieta', 'dieta', 'Dieta'],
   ['habitos', 'habitos', 'Hábitos'], ['remedios', 'remedio', 'Medicamentos'], ['lembretes', 'lembretes', 'Lembretes']
 ];
 const TITULOS = {
@@ -863,7 +903,16 @@ const FAB = {};
 
 /* ---------- ações globais ---------- */
 ACT.ir = e => go(e.dataset.v);
-ACT.voltar = () => go(SUB._back || 'hoje');
+/* Voltar pela seta é sair da tela, não descartar: o que já foi digitado
+   nos campos da tela cheia (nome da ficha, nome do prato) é salvo antes.
+   E ficha/prato aberto e deixado em branco não vira registro fantasma. */
+ACT.voltar = () => {
+  if (typeof fCapturar === 'function') fCapturar();
+  if (typeof prCapturar === 'function') prCapturar();
+  if (typeof limparRascunhos === 'function') limparRascunhos();
+  save(false);
+  go(SUB._back || 'hoje');
+};
 ACT.fechar = () => fechar();
 ACT.setDia = e => { D = e.dataset.d; render(); };
 
@@ -882,8 +931,15 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-a]');
   if (b) {
     ev.preventDefault();
+    /* Muita folha se redesenha sozinha ao trocar uma opção (frequência,
+       tipo, dias da semana). Como sheet() nasce limpa, o "já preenchi
+       algo aqui" se perdia e o app deixava sair sem perguntar.
+       Guardo antes e devolvo depois do redesenho.                      */
+    if (cliqueSuja(b)) sujar();
+    const sujoAntes = SHEET_SUJO, naFolha = !!b.closest('#modal .sheet');
     const f = ACT[b.dataset.a];
     if (f) f(b, ev); else console.warn('ação sem handler:', b.dataset.a);
+    if (naFolha && sujoAntes && $('#modal').innerHTML) SHEET_SUJO = true;
     return;
   }
   const t = ev.target;
@@ -965,14 +1021,32 @@ ACT.verBoasVindas = () => { DB.cfg.pularBoasVindas = false; save(false); go('boa
 /* =========================================================
    Perfil, metas e configurações
    ========================================================= */
+/* Limites de gente de verdade. Sem eles, peso 0 fazia a TMB ficar negativa
+   e a tela de Dieta mostrar "Proteína 95 / 0 g" e meta de água de 0 L. */
+const LIMITES = {
+  peso: [20, 350, 75], altura: [100, 250, 175], idade: [5, 120, 30],
+  protKg: [0.5, 4, 1.8], gordPct: [10, 60, 25], metaSono: [4, 14, 8]
+};
+function dentro(campo, v) {
+  const [mn, mx, padrao] = LIMITES[campo];
+  if (!v) return padrao;                       // campo vazio volta ao padrão
+  return clamp(v, mn, mx);
+}
 function perfilDosCampos() {
   const p = Object.assign({}, DB.perfil);
-  p.nome = valOf('p_nome'); p.peso = numOf('p_peso'); p.altura = numOf('p_altura');
-  p.idade = numOf('p_idade'); p.ativ = num(valOf('p_ativ', 1.55));
-  p.ajuste = numOf('p_ajuste'); p.protKg = numOf('p_prot'); p.gordPct = numOf('p_gord');
+  if (!document.getElementById('p_peso')) return p;   // a tela não está aberta
+  p.nome = valOf('p_nome').slice(0, 60);
+  p.peso = dentro('peso', numOf('p_peso'));
+  p.altura = dentro('altura', numOf('p_altura'));
+  p.idade = dentro('idade', numOf('p_idade'));
+  p.ativ = num(valOf('p_ativ', 1.55));
+  p.ajuste = valOf('p_ajuste') === '' ? '' : clamp(numOf('p_ajuste'), 0, 1500);
+  p.protKg = dentro('protKg', numOf('p_prot'));
+  p.gordPct = dentro('gordPct', numOf('p_gord'));
   if (document.getElementById('p_aguafixa')) p.aguaFixa = numOf('p_aguafixa');
-  p.gastoExtra = numOf('p_gextra'); p.aguaExtra = numOf('p_aextra');
-  if (document.getElementById('p_sono')) p.metaSono = Math.min(14, Math.max(4, numOf('p_sono') || 8));
+  p.gastoExtra = clamp(numOf('p_gextra'), 0, 5000);
+  p.aguaExtra = clamp(numOf('p_aextra'), 0, 5000);
+  if (document.getElementById('p_sono')) p.metaSono = dentro('metaSono', numOf('p_sono'));
   return p;
 }
 function boxMetas(p) {
@@ -996,9 +1070,18 @@ function boxMetas(p) {
       <div class="v" style="color:var(--tre)">+${n0(p.gastoExtra)} kcal</div></div>` : ''}`;
 }
 ACT.pPreview = () => { const b = document.getElementById('p_box'); if (b) b.innerHTML = boxMetas(perfilDosCampos()); };
-ACT.pSexo = e => { DB.perfil.sexo = e.dataset.v; save(); render(); };
-ACT.pObj = e => { DB.perfil.objetivo = e.dataset.v; if (!DB.perfil.ajuste) DB.perfil.ajuste = e.dataset.v === 'perder' ? 400 : e.dataset.v === 'ganhar' ? 350 : 0; save(); render(); };
-ACT.pAgua = e => { DB.perfil.aguaModo = e.dataset.v; save(); render(); };
+/* Estes três botões redesenham a tela inteira. Sem guardar o que já está
+   digitado, o nome, o peso e a altura voltavam sozinhos ao valor anterior —
+   justamente na tela do primeiro uso, com os botões entre os campos. */
+function pGuardar() { DB.perfil = Object.assign(DB.perfil, perfilDosCampos(), { upd: nowISO() }); }
+ACT.pSexo = e => { pGuardar(); DB.perfil.sexo = e.dataset.v; save(); render(); };
+ACT.pObj = e => {
+  pGuardar(); DB.perfil.objetivo = e.dataset.v;
+  if (DB.perfil.ajuste === '' || DB.perfil.ajuste == null)
+    DB.perfil.ajuste = e.dataset.v === 'perder' ? 400 : e.dataset.v === 'ganhar' ? 350 : 0;
+  save(); render();
+};
+ACT.pAgua = e => { pGuardar(); DB.perfil.aguaModo = e.dataset.v; save(); render(); };
 ACT.pSalvar = () => {
   DB.perfil = Object.assign(DB.perfil, perfilDosCampos(), { upd: nowISO() });
   save(); toast('Perfil salvo ✓'); render();
@@ -1015,9 +1098,9 @@ SCREENS.perfil = () => {
         <button class="${p.sexo === 'F' ? 'on' : ''}" data-a="pSexo" data-v="F">Mulher</button>
       </div></div>
     <div class="grid3">
-      <div class="f"><label>Peso (kg)</label><input class="in" id="p_peso" type="number" inputmode="decimal" step="0.1" value="${p.peso}" data-inp="pPreview"></div>
-      <div class="f"><label>Altura (cm)</label><input class="in" id="p_altura" type="number" inputmode="numeric" value="${p.altura}" data-inp="pPreview"></div>
-      <div class="f"><label>Idade</label><input class="in" id="p_idade" type="number" inputmode="numeric" value="${p.idade}" data-inp="pPreview"></div>
+      <div class="f"><label>Peso (kg)</label><input class="in" id="p_peso" type="number" inputmode="decimal" step="0.1" min="20" max="350" value="${p.peso}" data-inp="pPreview"></div>
+      <div class="f"><label>Altura (cm)</label><input class="in" id="p_altura" type="number" inputmode="numeric" min="100" max="250" value="${p.altura}" data-inp="pPreview"></div>
+      <div class="f"><label>Idade</label><input class="in" id="p_idade" type="number" inputmode="numeric" min="5" max="120" value="${p.idade}" data-inp="pPreview"></div>
     </div>
     <div class="f"><label>Nível de atividade</label>
       <select class="in" id="p_ativ" data-inp="pPreview">
@@ -1032,9 +1115,9 @@ SCREENS.perfil = () => {
     `<button class="${p.objetivo === o[0] ? 'on' : ''}" data-a="pObj" data-v="${o[0]}">${o[1]}</button>`).join('')}
     </div>
     <div class="grid3">
-      <div class="f"><label>Ajuste kcal</label><input class="in" id="p_ajuste" type="number" inputmode="numeric" value="${p.ajuste}" data-inp="pPreview"></div>
-      <div class="f"><label>Proteína g/kg</label><input class="in" id="p_prot" type="number" inputmode="decimal" step="0.1" value="${p.protKg}" data-inp="pPreview"></div>
-      <div class="f"><label>Gordura %</label><input class="in" id="p_gord" type="number" inputmode="numeric" value="${p.gordPct}" data-inp="pPreview"></div>
+      <div class="f"><label>Ajuste kcal</label><input class="in" id="p_ajuste" type="number" inputmode="numeric" min="0" max="1500" value="${p.ajuste}" data-inp="pPreview"></div>
+      <div class="f"><label>Proteína g/kg</label><input class="in" id="p_prot" type="number" inputmode="decimal" step="0.1" min="0.5" max="4" value="${p.protKg}" data-inp="pPreview"></div>
+      <div class="f"><label>Gordura %</label><input class="in" id="p_gord" type="number" inputmode="numeric" min="10" max="60" value="${p.gordPct}" data-inp="pPreview"></div>
     </div>
     <p class="mini">O ajuste é somado (ganhar) ou subtraído (emagrecer) do seu gasto total. Carboidrato é o que sobra depois de proteína e gordura.</p>
     <hr class="sep">
@@ -1138,7 +1221,9 @@ ACT.importar = () => {
       try {
         const d = JSON.parse(r.result);
         if (!d.perfil) throw 0;
-        DB = Object.assign(novoDB(), d); save(); toast('Backup restaurado ✓'); go('hoje');
+        DB = Object.assign(novoDB(), d);
+        carimbarTudo();          // o que veio do backup é a versão boa AGORA
+        save(); toast('Backup restaurado ✓'); go('hoje');
       } catch (e) { toast('Arquivo inválido'); }
     };
     r.readAsText(f);
@@ -1777,7 +1862,7 @@ SCREENS.fichas = () => {
   return DB.fichas.length ? DB.fichas.map(f => `<div class="card">
       <div class="ch"><span class="dot" style="background:${f.cor}"></span><h2>${esc(f.nome || 'Sem nome')}</h2>
         <button class="btn xs" data-a="abrirFicha" data-f="${f.id}">Editar</button></div>
-      <div class="mini">${(f.exercicios || []).length} exercícios${(f.dias || []).length ? ' · ' + f.dias.map(d => DOW[d]).join(', ') : ''}</div>
+      <div class="mini">${plural((f.exercicios || []).length, 'exercício', 'exercícios')}${(f.dias || []).length ? ' · ' + f.dias.map(d => DOW[d]).join(', ') : ''}</div>
       <div class="mini" style="color:var(--tx3);margin-top:5px">${esc((f.exercicios || []).map(e => e.nome).slice(0, 4).join(' · ')) || 'vazia'}</div>
     </div>`).join('') + `<button class="btn pri full" data-a="novaFicha" style="margin-bottom:14px">${ic('mais',15)} Nova ficha</button>`
     : `<div class="card"><div class="empty"><b>${ic('ficha')}</b>Monte sua primeira ficha: dê um nome (ex: “Treino A — Peito e tríceps”), escolha os dias da semana e liste os exercícios com séries, repetições e carga alvo.</div>
@@ -1792,7 +1877,27 @@ ACT.fSalvar = () => {
 };
 function fCapturar() {
   const f = fichaAtual(); if (!f) return;
-  if (document.getElementById('f_nome')) f.nome = valOf('f_nome').trim() || f.nome;
+  if (document.getElementById('f_nome')) {
+    const n = valOf('f_nome').trim();
+    if (n !== f.nome) { f.nome = n; f.upd = nowISO(); }
+  }
+}
+/* Abrir "Nova ficha" e voltar sem preencher deixava um cartão
+   "Sem nome · 0 exercícios · vazia" na lista, que só sumia entrando nele
+   de novo para achar o Excluir. Aqui a casca vazia é descartada. */
+function limparRascunhos() {
+  const vaziaF = f => !String(f.nome || '').trim() && !(f.exercicios || []).length && !(f.dias || []).length;
+  const vazioP = p => !String(p.nome || '').trim() && !(p.itens || []).length;
+  DB.fichas = (DB.fichas || []).filter(f => f.id === SUB.fichaId || !vaziaF(f));
+  DB.pratos = (DB.pratos || []).filter(p => p.id === SUB.pratoId || !vazioP(p));
+  if (VIEW === 'ficha' && SUB.fichaId) {
+    const f = (DB.fichas || []).find(x => x.id === SUB.fichaId);
+    if (f && vaziaF(f)) DB.fichas = DB.fichas.filter(x => x.id !== SUB.fichaId);
+  }
+  if (VIEW === 'prato' && SUB.pratoId) {
+    const p = (DB.pratos || []).find(x => x.id === SUB.pratoId);
+    if (p && vazioP(p)) DB.pratos = DB.pratos.filter(x => x.id !== SUB.pratoId);
+  }
 }
 ACT.fDia = e => {
   const f = fichaAtual(), d = +e.dataset.d; fCapturar();
@@ -1898,8 +2003,13 @@ ACT.aguaCustom = () => {
 ACT.aguaSalvar = () => { const x = dia(D); x.agua = Math.max(0, (x.agua || 0) + numOf('ag_v')); tocaDia(D); save(); fechar(); render(); };
 
 /* ---------- lançamento de refeição ---------- */
-ACT.addRef = e => { SUB.ref = e.dataset.r; SUB.aba = SUB.aba || 'plano'; SUB.busca = ''; sheetAdd(); };
-ACT.abaAdd = e => { SUB.aba = e.dataset.t; sheetAdd(); };
+/* "Fora da dieta" vale para o lançamento, não para sempre: sem zerar aqui,
+   o café da manhã seguinte entrava marcado como escape sem o usuário pedir. */
+ACT.addRef = e => {
+  SUB.ref = e.dataset.r; SUB.aba = SUB.aba || 'plano';
+  SUB.busca = ''; SUB.escape = false; SUB.livre = null; sheetAdd();
+};
+ACT.abaAdd = e => { livreCapturar(); SUB.aba = e.dataset.t; sheetAdd(); };
 ACT.buscaAlim = e => { SUB.busca = e.value; sheetAdd(true); };
 
 function sheetAdd(keepFocus) {
@@ -1950,9 +2060,22 @@ function sheetAdd(keepFocus) {
       ${[['plano', 'Do plano'], ['alimento', 'Alimento'], ['livre', 'Livre']].map(t =>
     `<button class="${aba === t[0] ? 'on' : ''}" data-a="abaAdd" data-t="${t[0]}">${t[1]}</button>`).join('')}
     </div>${corpo}`);
+  livreRestaurar();
   if (keepFocus) { const el = document.getElementById('q_alim'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
 }
-ACT.togEscape = () => { SUB.escape = !SUB.escape; sheetAdd(); };
+ACT.togEscape = () => { livreCapturar(); SUB.escape = !SUB.escape; sheetAdd(); livreRestaurar(); };
+/* A folha se redesenha ao marcar o escape ou trocar de aba, e o formulário
+   livre é longo (5 campos). Guardo e devolvo o que já estava digitado. */
+const CAMPOS_LIVRE = ['l_nome', 'l_k', 'l_l', 'l_c', 'l_p', 'l_g'];
+function livreCapturar() {
+  if (!document.getElementById('l_nome')) return;
+  SUB.livre = {};
+  CAMPOS_LIVRE.forEach(k => { const e = document.getElementById(k); if (e) SUB.livre[k] = e.value; });
+}
+function livreRestaurar() {
+  if (!SUB.livre) return;
+  CAMPOS_LIVRE.forEach(k => { const e = document.getElementById(k); if (e && SUB.livre[k] != null) e.value = SUB.livre[k]; });
+}
 ACT.irPratos = () => { fechar(); SUB._back = 'dieta'; go('pratos', true); SUB._back = 'dieta'; };
 ACT.irAlimentos = () => { fechar(); SUB._back = 'dieta'; go('alimentos', true); SUB._back = 'dieta'; };
 
@@ -1990,6 +2113,7 @@ ACT.addAlimOk = e => {
 };
 ACT.addLivre = () => {
   const nome = valOf('l_nome').trim(); if (!nome) return toast('Descreva o que você consumiu');
+  SUB.livre = null;
   lancar({ nome, qtd: 1, un: '', kcal: numOf('l_k'), c: numOf('l_c'), p: numOf('l_p'), g: numOf('l_g'), liq: numOf('l_l'), fonte: 'livre' });
 };
 ACT.delItem = e => {
@@ -2057,7 +2181,7 @@ SCREENS.dieta = () => {
         ${itens.length ? `<span class="sub">${n0(s.kcal)} kcal</span>` : ''}
         <button class="btn xs pri" data-a="addRef" data-r="${k}">${ic('mais',14)}</button></div>
       ${itens.map((i, idx) => `<div class="row">
-        <div class="g"><div class="t">${esc(i.nome)} ${i.escape ? '<span class="pill esc">escape</span>' : ''}</div>
+        <div class="g"><div class="t wrap">${esc(i.nome)} ${i.escape ? '<span class="pill esc">escape</span>' : ''}</div>
           <div class="s">${i.qtd ? esc(i.qtd + ' ' + (i.un || '')) + ' · ' : ''}C${n1(i.c)} P${n1(i.p)} G${n1(i.g)}${i.liq ? ' · ' + n0(i.liq) + 'ml' : ''}</div></div>
         <div class="v">${n0(i.kcal)}</div>
         <button class="btn xs" data-a="togItemEsc" data-r="${k}" data-i="${idx}" title="Marcar como escape">${ic('alerta',14)}</button>
@@ -2156,7 +2280,9 @@ ACT.pSalvarPrato = () => {
 };
 function prCapturar() {
   const p = pratoAtual(); if (!p || !document.getElementById('pr_nome')) return;
-  p.nome = valOf('pr_nome').trim() || p.nome; p.refeicao = valOf('pr_ref');
+  const n = valOf('pr_nome').trim();
+  if (n !== p.nome || valOf('pr_ref') !== p.refeicao) p.upd = nowISO();
+  p.nome = n || p.nome; p.refeicao = valOf('pr_ref');
 }
 ACT.prAddItem = () => {
   prCapturar(); const q = '';
@@ -2247,7 +2373,10 @@ function habDevidoEm(h, d) {
   if (h.freqTipo === 'dias') return (h.dias || []).includes(parseD(d).getDay());
   return true;                       // diário ou x vezes por semana (aparece todo dia)
 }
-function regHab(d, id) { const x = dia(d); return x.habitos[id] || null; }
+/* leitura pura: NÃO usa dia(), que criaria o registro. Só desenhar a tela
+   de hábitos materializava um dia vazio para cada data desde o início do
+   hábito, e esses dias fantasmas entravam nas contas do Resumo. */
+function regHab(d, id) { return ((DB.dias[d] || {}).habitos || {})[id] || null; }
 function habDias(h, ate = today()) {
   const out = []; let d = h.inicio;
   let guard = 0;
@@ -2516,8 +2645,7 @@ SCREENS.habito = () => {
         <b>${h.encerrado.alcancado ? ic('festa', 15) + ' Objetivo alcançado' : 'Objetivo não alcançado'}</b> — ${esc(dLabel(h.encerrado.data))}
         ${h.encerrado.nota ? '<br>' + esc(h.encerrado.nota) : ''}</div>
       <button class="btn full sm" data-a="reabrir" data-h="${h.id}">Reabrir hábito</button>
-    </div>
-    <button class="btn danger full" data-a="delHabito" data-h="${h.id}" style="margin-bottom:14px">Excluir hábito</button>`
+    </div>`
       : `<button class="btn full" data-a="encerrar" data-h="${h.id}" style="margin-bottom:10px">Encerrar e avaliar objetivo</button>`}
   <button class="btn danger full" data-a="delHabito" data-h="${h.id}" style="margin-bottom:14px">Excluir hábito</button>`;
 };
@@ -2906,9 +3034,9 @@ function sheetMed(m) {
     ${SUB.medFreq !== 'necessario' ? `<div class="f"><label>Horários do dia</label>
       ${SUB.medHoras.map((h, i) => `<div class="row" style="gap:8px;border:0;padding:5px 0">
         <input class="in" type="time" value="${esc(h)}" id="md_h${i}" style="flex:1">
-        ${SUB.medHoras.length > 1 ? `<button class="btn xs danger" data-a="medDelHora" data-i="${i}">${ic('x', 13)}</button>` : ''}
+        ${SUB.medHoras.length > 1 ? `<button class="btn xs danger" data-a="medDelHora" data-i="${i}" data-sujo="1">${ic('x', 13)}</button>` : ''}
       </div>`).join('')}
-      <button class="btn gh full sm" style="margin-top:6px" data-a="medAddHora">${ic('mais', 14)} Outro horário</button>
+      <button class="btn gh full sm" style="margin-top:6px" data-a="medAddHora" data-sujo="1">${ic('mais', 14)} Outro horário</button>
       <p class="mini" style="margin-top:6px">Com horário preenchido você recebe uma notificação na hora
       (se tiver autorizado em Configurações).</p></div>` : ''}
 
@@ -3152,12 +3280,12 @@ function sheetSono(s) {
 
     <div class="f"><label>Acordei no meio da noite</label>
       <div class="row" style="border:0;padding:0;gap:10px">
-        <button class="btn xs" data-a="sonoDesp" data-v="-1">${ic('menos', 14)}</button>
+        <button class="btn xs" data-a="sonoDesp" data-v="-1" data-sujo="1">${ic('menos', 14)}</button>
         <div class="g" style="text-align:center">
           <div class="t" style="font-size:19px">${SUB.sonoDesp}</div>
           <div class="s">${SUB.sonoDesp === 0 ? 'dormi direto' : SUB.sonoDesp === 1 ? 'uma vez' : SUB.sonoDesp + ' vezes'}</div>
         </div>
-        <button class="btn xs" data-a="sonoDesp" data-v="1">${ic('mais', 14)}</button>
+        <button class="btn xs" data-a="sonoDesp" data-v="1" data-sujo="1">${ic('mais', 14)}</button>
       </div></div>
 
     <div class="f"><label>Observação</label>
@@ -3287,12 +3415,18 @@ function chartLine(pts, o = {}) {
 }
 
 function tendencia(vals, inverso, lim) {
-  const v = vals.filter(x => x != null && x > 0);
+  /* null = dia sem registro (não entra na conta). Zero é um valor de
+     verdade: quem parou de beber água precisa ver a queda, não "estável". */
+  const v = vals.filter(x => x != null);
   if (v.length < 4) return { txt: 'sem tendência', cls: 'flat', pct: 0 };
   const m = Math.floor(v.length / 2);
   const a = v.slice(0, m).reduce((x, y) => x + y, 0) / m;
   const b = v.slice(m).reduce((x, y) => x + y, 0) / (v.length - m);
-  const pct = a ? (b - a) / a * 100 : 0;
+  /* saiu do zero: percentual não existe (divisão por zero), mas a mudança
+     é real e é a mais importante de todas — "comecei a fazer". */
+  if (!a) return b ? { txt: '▲ começou', cls: inverso ? 'down' : 'up', pct: 100 }
+                   : { txt: 'estável', cls: 'flat', pct: 0 };
+  const pct = (b - a) / a * 100;
   const bom = inverso ? pct < 0 : pct > 0;
   if (Math.abs(pct) < (lim || 2)) return { txt: 'estável', cls: 'flat', pct };
   return { txt: `${pct > 0 ? '▲' : '▼'} ${n1(Math.abs(pct))}%`, cls: bom ? 'up' : 'down', pct };
@@ -3318,7 +3452,7 @@ function serieMes(ds) {
       treino: estadoTreino(d) === 'feito', falta: estadoTreino(d) === 'falta',
       motivo: (faltaDoDia(d) || {}).motivo || '', vol: volDia(d),
       esporte: x ? (x.esportes || []).reduce((a, e) => a + e.kcal, 0) : 0,
-      habPrev: habs.length, habFeito: hf, temDado: !!x,
+      habPrev: habs.length, habFeito: hf, temDado: !!x && !diaVazio(x),
       medPrev: md.prev, medTom: md.tom,
       dur: x && x.treino && x.treino.feito ? +x.treino.duracao || 0 : 0,
       espMin: x ? (x.esportes || []).reduce((a, e) => a + (+e.min || 0), 0) : 0,
@@ -4019,7 +4153,9 @@ SCREENS.hoje = () => {
 
   let h = `<div class="card hero">
     <div class="ch" style="margin-bottom:6px"><h2 style="font-size:16px">${saudacao()}${esc(nome)}</h2></div>
-    <p class="mini">${esc(dLabel(D))} — ${D === today() ? 'lance seus dados do dia em poucos toques.' : 'você está editando um dia anterior.'}</p>
+    <p class="mini">${esc(dLabel(D))} — ${D === today() ? 'lance seus dados do dia em poucos toques.'
+      : D > today() ? 'este dia ainda não chegou: o que você lançar aqui já fica guardado para ele.'
+      : 'você está editando um dia anterior.'}</p>
   </div>` + dateStrip();
 
   /* sono — a noite que acabou de terminar abre o dia */
@@ -4041,7 +4177,7 @@ SCREENS.hoje = () => {
       ${bar(tr.itens.filter(i => i.feito).length, Math.max(tr.itens.length, 1), 'var(--tre)')}`
       : `<div class="row" style="border:0;padding:0 0 10px"><div class="g">
           <div class="t">${sug ? 'Hoje na agenda: ' + esc(sug.nome) : 'Nenhum treino registrado'}</div>
-          <div class="s">${sug ? (sug.exercicios || []).length + ' exercícios' : 'escolha uma ficha ou registre livre'}</div></div></div>
+          <div class="s">${sug ? plural((sug.exercicios || []).length, 'exercício', 'exercícios') : 'escolha uma ficha ou registre livre'}</div></div></div>
         <div class="btnrow">
           <button class="btn pri sm" data-a="escolherFicha">Iniciar treino</button>
           <button class="btn gh sm" data-a="marcarFalta">Não vou treinar</button>
@@ -4418,9 +4554,23 @@ function explicarErro(e) {
   return 'Erro no sync: ' + m.slice(0, 80);
 }
 
-/* exclusões feitas offline ou em outro momento */
+/* EXCLUSÕES — por que existe uma tabela só de lápides
+   Apagar a linha do servidor não bastava: o outro aparelho, que ainda
+   tinha o item, reenviava tudo no sync seguinte e o item voltava. Pior
+   com os alimentos que já vêm no app — eles renascem em todo aparelho
+   novo. Agora cada exclusão vira um registro em "excluidos" que todos
+   os aparelhos leem, e um id anotado ali nunca mais é reenviado.       */
+const LAPIDES = new Map();          // "tabela|id" -> data da exclusão
+
 async function aplicarExclusoes() {
-  const fila = DB.delFila || []; if (!fila.length) return;
+  const fila = DB.delFila || [];
+  if (fila.length && !SEM_TABELA.has('excluidos')) {
+    const linhas = fila.map(d => ({ user_id: SB.user, tabela: d.t, item_id: d.id, em: nowISO() }));
+    const { error } = await SB.client.from('excluidos')
+      .upsert(linhas, { onConflict: 'user_id,tabela,item_id' });
+    if (error && tabelaAusente(error)) SEM_TABELA.add('excluidos');
+    else if (error) throw error;
+  }
   const porTabela = {};
   fila.forEach(d => (porTabela[d.t] = porTabela[d.t] || []).push(d.id));
   for (const t of Object.keys(porTabela)) {
@@ -4428,7 +4578,15 @@ async function aplicarExclusoes() {
     if (error && !tabelaAusente(error)) throw error;
   }
   DB.delFila = [];
+
+  LAPIDES.clear();
+  if (SEM_TABELA.has('excluidos')) return;
+  const { data, error: e2 } = await SB.client.from('excluidos').select('*').eq('user_id', SB.user);
+  if (e2 && tabelaAusente(e2)) { SEM_TABELA.add('excluidos'); return; }
+  if (e2) throw e2;
+  (data || []).forEach(r => LAPIDES.set(r.tabela + '|' + r.item_id, r.em));
 }
+const apagado = (tabela, id) => LAPIDES.has(tabela + '|' + id);
 
 /* Tabela que ainda não existe no banco (schema desatualizado) não derruba o
    sync inteiro: o app avisa uma vez e segue sincronizando o resto.            */
@@ -4449,6 +4607,8 @@ async function syncTabela(t) {
   const mapL = new Map(locais.map(x => [x.id, x])), mapR = new Map(remotos.map(x => [x.id, x]));
   const enviar = [], resultado = [];
   new Set([...mapL.keys(), ...mapR.keys()]).forEach(id => {
+    /* excluído em qualquer aparelho: some daqui também e não volta a subir */
+    if (apagado(t.n, id)) return;
     const l = mapL.get(id), r = mapR.get(id);
     if (l && r) { const vence = (l.upd || '') >= (r.upd || '') ? l : r; resultado.push(vence); if (vence === l) enviar.push(l); }
     else if (l) { resultado.push(l); enviar.push(l); }
@@ -4488,20 +4648,76 @@ const baixaDia = r => ({
   habitos: r.habitos || {}, meds: r.meds || {}, sono: r.sono || null, peso: r.peso, nota: r.nota || '',
   ajusteKcal: +r.ajuste_kcal || 0, ajusteAgua: +r.ajuste_agua || 0, upd: r.upd
 });
-const diaEnviavel = x => !!(x && x.upd && !diaVazio(x));
+/* Dia que EU toquei tem upd. Dia só aberto na tela (upd null) nunca sobe —
+   era isso que apagava o servidor. Repare que um dia esvaziado de propósito
+   CONTINUA enviável: apagar o último lançamento é uma mudança como outra
+   qualquer, e antes ela nunca chegava ao servidor (o dia voltava no sync). */
+const diaEnviavel = x => !!(x && x.upd);
+
+/* Os dois aparelhos lançaram no MESMO dia, cada um sem saber do outro.
+   Substituir o dia inteiro pelo mais recente jogava fora a manhã toda de
+   quem sincronizou depois. Aqui o mais recente manda nos empates, mas o
+   que só existe de um lado é preservado.
+   Limite conhecido: com um único carimbo por dia, não dá para distinguir
+   "o outro aparelho ainda não sabe disto" de "isto foi apagado lá". Na
+   dúvida eu preservo — dado de volta incomoda menos que dado perdido. */
+function mesclarDia(l, r) {
+  const ganha = (l.upd || '') >= (r.upd || '') ? l : r, perde = ganha === l ? r : l;
+  const escolhe = (a, b) => (a === null || a === undefined || a === '' || a === 0) ? b : a;
+  const refeicoes = Object.assign({}, perde.refeicoes || {});
+  Object.entries(ganha.refeicoes || {}).forEach(([k, v]) => {
+    if ((v && v.length) || !(refeicoes[k] || []).length) refeicoes[k] = v;
+  });
+  const porId = (a, b) => {
+    const m = new Map((b || []).map(x => [x.id, x]));
+    (a || []).forEach(x => m.set(x.id, x));
+    return [...m.values()];
+  };
+  return {
+    treino: escolhe(ganha.treino, perde.treino),
+    esportes: porId(ganha.esportes, perde.esportes),
+    refeicoes,
+    /* água NÃO é o maior dos dois: somar sempre o maior tornaria
+       impossível corrigir para menos — o "−" nunca chegaria ao outro
+       aparelho. Vale o valor de quem escreveu por último. */
+    agua: escolhe(+ganha.agua || 0, +perde.agua || 0),
+    habitos: Object.assign({}, perde.habitos || {}, ganha.habitos || {}),
+    meds: Object.assign({}, perde.meds || {}, ganha.meds || {}),
+    sono: escolhe(ganha.sono, perde.sono),
+    peso: escolhe(ganha.peso, perde.peso),
+    nota: escolhe(ganha.nota, perde.nota),
+    ajusteKcal: escolhe(ganha.ajusteKcal, perde.ajusteKcal) || 0,
+    ajusteAgua: escolhe(ganha.ajusteAgua, perde.ajusteAgua) || 0,
+    upd: ganha.upd
+  };
+}
+/* mudou de verdade em relação ao que o servidor já tem? */
+const mesmoDia = (a, b) => JSON.stringify(Object.assign({}, a, { upd: 0 }))
+  === JSON.stringify(Object.assign({}, b, { upd: 0 }));
 
 async function syncDias() {
   const limite = addDays(today(), -400);
   const { data, error } = await SB.client.from('dias').select('*').eq('user_id', SB.user).gte('data', limite);
   if (error) throw error;
   const mapR = new Map((data || []).map(r => [r.data, r]));
+  const visto = DB.cfg.ultimoSync || '';       // até onde eu já vi o servidor
   const enviar = [];
   new Set([...Object.keys(DB.dias), ...mapR.keys()]).forEach(k => {
+    /* fora da janela que eu baixei eu não mexo: não sei o que há lá */
+    if (k < limite) return;
     const l = DB.dias[k], r = mapR.get(k);
     if (l && r) {
-      // só disputo o dia se eu tiver conteúdo de verdade e for mais recente
-      if (diaEnviavel(l) && l.upd >= r.upd) enviar.push(k);
-      else DB.dias[k] = baixaDia(r);
+      const rr = baixaDia(r);
+      if (!diaEnviavel(l)) { DB.dias[k] = rr; return; }   // nunca toquei: fico com o servidor
+      /* Esta linha do servidor é anterior ao meu último sync? Então eu JÁ a
+         recebi, e o que está aqui é a continuação dela — inclusive as coisas
+         que eu apaguei de propósito. Mesclar aqui faria o apagado voltar.
+         Só quando o servidor mudou DEPOIS do meu último sync é que existe
+         edição concorrente de verdade, e aí sim vale mesclar. */
+      const jaConhecia = visto && (rr.upd || '') <= visto;
+      const m = jaConhecia ? l : mesclarDia(l, rr);
+      DB.dias[k] = m;
+      if (!mesmoDia(m, rr)) enviar.push(k);
     } else if (l) { if (diaEnviavel(l)) enviar.push(k); }
     else DB.dias[k] = baixaDia(r);
   });
