@@ -200,7 +200,12 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
   box-shadow:0 10px 28px -10px rgba(43,54,35,.5)}
 .navin button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 1px;border-radius:16px;color:color-mix(in srgb,var(--ac-tx) 72%,transparent)}
 .navin button i{font-style:normal;font-size:17px;line-height:0;display:block}
-.navin button span{font-size:9px;font-weight:700;letter-spacing:0;white-space:nowrap}
+/* seis abas num celular estreito: o rótulo encolhe em vez de vazar */
+.navin button span{font-size:9px;font-weight:700;letter-spacing:-.1px;white-space:nowrap;
+  max-width:100%;overflow:hidden;text-overflow:clip}
+@media (max-width:430px){.navin button span{font-size:8px;letter-spacing:-.25px}}
+@media (max-width:360px){.navin button span{font-size:7.5px}}
+@media (max-width:340px){.navin button span{font-size:6.6px;letter-spacing:-.3px}}
 .navin button.on{color:var(--ac);background:var(--ac-tx)}
 
 /* ---------- sheet / modal ---------- */
@@ -409,7 +414,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-25j';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-26a';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -526,7 +531,7 @@ function novoDB() {
     perfil: {
       nome: '', sexo: 'M', peso: 75, altura: 175, idade: 30, ativ: 1.55,
       objetivo: 'manter', ajuste: 0, protKg: 1.8, gordPct: 25,
-      aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, upd: null
+      aguaModo: 'peso', aguaFixa: 3000, gastoExtra: 0, aguaExtra: 0, metaSono: 8, upd: null
     },
     fichas: [], alimentos: al, pratos: [], habitos: [], lembretes: [], atividades: [], medicamentos: [], dias: {},
     delFila: [],
@@ -604,11 +609,11 @@ function diaVazio(x) {
   return !x.treino && !(x.esportes || []).length
     && !Object.values(x.refeicoes || {}).some(l => l && l.length)
     && !x.agua && !Object.keys(x.habitos || {}).length
-    && !Object.keys(x.meds || {}).length
+    && !Object.keys(x.meds || {}).length && !x.sono
     && !x.peso && !x.nota && !x.ajusteKcal && !x.ajusteAgua;
 }
 function dia(d) {
-  if (!DB.dias[d]) DB.dias[d] = { treino: null, esportes: [], refeicoes: {}, agua: 0, habitos: {}, meds: {}, peso: null, nota: '', ajusteKcal: 0, ajusteAgua: 0, upd: null };
+  if (!DB.dias[d]) DB.dias[d] = { treino: null, esportes: [], refeicoes: {}, agua: 0, habitos: {}, meds: {}, sono: null, peso: null, nota: '', ajusteKcal: 0, ajusteAgua: 0, upd: null };
   const x = DB.dias[d];
   x.esportes = x.esportes || []; x.refeicoes = x.refeicoes || {}; x.habitos = x.habitos || {};
   x.meds = x.meds || {};
@@ -808,7 +813,7 @@ let SUB = {};   // estado auxiliar por tela (aba interna, item em edição...)
 
 const NAVITENS = [
   ['hoje', 'hoje', 'Hoje'], ['treino', 'treino', 'Treino'], ['dieta', 'dieta', 'Dieta'],
-  ['habitos', 'habitos', 'Hábitos'], ['remedios', 'remedio', 'Remédios'], ['lembretes', 'lembretes', 'Lembretes']
+  ['habitos', 'habitos', 'Hábitos'], ['remedios', 'remedio', 'Medicamentos'], ['lembretes', 'lembretes', 'Lembretes']
 ];
 const TITULOS = {
   hoje: ['Hoje', ''], treino: ['Exercícios', 'fichas, treinos e esportes'],
@@ -967,6 +972,7 @@ function perfilDosCampos() {
   p.ajuste = numOf('p_ajuste'); p.protKg = numOf('p_prot'); p.gordPct = numOf('p_gord');
   if (document.getElementById('p_aguafixa')) p.aguaFixa = numOf('p_aguafixa');
   p.gastoExtra = numOf('p_gextra'); p.aguaExtra = numOf('p_aextra');
+  if (document.getElementById('p_sono')) p.metaSono = Math.min(14, Math.max(4, numOf('p_sono') || 8));
   return p;
 }
 function boxMetas(p) {
@@ -1049,6 +1055,15 @@ SCREENS.perfil = () => {
     <div class="f" style="margin:0"><label>Água adicional (ml por dia)</label>
       <input class="in" id="p_aextra" type="number" inputmode="numeric" value="${p.aguaExtra || 0}" data-inp="pPreview" placeholder="0">
       <p class="mini" style="margin-top:6px">Somado à meta todo dia. Útil se você sua muito, mora em lugar quente ou usa creatina.</p></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Sono</h2></div>
+    <div class="f" style="margin:0"><label>Quantas horas você quer dormir por noite</label>
+      <input class="in" id="p_sono" type="number" inputmode="decimal" step="0.5" min="4" max="14"
+        value="${p.metaSono || 8}">
+      <p class="mini" style="margin-top:6px">É a referência do cartão de sono na tela Hoje e dos
+      gráficos do resumo. A recomendação para adulto fica entre 7 e 9 horas.</p></div>
   </div>
 
   <div class="card" id="p_box">${boxMetas(p)}</div>
@@ -2809,6 +2824,11 @@ function medStats(d) {
   return { prev, tom };
 }
 const medRotulo = m => `${m.dose ? n1(m.dose) + ' ' : ''}${m.unidade || ''}`.trim();
+/* o "para que serve": aparece embaixo do nome em todas as listas */
+const medMotivo = m => m.motivo
+  ? `<div class="s" style="display:flex;gap:5px;align-items:flex-start;margin-top:2px">
+      <span style="line-height:0;flex:none;padding-top:6px">${ic('meta', 11)}</span>
+      <span class="wrap">${esc(m.motivo)}</span></div>` : '';
 function medQuando(m) {
   const per = m.fim ? ` · até ${dLabel(m.fim)}` : '';
   if (m.freq === 'necessario') return 'se necessário' + per;
@@ -2855,7 +2875,7 @@ ACT.novoMed = e => {
   sheetMed(m);
 };
 function sheetMed(m) {
-  m = m || { nome: '', dose: 1, unidade: 'comprimido(s)', inicio: today(), fim: '', obs: '' };
+  m = m || { nome: '', dose: 1, unidade: 'comprimido(s)', inicio: today(), fim: '', obs: '', motivo: '' };
   sheet(`<h3>${SUB.medId ? 'Editar' : 'Novo'} medicamento</h3>
     <p class="hint">Vale para remédio, vitamina, suplemento — qualquer coisa que você toma em dose.</p>
 
@@ -2901,6 +2921,11 @@ function sheetMed(m) {
     <p class="mini" style="margin:-4px 0 12px">Tratamento com prazo — antibiótico, por exemplo — some
     sozinho da lista quando a data de fim passa.</p>
 
+    <div class="f"><label>Para que serve</label>
+      <textarea class="in" id="md_motivo" placeholder="ex: repor a vitamina D que veio baixa no exame — ossos e imunidade">${esc(m.motivo || '')}</textarea>
+      <p class="mini" style="margin-top:5px">O objetivo que este medicamento vai ajudar. Fica visível
+      toda vez que você abre o item — nos dias de desânimo é o que faz continuar.</p></div>
+
     <div class="f"><label>Observação</label>
       <input class="in" id="md_obs" value="${esc(m.obs || '')}" placeholder="ex: tomar em jejum, com gordura, longe do café"></div>
 
@@ -2910,7 +2935,7 @@ function sheetMed(m) {
 }
 function medCapturar() {
   SUB.medTmp = SUB.medTmp || {};
-  ['md_nome', 'md_dose', 'md_un', 'md_ini', 'md_fim', 'md_obs'].forEach(k => {
+  ['md_nome', 'md_dose', 'md_un', 'md_ini', 'md_fim', 'md_obs', 'md_motivo'].forEach(k => {
     const e = document.getElementById(k); if (e) SUB.medTmp[k] = e.value;
   });
   SUB.medHoras = SUB.medHoras.map((h, i) => {
@@ -2941,7 +2966,7 @@ ACT.salvarMed = () => {
     freq: SUB.medFreq, dias: SUB.medFreq === 'dias' ? SUB.medDias : [],
     horarios: SUB.medFreq === 'necessario' ? [] : SUB.medHoras.filter(Boolean),
     inicio: valOf('md_ini') || today(), fim: valOf('md_fim') || null,
-    obs: valOf('md_obs'), ativo: true, upd: nowISO()
+    obs: valOf('md_obs'), motivo: valOf('md_motivo').trim(), ativo: true, upd: nowISO()
   };
   if (SUB.medId) Object.assign(medById(SUB.medId), o);
   else (DB.medicamentos = DB.medicamentos || []).push(Object.assign({ id: uid() }, o));
@@ -2993,6 +3018,7 @@ SCREENS.remedios = () => {
             <div class="g" data-a="novoMed" data-m="${m.id}">
               <div class="t wrap">${esc(m.nome)}</div>
               <div class="s">${esc(medRotulo(m))}${m.obs ? ' · ' + esc(m.obs) : ''}</div>
+              ${medMotivo(m)}
             </div>
           </div>`;
         }).join('')}
@@ -3010,7 +3036,8 @@ SCREENS.remedios = () => {
           <div class="g" data-a="novoMed" data-m="${m.id}">
             <div class="t wrap">${esc(m.nome)}</div>
             <div class="s">${esc(medRotulo(m))}${tomados.length
-              ? ' · hoje às ' + tomados.map(esc).join(', ') : ' · não tomou hoje'}</div></div>
+              ? ' · hoje às ' + tomados.map(esc).join(', ') : ' · não tomou hoje'}</div>
+            ${medMotivo(m)}</div>
           <button class="btn xs pri" data-a="medAvulso" data-m="${m.id}">Tomei</button>
           ${tomados.length ? `<button class="btn xs" data-a="medDesfazAvulso" data-m="${m.id}"
             data-i="${tomados.length - 1}">${ic('x', 13)}</button>` : ''}
@@ -3034,6 +3061,7 @@ SCREENS.medicamentos = () => {
     <div class="g" data-a="novoMed" data-m="${m.id}">
       <div class="t wrap">${esc(m.nome)} <span class="pill mut">${esc((TIPOS_MED.find(t => t[0] === m.tipo) || [, 'Outro'])[1])}</span></div>
       <div class="s">${esc(medRotulo(m))} · ${esc(medQuando(m))}${(m.horarios || []).length ? ' · ' + m.horarios.join(', ') : ''}</div>
+      ${medMotivo(m)}
     </div>
     <button class="btn xs" data-a="medPausa" data-m="${m.id}">${m.ativo === false ? ic('play', 13) : ic('pausa', 13)}</button>
   </div>`;
@@ -3047,6 +3075,163 @@ SCREENS.medicamentos = () => {
       <div class="card tight">${pausados.map(linha).join('')}</div>` : ''}
     <button class="btn pri full" data-a="novoMed" style="margin-bottom:14px">${ic('mais', 15)} Adicionar medicamento</button>`;
 };
+/* =========================================================
+   SONO — o registro da noite, dentro da tela Hoje
+
+   Guardo no dia: hora de deitar, hora de acordar, qualidade
+   (1 a 5), quantas vezes acordou no meio da noite e uma
+   observação livre.
+
+   A noite atravessa a meia-noite quase sempre. Por isso a
+   duração NÃO é uma subtração simples: se acordar <= deitar,
+   somo 24 horas. Dormir 23:30 → 07:00 dá 7h30, não -16h30.
+
+   Convenção: a noite pertence ao dia em que a pessoa ACORDOU.
+   É como todo mundo fala ("hoje eu dormi mal"), e é o que faz
+   o registro caber no dia que está aberto na tela.
+   ========================================================= */
+const SONO_PADRAO = { deitou: '23:00', acordou: '07:00', qual: 0, despertares: 0, nota: '' };
+
+const sonoDe = d => (DB.dias[d] || {}).sono || null;
+function sonoMin(s) {
+  if (!s || !s.deitou || !s.acordou) return 0;
+  let m = minutos(s.acordou) - minutos(s.deitou);
+  if (m <= 0) m += 1440;                       // atravessou a meia-noite
+  return m;
+}
+const sonoHoras = s => sonoMin(s) / 60;
+const hhmm = min => Math.floor(min / 60) + 'h' + (min % 60 ? pad(min % 60) : '');
+/* meta de sono: o que a pessoa definir no perfil, senão 8 horas */
+const metaSono = () => num(DB.perfil.metaSono) || 8;
+
+/* uma nota de 0 a 100 para a noite: duração perto da meta, qualidade
+   declarada e quantas vezes acordou. Serve para o gráfico do resumo. */
+function sonoNota(s) {
+  if (!s) return 0;
+  const h = sonoHoras(s), meta = metaSono();
+  const dur = h ? Math.max(0, 1 - Math.abs(h - meta) / meta) : 0;
+  const q = s.qual ? s.qual / 5 : dur;                       // sem nota, uso a duração
+  const acordadas = Math.max(0, 1 - (+s.despertares || 0) * .15);
+  return (dur * .45 + q * .40 + acordadas * .15) * 100;
+}
+function sonoResumo(s) {
+  if (!s) return 'não registrado';
+  const p = [];
+  if (sonoMin(s)) p.push(hhmm(sonoMin(s)));
+  if (s.deitou && s.acordou) p.push(s.deitou + ' → ' + s.acordou);
+  if (+s.despertares) p.push(s.despertares + '× acordou');
+  return p.join(' · ') || 'registrado';
+}
+
+/* ---------- folha de registro ---------- */
+ACT.registrarSono = () => {
+  const s = sonoDe(D) || SONO_PADRAO;
+  SUB.sonoQual = s.qual || 0;
+  SUB.sonoDesp = +s.despertares || 0;
+  sheetSono(s);
+};
+function sheetSono(s) {
+  const min = sonoMin(s);
+  sheet(`<h3>${ic('sono', 18)} Sono da noite</h3>
+    <p class="hint">${esc(dLabel(D))} — a noite que terminou nesta manhã. Se você deitou ontem
+    às 23h e acordou hoje às 7h, é aqui que ela entra.</p>
+
+    <div class="grid2">
+      <div class="f"><label>Fui dormir</label>
+        <input class="in" id="sn_de" type="time" value="${esc(s.deitou || '23:00')}" data-inp="sonoPrev"></div>
+      <div class="f"><label>Acordei</label>
+        <input class="in" id="sn_ac" type="time" value="${esc(s.acordou || '07:00')}" data-inp="sonoPrev"></div>
+    </div>
+    <div class="okbox" id="sn_dur" style="margin:-2px 0 13px">${textoDuracao(min)}</div>
+
+    <div class="f"><label>Qualidade do sono</label>
+      <div class="chiprow">${[1, 2, 3, 4, 5].map(q =>
+        `<button class="chip ${SUB.sonoQual === q ? 'on' : ''}" data-a="sonoQual" data-q="${q}"
+          style="flex:1;text-align:center">${estrelas(q, q)}</button>`).join('')}</div>
+      <p class="mini" style="margin-top:5px">1 = acordei quebrado · 5 = acordei inteiro.</p></div>
+
+    <div class="f"><label>Acordei no meio da noite</label>
+      <div class="row" style="border:0;padding:0;gap:10px">
+        <button class="btn xs" data-a="sonoDesp" data-v="-1">${ic('menos', 14)}</button>
+        <div class="g" style="text-align:center">
+          <div class="t" style="font-size:19px">${SUB.sonoDesp}</div>
+          <div class="s">${SUB.sonoDesp === 0 ? 'dormi direto' : SUB.sonoDesp === 1 ? 'uma vez' : SUB.sonoDesp + ' vezes'}</div>
+        </div>
+        <button class="btn xs" data-a="sonoDesp" data-v="1">${ic('mais', 14)}</button>
+      </div></div>
+
+    <div class="f"><label>Observação</label>
+      <textarea class="in" id="sn_nota" placeholder="ex: dormi tarde por causa do plantão, acordei com sede, sonho ruim">${esc(s.nota || '')}</textarea></div>
+
+    <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarSono">Salvar</button></div>
+    ${sonoDe(D) ? `<button class="btn danger full sm" style="margin-top:9px" data-a="apagarSono">Apagar o registro desta noite</button>` : ''}`);
+}
+function textoDuracao(min) {
+  if (!min) return 'Preencha os dois horários para ver quanto você dormiu.';
+  const h = min / 60, meta = metaSono(), dif = h - meta;
+  return `<b>${hhmm(min)} de sono.</b> ` + (Math.abs(dif) < .5
+    ? 'Bem em cima da sua meta de ' + n1(meta) + ' h.'
+    : dif < 0 ? `${n1(Math.abs(dif))} h a menos que a sua meta de ${n1(meta)} h.`
+      : `${n1(dif)} h a mais que a sua meta de ${n1(meta)} h.`);
+}
+/* só o quadro da duração é redesenhado: mexer no campo não pode
+   derrubar o que já foi digitado na observação */
+ACT.sonoPrev = () => {
+  const e = document.getElementById('sn_dur');
+  if (e) e.innerHTML = textoDuracao(sonoMin({ deitou: valOf('sn_de'), acordou: valOf('sn_ac') }));
+};
+function sonoCapturar() {
+  SUB.sonoTmp = {
+    deitou: valOf('sn_de'), acordou: valOf('sn_ac'), nota: valOf('sn_nota')
+  };
+}
+function sonoRedesenha() {
+  const t = SUB.sonoTmp || {};
+  sheetSono(Object.assign({}, sonoDe(D) || SONO_PADRAO, t, { qual: SUB.sonoQual }));
+}
+ACT.sonoQual = e => { sonoCapturar(); SUB.sonoQual = +e.dataset.q; sonoRedesenha(); };
+ACT.sonoDesp = e => {
+  sonoCapturar();
+  SUB.sonoDesp = Math.max(0, Math.min(20, SUB.sonoDesp + (+e.dataset.v)));
+  sonoRedesenha();
+};
+ACT.salvarSono = () => {
+  const deitou = valOf('sn_de'), acordou = valOf('sn_ac');
+  if (!deitou || !acordou) return toast('Preencha as duas horas');
+  const x = dia(D);
+  x.sono = {
+    deitou, acordou, qual: SUB.sonoQual || 0,
+    despertares: SUB.sonoDesp || 0, nota: valOf('sn_nota').trim()
+  };
+  SUB.sonoTmp = null; tocaDia(D); save(); fechar(); render();
+  toast('Sono registrado — ' + hhmm(sonoMin(x.sono)));
+};
+ACT.apagarSono = () => confirmar('Apagar o registro de sono desta noite?', () => {
+  const x = dia(D); delete x.sono;
+  SUB.sonoTmp = null; tocaDia(D); save(); fechar(); render();
+});
+
+/* ---------- cartão da tela Hoje ---------- */
+function cardSono() {
+  const s = sonoDe(D), min = sonoMin(s), meta = metaSono() * 60;
+  return `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Sono</h2>
+      <span class="sub">${s ? hhmm(min) + (s.qual ? ' · ' + estrelas(s.qual) : '') : 'sem registro'}</span></div>
+    ${s ? `${bar(min, meta, 'var(--res)')}
+      <div class="row" style="border:0;padding:9px 0 0" data-a="registrarSono">
+        <div class="g">
+          <div class="t">${esc(s.deitou)} → ${esc(s.acordou)}
+            <span class="pill ${min >= meta * .9 ? 'ok' : 'mut'}">${n1(min / 60)} h</span></div>
+          <div class="s wrap">${+s.despertares ? `acordou ${s.despertares}×` : 'dormiu direto'}${s.nota ? ' · ' + esc(s.nota) : ''}</div>
+        </div>
+        <div class="v">${ic('lapis', 15, 'op')}</div>
+      </div>`
+      : `<p class="mini" style="margin-bottom:10px">Quanto tempo você dormiu, como acordou e quantas
+        vezes a noite foi interrompida. É o dado que mais explica um dia ruim de treino ou de fome.</p>
+      <button class="btn pri full sm" data-a="registrarSono">${ic('lua', 15)} Registrar a noite</button>`}
+  </div>`;
+}
 /* =========================================================
    RESUMO — relatórios diário, semanal e mensal
    O painel semanal e o mensal são o MESMO código
@@ -3137,7 +3322,9 @@ function serieMes(ds) {
       medPrev: md.prev, medTom: md.tom,
       dur: x && x.treino && x.treino.feito ? +x.treino.duracao || 0 : 0,
       espMin: x ? (x.esportes || []).reduce((a, e) => a + (+e.min || 0), 0) : 0,
-      refs: refsDoDia(d), metaAgua: metaAguaDia(d), gasto: x ? gastoDia(d).total : 0
+      refs: refsDoDia(d), metaAgua: metaAguaDia(d), gasto: x ? gastoDia(d).total : 0,
+      sono: sonoDe(d), sonoH: sonoHoras(sonoDe(d)), sonoQ: (sonoDe(d) || {}).qual || 0,
+      sonoDesp: +((sonoDe(d) || {}).despertares || 0), sonoNota: sonoDe(d) ? sonoNota(sonoDe(d)) : null
     };
   });
 }
@@ -3202,6 +3389,7 @@ function resumoDia() {
   const hf = habs.filter(hh => (x.habitos[hh.id] || {}).feito).length;
   const estT = estadoTreino(D), treinoOk = estT === 'feito';
   const bal = t.kcal - gd.total;
+  const sn = sonoDe(D);
 
   /* comparação com os 7 dias anteriores, para o número de hoje ter contexto */
   const ant = [];
@@ -3226,6 +3414,8 @@ function resumoDia() {
         <div class="mini" style="margin-top:4px">Água</div></div>
       <div>${ring(habs.length ? hf / habs.length : 0, 'var(--hab)', 62, `${hf}/${habs.length}`)}
         <div class="mini" style="margin-top:4px">Hábitos</div></div>
+      <div>${ring(sn ? sonoMin(sn) / (metaSono() * 60) : 0, 'var(--res)', 62, sn ? n1(sonoHoras(sn)) + 'h' : '—')}
+        <div class="mini" style="margin-top:4px">Sono</div></div>
     </div>
     ${ant.length ? `<div class="sec-title" style="margin:16px 4px 8px">Comparado com a sua média dos últimos ${ant.length} dias</div>
       <div class="row"><div class="g"><div class="t">Calorias</div>
@@ -3301,6 +3491,20 @@ function resumoDia() {
     </div>`;
   })()}
 
+  ${sn ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Sono</h2>
+      <span class="pill ${sonoNota(sn) >= 70 ? 'ok' : sonoNota(sn) >= 45 ? 'mut' : 'bad'}">${n0(sonoNota(sn))}/100</span></div>
+    <div class="kpi">
+      <div><b style="color:var(--res)">${hhmm(sonoMin(sn))}</b><span>de sono</span></div>
+      <div><b>${sn.qual ? sn.qual + '/5' : '—'}</b><span>qualidade</span></div>
+      <div><b style="color:${sn.despertares ? 'var(--warn)' : 'var(--ac)'}">${sn.despertares || 0}</b><span>despertares</span></div>
+    </div>
+    ${bar(sonoMin(sn), metaSono() * 60, 'var(--res)')}
+    <p class="mini" style="margin-top:9px">Deitou ${esc(sn.deitou)} · acordou ${esc(sn.acordou)} ·
+    meta ${n1(metaSono())} h.${sn.nota ? ' ' + esc(sn.nota) : ''}</p>
+    <button class="btn gh full sm" style="margin-top:10px" data-a="registrarSono">${ic('lapis', 15)} Editar o sono desta noite</button>
+  </div>` : ''}
+
   <div class="card">
     <div class="ch"><h2>Registro do dia</h2></div>
     <div class="grid2">
@@ -3371,6 +3575,7 @@ function painelPeriodo(ds, opt) {
   const tAgua = tendencia(passados.map(s => s.agua));
   const tHab = tendencia(passados.map(s => s.habPrev ? s.habFeito / s.habPrev * 100 : null));
   const tMed = tendencia(passados.map(s => s.medPrev ? s.medTom / s.medPrev * 100 : null));
+  const tSono = tendencia(passados.map(s => s.sonoH || null));
 
   const linha = (nome, val, t) => `<div class="row"><div class="g"><div class="t">${nome}</div><div class="s">${val}</div></div>
     <div class="v trend ${t.cls}">${t.txt}</div></div>`;
@@ -3391,6 +3596,11 @@ function painelPeriodo(ds, opt) {
   const diasComHab = passados.filter(s => s.habPrev).length;
   const diasComMed = passados.filter(s => s.medPrev).length;
 
+  const noites = passados.filter(x => x.sono);
+  const sonoMedia = noites.length ? noites.reduce((a, x) => a + x.sonoH, 0) / noites.length : 0;
+  const sonoQmed = (() => { const q = noites.filter(x => x.sonoQ); return q.length ? q.reduce((a, x) => a + x.sonoQ, 0) / q.length : 0; })();
+  const sonoDespTot = noites.reduce((a, x) => a + x.sonoDesp, 0);
+  const noitesOk = noites.filter(x => x.sonoH >= metaSono() - .5).length;
   const seqReg = sequencia(d => !!DB.dias[d] && !diaVazio(DB.dias[d]));
   const seqHab = sequencia(d => {
     const hs = DB.habitos.filter(h => habDevidoEm(h, d));
@@ -3474,7 +3684,8 @@ function painelPeriodo(ds, opt) {
     ${[['Calorias na faixa da meta', naMeta, passados.filter(s => s.kcal > 0).length, 'var(--die)'],
        ['Água completa', aguaOk, passados.length, 'var(--agua)'],
        ['Todos os hábitos do dia', habOk, diasComHab, 'var(--hab)'],
-       ['Todas as doses do dia', medOk, diasComMed, 'var(--lem)']]
+       ['Todas as doses do dia', medOk, diasComMed, 'var(--lem)'],
+       ['Noites com o sono que você quer', noitesOk, noites.length, 'var(--res)']]
       .filter(r => r[2] > 0).map(r => `<div style="margin-bottom:9px">
         <div class="mt"><span>${r[0]}</span><span>${r[1]}/${r[2]} dias</span></div>
         ${bar(r[1], r[2], r[3])}</div>`).join('') || '<p class="mini">Ainda sem dados suficientes.</p>'}
@@ -3526,6 +3737,7 @@ function painelPeriodo(ds, opt) {
     ${linha('Água', `média ${n1(mediaAgua / 1000)} L de ${n1(m.agua / 1000)} L`, tAgua)}
     ${linha('Adesão a hábitos', `${habFeito} de ${habPrev} check-ins`, tHab)}
     ${medPrev ? linha('Medicamentos', `${medTom} de ${medPrev} doses tomadas`, tMed) : ''}
+    ${noites.length ? linha('Sono', `média ${n1(sonoMedia)} h de ${n1(metaSono())} h · ${noites.length} noite(s) registrada(s)`, tSono) : ''}
     <p class="mini" style="margin-top:8px">A tendência compara a média da 2ª metade do período com a da 1ª metade. Verde = evoluindo na direção do seu objetivo.</p>
   </div>
 
@@ -3548,6 +3760,35 @@ function painelPeriodo(ds, opt) {
     ${pesos.length ? chartLine(pesos, { cor: 'var(--res)', n: ds.length, minRange: 2 })
       : '<div class="empty">Registre seu peso no Resumo diário para ver a curva.</div>'}
   </div>
+
+  ${noites.length ? `<div class="card">
+    <div class="ch"><span class="dot" style="background:var(--res)"></span><h2>Horas de sono</h2>
+      <span class="sub trend ${tSono.cls}">${tSono.txt}</span></div>
+    ${chartBar(S.map(s => s.sonoH || 0), { cor: 'var(--res)', meta: metaSono(), labels })}
+    <div class="kpi" style="margin-top:4px">
+      <div><b style="color:var(--res)">${n1(sonoMedia)}</b><span>horas por noite</span></div>
+      <div><b>${sonoQmed ? n1(sonoQmed) + '/5' : '—'}</b><span>qualidade média</span></div>
+      <div><b style="color:${sonoDespTot ? 'var(--warn)' : 'var(--ac)'}">${sonoDespTot}</b><span>despertares</span></div>
+    </div>
+    ${(() => {
+      /* o cruzamento que interessa: como o corpo responde no dia seguinte a uma noite curta */
+      const curtas = noites.filter(x => x.sonoH < metaSono() - 1);
+      const boas = noites.filter(x => x.sonoH >= metaSono() - .5);
+      const mediaKc = l => { const c = l.filter(x => x.kcal > 0); return c.length ? c.reduce((a, x) => a + x.kcal, 0) / c.length : 0; };
+      const treinou = l => l.length ? l.filter(x => x.treino).length / l.length * 100 : 0;
+      if (curtas.length < 2 || boas.length < 2) return `<p class="mini">Com mais noites registradas
+        eu passo a comparar aqui o que muda no seu dia depois de dormir pouco.</p>`;
+      return `<div class="sec-title" style="margin:16px 4px 8px">Depois de dormir pouco</div>
+        <div class="row"><div class="g"><div class="t">Calorias no dia</div>
+          <div class="s">noites boas: ${n0(mediaKc(boas))} kcal</div></div>
+          <div class="v">${n0(mediaKc(curtas))} kcal</div></div>
+        <div class="row"><div class="g"><div class="t">Treinou</div>
+          <div class="s">noites boas: ${n0(treinou(boas))}%</div></div>
+          <div class="v">${n0(treinou(curtas))}%</div></div>
+        <p class="mini" style="margin-top:8px">Compara os ${curtas.length} dia(s) após noite curta
+        (menos de ${n1(metaSono() - 1)} h) com os ${boas.length} dia(s) após noite completa.</p>`;
+    })()}
+  </div>` : ''}
 
   <div class="card">
     <div class="ch"><span class="dot" style="background:var(--agua)"></span><h2>Água (ml)</h2>
@@ -3651,7 +3892,9 @@ function planilhaDias(ds) {
     'Atividades', 'Kcal atividades', 'Kcal consumidas', 'Meta kcal', 'Carboidrato (g)', 'Proteína (g)',
     'Gordura (g)', 'Escapes (kcal)', 'Água (ml)', 'Meta água (ml)', 'Gasto estimado (kcal)',
     'Balanço (kcal)', 'Peso (kg)', 'Hábitos feitos', 'Hábitos previstos',
-    'Doses tomadas', 'Doses previstas', 'Medicamentos tomados', 'Anotação'];
+    'Doses tomadas', 'Doses previstas', 'Medicamentos tomados',
+    'Dormiu às', 'Acordou às', 'Horas de sono', 'Qualidade do sono', 'Despertares', 'Sono - observação',
+    'Anotação'];
   const linhas = [cab.join(';')];
   ds.forEach(d => {
     const x = DB.dias[d]; if (!x || diaVazio(x)) return;
@@ -3659,6 +3902,7 @@ function planilhaDias(ds) {
     const habs = DB.habitos.filter(h => habDevidoEm(h, d));
     const hf = habs.filter(h => (x.habitos[h.id] || {}).feito).length;
     const tr = treinoDoDia(d), fa = faltaDoDia(d);
+    const sn = x.sono;
     const ms = medStats(d), tomList = [];
     let tomAvulsas = 0;
     Object.keys(x.meds || {}).forEach(id => {
@@ -3682,6 +3926,8 @@ function planilhaDias(ds) {
       csvNum(x.peso || ''), habs.length ? hf : '', habs.length || '',
       ms.prev || tomList.length ? ms.tom + tomAvulsas : '', ms.prev || '',
       csvTxt(tomList.join(' | ')),
+      sn ? sn.deitou : '', sn ? sn.acordou : '', sn ? csvNum(+(sonoMin(sn) / 60).toFixed(2)) : '',
+      sn && sn.qual ? sn.qual : '', sn ? (sn.despertares || 0) : '', csvTxt(sn ? sn.nota || '' : ''),
       csvTxt(x.nota || '')
     ].join(';'));
   });
@@ -3775,6 +4021,9 @@ SCREENS.hoje = () => {
     <div class="ch" style="margin-bottom:6px"><h2 style="font-size:16px">${saudacao()}${esc(nome)}</h2></div>
     <p class="mini">${esc(dLabel(D))} — ${D === today() ? 'lance seus dados do dia em poucos toques.' : 'você está editando um dia anterior.'}</p>
   </div>` + dateStrip();
+
+  /* sono — a noite que acabou de terminar abre o dia */
+  h += cardSono();
 
   /* treino */
   const tr = treinoDoDia(D), falta = faltaDoDia(D);
@@ -4100,12 +4349,13 @@ const TABELAS = [
     up: m => ({
       id: m.id, user_id: SB.user, nome: m.nome, tipo: m.tipo || 'remedio', dose: m.dose || 1,
       unidade: m.unidade || '', freq: m.freq || 'diario', dias: m.dias || [], horarios: m.horarios || [],
-      inicio: m.inicio || null, fim: m.fim || null, obs: m.obs || '', ativo: m.ativo !== false, upd: m.upd
+      inicio: m.inicio || null, fim: m.fim || null, obs: m.obs || '', motivo: m.motivo || '',
+      ativo: m.ativo !== false, upd: m.upd
     }),
     down: r => ({
       id: r.id, nome: r.nome, tipo: r.tipo, dose: +r.dose || 1, unidade: r.unidade,
       freq: r.freq, dias: r.dias || [], horarios: r.horarios || [], inicio: r.inicio, fim: r.fim,
-      obs: r.obs || '', ativo: r.ativo, alertado: '', upd: r.upd
+      obs: r.obs || '', motivo: r.motivo || '', ativo: r.ativo, alertado: '', upd: r.upd
     })
   },
   {
@@ -4235,7 +4485,7 @@ async function syncPerfil() {
 
 const baixaDia = r => ({
   treino: r.treino, esportes: r.esportes || [], refeicoes: r.refeicoes || {}, agua: r.agua || 0,
-  habitos: r.habitos || {}, meds: r.meds || {}, peso: r.peso, nota: r.nota || '',
+  habitos: r.habitos || {}, meds: r.meds || {}, sono: r.sono || null, peso: r.peso, nota: r.nota || '',
   ajusteKcal: +r.ajuste_kcal || 0, ajusteAgua: +r.ajuste_agua || 0, upd: r.upd
 });
 const diaEnviavel = x => !!(x && x.upd && !diaVazio(x));
@@ -4260,18 +4510,22 @@ async function syncDias() {
     const x = DB.dias[k];
     return {
       user_id: SB.user, data: k, treino: x.treino, esportes: x.esportes || [], refeicoes: x.refeicoes || {},
-      agua: x.agua || 0, habitos: x.habitos || {}, meds: x.meds || {}, peso: x.peso, nota: x.nota || '',
+      agua: x.agua || 0, habitos: x.habitos || {}, meds: x.meds || {}, sono: x.sono || null,
+      peso: x.peso, nota: x.nota || '',
       ajuste_kcal: x.ajusteKcal || 0, ajuste_agua: x.ajusteAgua || 0, upd: x.upd
     };
   });
   for (let i = 0; i < rows.length; i += 200) {
     let lote = rows.slice(i, i + 200);
     let { error: e2 } = await SB.client.from('dias').upsert(lote, { onConflict: 'user_id,data' });
-    /* banco ainda sem a coluna meds: reenvio sem ela em vez de perder o dia inteiro */
-    if (e2 && /meds/i.test(e2.message || '') && /column|schema cache/i.test(e2.message || '')) {
-      lote = lote.map(r => { const c = Object.assign({}, r); delete c.meds; return c; });
+    /* banco ainda sem as colunas novas: reenvio sem elas em vez de perder o dia inteiro */
+    for (const col of ['meds', 'sono']) {
+      if (!e2) break;
+      const msg = e2.message || '';
+      if (!(new RegExp(col, 'i').test(msg) && /column|schema cache/i.test(msg))) continue;
+      lote = lote.map(r => { const c = Object.assign({}, r); delete c[col]; return c; });
       ({ error: e2 } = await SB.client.from('dias').upsert(lote, { onConflict: 'user_id,data' }));
-      if (!e2) console.warn('[sync] coluna dias.meds ausente — rode a parte 9 do schema.sql');
+      if (!e2) console.warn('[sync] coluna dias.' + col + ' ausente — rode a parte 10 do schema.sql');
     }
     if (e2) throw e2;
   }
