@@ -94,6 +94,18 @@ a{color:var(--res)}
 .bv-pular{align-self:center;margin-top:4px;padding:8px 14px;font-size:12.5px;font-weight:600;
   color:var(--tx3);text-decoration:underline;text-underline-offset:3px}
 
+/* ---------- selo de sincronização ----------
+   Discreto de propósito: só existe para responder "isto já subiu?".
+   Verde = tudo salvo no servidor; âmbar = tem coisa esperando;
+   azul piscando = subindo agora; cinza = sem conta; vermelho = erro. */
+.selo{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;
+  opacity:.75;transition:opacity .15s,background .15s}
+.selo:hover{opacity:1;background:var(--card2)}
+.selo.indo{animation:pulsa 1.1s ease-in-out infinite}
+.selo.erro,.selo.pend{opacity:1}
+@keyframes pulsa{0%,100%{opacity:.35}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.selo.indo{animation:none;opacity:1}}
+
 /* ---------- header ---------- */
 .hd{display:flex;align-items:center;gap:10px;padding:6px 2px 14px}
 .hd h1{font-size:20px;font-weight:750;letter-spacing:-.4px;flex:1}
@@ -112,6 +124,13 @@ a{color:var(--res)}
 .dchip.on{background:var(--ac);border-color:var(--ac);color:var(--ac-tx)}
 .dchip.on span{color:var(--ac-tx);opacity:.85}
 .dchip.fut{opacity:.45}
+
+/* Linha de anéis da visão geral: cinco cabem no celular estreito
+   porque cada célula encolhe junto e o rótulo é uma palavra só. */
+.aneis{display:flex;gap:4px;justify-content:space-between;text-align:center}
+.aneis>div{flex:1;min-width:0}
+.aneis .mini{margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+@media (max-width:360px){.aneis .mini{font-size:10px}}
 
 /* ---------- cards ---------- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px;margin-bottom:12px;box-shadow:var(--sombra)}
@@ -161,6 +180,7 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .segs{display:flex;gap:6px;background:var(--bg2);padding:4px;border-radius:13px;border:1px solid var(--line)}
 .segs button{flex:1;padding:8px 4px;border-radius:10px;font-size:13px;font-weight:600;color:var(--tx2)}
 .segs button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 5px rgba(43,54,35,.12)}
+.chip.ico{padding:8px 9px;line-height:0}
 .chiprow{display:flex;flex-wrap:wrap;gap:7px}
 .chip{padding:7px 12px;border-radius:11px;background:var(--bg2);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--tx2)}
 .chip.on{background:color-mix(in srgb,var(--ac) 16%,transparent);border-color:var(--ac);color:var(--ac-d)}
@@ -262,10 +282,108 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:13px 0}
   padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.5;margin-bottom:12px}
 .okbox{background:color-mix(in srgb,var(--ac) 11%,transparent);border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);color:var(--ac-d);
   padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.5;margin-bottom:12px}
+/* =========================================================
+   DESKTOP — a partir de 960px o app deixa de ser uma coluna
+   de celular esticada no meio da tela.
+
+   O que muda:
+   - a navegação sai de baixo e vira barra lateral fixa, com
+     rótulo legível e os atalhos de teclado à mostra;
+   - o conteúdo se espalha em duas colunas (ou três no Resumo),
+     porque no monitor cabe o dia inteiro sem rolagem;
+   - a folha deixa de subir do rodapé e vira um diálogo no
+     centro — subir do rodapé é gesto de polegar, não de mouse;
+   - tudo que é clicável ganha estado de hover, que no celular
+     não existe e no desktop é o que diz "isto responde".
+   ========================================================= */
+#side{display:none}
+.kbd{display:inline-block;min-width:17px;padding:1px 4px;border-radius:5px;border:1px solid var(--line2);
+  background:var(--bg2);font:600 10px/1.5 ui-monospace,Menlo,monospace;color:var(--tx3);text-align:center}
+
+@media (min-width:960px){
+  body{overflow-y:scroll}
+  .nav{display:none}
+  #fab{display:none}                      /* no desktop o "+" mora na barra lateral */
+
+  #side{
+    display:flex;flex-direction:column;gap:3px;
+    position:fixed;left:0;top:0;bottom:0;width:236px;z-index:40;
+    padding:18px 14px;background:var(--bg2);border-right:1px solid var(--line);overflow-y:auto;
+  }
+  .side-top{display:flex;align-items:center;gap:10px;padding:2px 8px 16px}
+  .side-top .logo{flex:none}
+  .side-top b{font-size:17px;font-weight:750;letter-spacing:-.3px}
+  .side-top .v{font-size:10px;color:var(--tx3);display:block;font-weight:500;letter-spacing:0}
+  #side nav{display:flex;flex-direction:column;gap:2px}
+  #side nav button{display:flex;align-items:center;gap:11px;width:100%;padding:9px 11px;border-radius:12px;
+    font-size:13.5px;font-weight:600;color:var(--tx2);text-align:left;transition:background .12s,color .12s}
+  #side nav button i{font-style:normal;line-height:0;display:block;flex:none;opacity:.85}
+  #side nav button span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #side nav button:hover{background:var(--card2);color:var(--tx)}
+  #side nav button.on{background:var(--ac);color:var(--ac-tx)}
+  #side nav button.on i{opacity:1}
+  #side nav button.on .kbd{border-color:color-mix(in srgb,var(--ac-tx) 35%,transparent);
+    background:transparent;color:color-mix(in srgb,var(--ac-tx) 80%,transparent)}
+  .side-sep{height:1px;background:var(--line);margin:11px 4px}
+  .side-fim{margin-top:auto;padding-top:12px}
+  .side-add{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;
+    border-radius:13px;background:var(--ac);color:var(--ac-tx);font-size:13.5px;font-weight:700;
+    margin-bottom:10px;transition:filter .12s}
+  .side-add:hover{filter:brightness(1.08)}
+
+  /* a coluna de conteúdo fica centrada no espaço QUE SOBRA da lateral:
+     margem esquerda = a maior entre a largura da lateral e o que
+     centralizaria o bloco. Em monitor largo, centraliza de verdade. */
+  #app{max-width:1180px;margin-left:max(236px, calc(50vw - 590px));margin-right:auto;
+    padding:26px 30px 40px}
+  .hd{padding:2px 2px 20px}
+  .hd h1{font-size:26px}
+  .hd h1 small{font-size:12.5px;margin-top:2px}
+
+  /* duas colunas de cartões, sem quebrar um cartão no meio */
+  .colunas{column-count:2;column-gap:16px}
+  .colunas>*{break-inside:avoid;-webkit-column-break-inside:avoid}
+  .larga{column-span:all}
+
+  /* a semana inteira aparece de uma vez, sem rolar de lado */
+  .dstrip{gap:9px;padding-bottom:18px}
+  .dchip{flex:1;max-width:104px;padding:11px 0;transition:transform .1s,border-color .12s}
+  .dchip:hover{border-color:var(--line2);transform:translateY(-1px)}
+  .dchip b{font-size:19px}
+
+  .card{transition:box-shadow .15s,transform .15s}
+  .card:hover{box-shadow:0 1px 2px rgba(43,54,35,.05),0 14px 32px -18px rgba(43,54,35,.3)}
+  .row[data-a]{border-radius:10px;transition:background .12s}
+  .row[data-a]:hover{background:var(--bg2)}
+  .btn{transition:filter .12s,border-color .12s}
+  .btn:hover{filter:brightness(1.04);border-color:var(--line2)}
+  .tick{cursor:pointer;transition:border-color .12s,background .12s}
+  .tick:hover{border-color:var(--ac)}
+  .chip{transition:border-color .12s,background .12s}
+  .chip:hover{border-color:var(--ac)}
+
+  /* folha vira diálogo no centro */
+  .ov{align-items:center;padding:26px}
+  .sheet{border-radius:22px;max-height:86vh;box-shadow:0 30px 70px -20px rgba(20,28,16,.55)}
+  .sheet .grab{display:none}
+  .sheet{padding-top:20px}
+  .segs button{cursor:pointer}
+
+  /* o gráfico usa a largura que tem */
+  .chart{width:100%}
+}
+
+/* telas bem largas: três colunas no Resumo */
+@media (min-width:1400px){
+  #app{max-width:1420px}
+  .colunas.tres{column-count:3}
+}
+
 code{background:var(--bg2);padding:1px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
 </style>
 </head>
 <body>
+<aside id="side"></aside>
 <div id="app"></div>
 <div class="nav"><div class="navin" id="nav"></div></div>
 <div id="fab"></div>
@@ -352,7 +470,38 @@ const ICONS = {
   planilha: 'M4.5 4.5h15v15h-15z@M4.5 9.5h15M4.5 14.5h15M9.5 4.5v15M14.5 4.5v15',
   faisca: 'M12 3.5l1.7 4.4 4.4 1.7-4.4 1.7L12 15.7l-1.7-4.4L5.9 9.6l4.4-1.7z@M18.5 15l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z',
   vazio: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z@M8.5 14.5s1.3 1.5 3.5 1.5 3.5-1.5 3.5-1.5M9.5 9.5h.01M14.5 9.5h.01',
-  festa: 'M4 20.5l4.5-12 7.5 7.5z@M14 3.5c1.5 0 1.5 2 3 2M17.5 8c1 0 1.5.8 1.5 1.8M20.5 4.5h.01M12.5 6.5h.01M20.5 13.5h.01'
+  festa: 'M4 20.5l4.5-12 7.5 7.5z@M14 3.5c1.5 0 1.5 2 3 2M17.5 8c1 0 1.5.8 1.5 1.8M20.5 4.5h.01M12.5 6.5h.01M20.5 13.5h.01',
+
+  /* hábitos — biblioteca ampliada */
+  bike: 'M5.5 18.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z@M18.5 18.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z@M5.5 15h5l4-8h-3M13.5 7l3.5 8M14.5 7h3.5',
+  nadar: 'M2.5 17.5c1.2 0 1.2 1 2.4 1s1.2-1 2.4-1 1.2 1 2.4 1 1.2-1 2.4-1 1.2 1 2.4 1 1.2-1 2.4-1 1.2 1 2.4 1@M6.5 14.5 11 10l-2.5-2 5-1.5M16.5 7.5a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z',
+  alongar: 'M12 5.4a1.9 1.9 0 1 0 0-3.8 1.9 1.9 0 0 0 0 3.8z@M12 7v6M12 13l-3.5 8M12 13l3.5 8M5 9.5l7 1.5 7-1.5',
+  caminhar: 'M13.5 5.2a1.9 1.9 0 1 0 0-3.8 1.9 1.9 0 0 0 0 3.8z@M11 22l1.5-6-2.5-2.5.8-4.5 3.2 1.5 1.5 3 2.5 1M9 22l1.2-4M8 9.5 6 12l-.8 3',
+  sol: 'M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4z@M12 1.5v2.4M12 20.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M1.5 12h2.4M20.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7',
+  planta: 'M12 21v-8M12 13c0-3.5-2.5-6-6-6 0 3.5 2.5 6 6 6z@M12 13c0-4 2.8-6.8 6.8-6.8 0 4-2.8 6.8-6.8 6.8z@M8 21h8',
+  dinheiro: 'M12 2.5v19M16.5 6.5H9.8a3.2 3.2 0 0 0 0 6.4h4.4a3.2 3.2 0 0 1 0 6.4H7',
+  trabalho: 'M3.5 8.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z@M8.5 6.5V5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.5M3.5 12.5h17',
+  arte: 'M12 21.5a9.5 9.5 0 1 1 0-19c5 0 9 3.5 9 7.8 0 2.6-2.1 4.7-4.7 4.7h-1.7a2.3 2.3 0 0 0-1.6 3.9 1.7 1.7 0 0 1-1 2.6z@M7.5 10.5a1.1 1.1 0 1 0 0-2.2 1.1 1.1 0 0 0 0 2.2z@M12 8a1.1 1.1 0 1 0 0-2.2A1.1 1.1 0 0 0 12 8z@M16.5 10.5a1.1 1.1 0 1 0 0-2.2 1.1 1.1 0 0 0 0 2.2z',
+  foto: 'M3 8.5a2 2 0 0 1 2-2h2.3l1.5-2.4h6.4L16.7 6.5H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z@M12 16.4a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2z',
+  pet: 'M6 10.5a2 2.6 0 1 0 0-5.2 2 2.6 0 0 0 0 5.2z@M18 10.5a2 2.6 0 1 0 0-5.2 2 2.6 0 0 0 0 5.2z@M12 21c-3 0-5-1.6-5-3.8 0-2 1.6-3.2 2.6-4.4C10.5 11.6 11 10.5 12 10.5s1.5 1.1 2.4 2.3c1 1.2 2.6 2.4 2.6 4.4 0 2.2-2 3.8-5 3.8z',
+  limpeza: 'M15.5 2.5 8 10M6.5 11.5l6-6 6 6-6 6z@M4 21c0-2.5 1.2-4 3.2-4.5M11 21H3.5',
+  ligar: 'M21 16.9v2.6a2 2 0 0 1-2.2 2 19.6 19.6 0 0 1-8.5-3 19.3 19.3 0 0 1-6-6 19.6 19.6 0 0 1-3-8.6A2 2 0 0 1 3.3 1.7h2.6a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L7 9.4a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z',
+  amor: 'M20.4 5.2a5 5 0 0 0-7.1 0L12 6.5l-1.3-1.3a5 5 0 1 0-7.1 7.1L12 20.7l8.4-8.4a5 5 0 0 0 0-7.1z',
+  familia: 'M9 10.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z@M17.5 10a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8z@M2.5 20.5a6.5 6.5 0 0 1 13 0M16 14.2a5 5 0 0 1 5.5 5.3',
+  orar: 'M12 21.5c-1 0-2-.5-2-2v-6.8l-3 2.3M12 21.5c1 0 2-.5 2-2v-6.8l3 2.3M9 12V4.5a1.5 1.5 0 0 1 3 0V9M12 9V3.8a1.5 1.5 0 0 1 3 0V12',
+  idioma: 'M2.5 6h9M7 3.5V6M9.5 6c0 4-3 7-6 8.5M5 10c0 2 2.5 4 6.5 4.5M13 21l4-9.5 4 9.5M14.6 17.5h4.8',
+  codigo: 'M8.5 17 3.5 12l5-5M15.5 7l5 5-5 5M13.5 4l-3 16',
+  dente: 'M12 21c-1.2 0-1.4-2-2-4-.5-1.7-1-3-2-3s-1.5 1.2-2 1.2c-1 0-1.5-1.5-1.5-4.5C4.5 6 7.5 3.5 12 5c4.5-1.5 7.5 1 7.5 5.7 0 3-.5 4.5-1.5 4.5-.5 0-1-1.2-2-1.2s-1.5 1.3-2 3c-.6 2-.8 4-2 4z',
+  banho: 'M3 12.5h18v2a5.5 5.5 0 0 1-5.5 5.5h-7A5.5 5.5 0 0 1 3 14.5z@M6 12.5V5a2.5 2.5 0 0 1 5 0v.5M6.5 21l-1 1.5M17.5 21l1 1.5',
+  respirar: 'M12 12.5a4 4 0 1 0 0-8 4 4 0 0 0 0 8z@M12 12.5v8M4.5 8.5c-1.5 1.5-1.5 4 0 5.5M19.5 8.5c1.5 1.5 1.5 4 0 5.5M8 20.5h8',
+  livro: 'M3.5 4.5A2 2 0 0 1 5.5 3H12v17H5.5a2 2 0 0 0-2 1.5z@M20.5 4.5A2 2 0 0 0 18.5 3H12v17h6.5a2 2 0 0 1 2 1.5z',
+  amigos: 'M8 10.5a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z@M2 20.5a6 6 0 0 1 12 0M16.5 4.3a3.2 3.2 0 0 1 0 6.2M18 13.5a6 6 0 0 1 4 5.7',
+  cozinhar: 'M5 10.5h14v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z@M4 10.5a8 8 0 0 1 16 0M12 2.5v1.5M3.5 20.5h17',
+  semAlcool: 'M6.5 3h11l-1 5.5A4.5 4.5 0 0 1 12 12a4.5 4.5 0 0 1-4.5-3.5zM12 12v7M8.5 19h7@M4 3l16 18',
+  semAcucar: 'M4.5 9.5 9.5 4.5l10 10-5 5zM8 8l1.5 1.5M11 11l1.5 1.5M14 14l1.5 1.5@M3.5 3.5l17 17',
+  peso2: 'M4 9v6M20 9v6M7 6.5v11M17 6.5v11M7 12h10',
+  jardim: 'M12 21v-9M12 12a4.5 4.5 0 0 1 4.5-4.5A4.5 4.5 0 0 1 12 12z@M12 12a4.5 4.5 0 0 0-4.5-4.5A4.5 4.5 0 0 0 12 12z@M12 7.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z@M6.5 21h11',
+  gratidao: 'M6.5 21v-9h-3v9zM6.5 12.5l3.5-9a2 2 0 0 1 3.8 1.2L13 9h5.5a2.2 2.2 0 0 1 2.2 2.6l-1.4 7a2.2 2.2 0 0 1-2.2 1.9H6.5'
 };
 
 /* Um ícone pode ter mais de um traço; separo com @ para não repetir o <svg>. */
@@ -421,7 +570,7 @@ const ACT = {};
 const SCREENS = {};
 
 const KEY = 'vitta_db_v1';
-const VERSAO = '2026-08-26b';   // conferível nas Configurações — serve para saber se o navegador
+const VERSAO = '2026-08-26d';   // conferível nas Configurações — serve para saber se o navegador
                                 // está servindo o arquivo novo ou uma cópia em cache
 const $ = s => document.querySelector(s);
 const APP = $('#app');
@@ -589,6 +738,55 @@ function carimbarTudo() {
   Object.values(DB.dias || {}).forEach(d => { if (!diaVazio(d)) d.upd = t; });
 }
 
+/* =========================================================
+   REPETIÇÃO — uma regra só para hábitos, lembretes e o que vier
+
+   tipo:
+     diario     todo dia
+     dias       dias fixos da semana        → dias: [1,3,5]
+     semana     x vezes por semana (aparece todo dia, a meta é semanal)
+     mes        um dia por mês              → diaMes: 1..31
+     ano        um dia por ano              → diaMes + mesAno (0..11)
+     intervalo  a cada N dias contando do início → cada: 2..365
+
+   Dia 31 em mês de 30: cai no último dia do mês, em vez de simplesmente
+   não acontecer. Quem marca "todo dia 31" quer dizer "fim do mês".
+   ========================================================= */
+const FREQS = [
+  ['diario', 'Todo dia'], ['dias', 'Dias fixos'], ['intervalo', 'A cada X dias'],
+  ['mes', 'Mensal'], ['ano', 'Anual']
+];
+const diffDias = (a, b) => Math.round((parseD(b) - parseD(a)) / 86400000);
+function diaDoMesCasa(d, alvo) {
+  const p = parseD(d), ultimo = new Date(p.getFullYear(), p.getMonth() + 1, 0).getDate();
+  return p.getDate() === clamp(+alvo || 1, 1, ultimo);
+}
+function repeteEm(cfg, d) {
+  switch (cfg.tipo) {
+    case 'dias': return (cfg.dias || []).includes(parseD(d).getDay());
+    case 'mes': return diaDoMesCasa(d, cfg.diaMes);
+    case 'ano': return parseD(d).getMonth() === (+cfg.mesAno || 0) && diaDoMesCasa(d, cfg.diaMes);
+    case 'intervalo': {
+      const n = clamp(Math.round(+cfg.cada || 1), 1, 365);
+      const dif = diffDias(cfg.inicio || d, d);
+      return dif >= 0 && dif % n === 0;
+    }
+    default: return true;              // diario e semana aparecem todo dia
+  }
+}
+/* frase curta para as listas: "a cada 3 dias", "todo dia 10", "10 de março" */
+function textoFreq(cfg) {
+  switch (cfg.tipo) {
+    case 'dias': return (cfg.dias || []).slice().sort().map(i => DOW[i]).join(', ') || 'sem dias';
+    case 'intervalo': return 'a cada ' + clamp(Math.round(+cfg.cada || 1), 1, 365) + ' dias';
+    case 'mes': return 'todo dia ' + clamp(+cfg.diaMes || 1, 1, 31);
+    case 'ano': return clamp(+cfg.diaMes || 1, 1, 31) + ' de ' + MESL[+cfg.mesAno || 0].toLowerCase();
+    case 'semana': return (cfg.vezes || 0) + '× por semana';
+    case 'uma': return 'uma vez';
+    default: return 'todo dia';
+  }
+}
+
 /* Exclusões esperando para serem aplicadas no servidor no próximo sync. */
 function enfileirarDel(tabela, id) {
   DB.delFila = DB.delFila || [];
@@ -620,6 +818,9 @@ let DB = (() => {
 let DIRTY = false;
 function save(sync = true) {
   writeRaw(JSON.stringify(DB));
+  /* No APK Android, quem toca o alarme é o sistema — ele precisa saber
+     da mudança na hora em que ela acontece. */
+  if (typeof mandarAgenda === 'function') mandarAgenda();
   if (sync) { DIRTY = true; agendarSync(); }
 }
 /* Um dia só existe de verdade depois que você lança alguma coisa nele.
@@ -786,6 +987,13 @@ function sheet(html) {
   if (s) {
     s.addEventListener('input', () => SHEET_SUJO = true);
     s.addEventListener('change', () => SHEET_SUJO = true);
+    /* No computador o cursor já entra no primeiro campo: abrir a folha e
+       ter de clicar para digitar é um passo a mais em cada lançamento.
+       No celular NÃO fazemos isso — abriria o teclado por cima de tudo. */
+    if (matchMedia('(min-width:960px)').matches && matchMedia('(pointer:fine)').matches) {
+      const primeiro = s.querySelector('input:not([type=date]):not([type=time]):not([readonly]), textarea');
+      if (primeiro) { try { primeiro.focus({ preventScroll: true }); } catch (e) { primeiro.focus(); } }
+    }
   }
 }
 function fechar() {
@@ -833,12 +1041,31 @@ const bar = (v, max, cor) => {
   const pct = clamp(max > 0 ? v / max * 100 : 0, 0, 100);
   return `<div class="bar"><i style="width:${pct}%;background:${cor || 'var(--ac)'}"></i></div>`;
 };
-function ring(pct, cor, size = 58, txt = '') {
-  const r = size / 2 - 5, c = 2 * Math.PI * r, o = c * (1 - clamp(pct, 0, 1));
+/* Anel de progresso. `partes` permite dividir o traço em pedaços de cores
+   diferentes — é o que separa, no anel da Dieta, quanto do dia veio de
+   comida do plano e quanto veio de escape. Sem isso, 2.000 kcal de
+   marmita e 2.000 kcal de pizza desenhavam exatamente o mesmo anel.
+   Formato: [[fracao, cor], ...] na ordem em que devem ser desenhados. */
+function ring(pct, cor, size = 58, txt = '', partes = null) {
+  const r = size / 2 - 5, c = 2 * Math.PI * r;
+  const lista = partes && partes.length ? partes : [[pct, cor]];
+  let ang = 0, tracos = '';
+  lista.forEach(([f, k], i) => {
+    const v = clamp(f || 0, 0, 1);
+    if (v <= 0) return;
+    const ate = clamp(ang + v, 0, 1);
+    /* cada pedaço é um arco: gira até onde o anterior parou e desenha o
+       seu tamanho. Ponta arredondada só no último, senão os pedaços se
+       sobrepõem e a cor de trás vaza por cima da da frente. */
+    tracos += `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${k}" stroke-width="6"
+      stroke-linecap="${i === lista.length - 1 ? 'round' : 'butt'}"
+      stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - (ate - ang))}"
+      transform="rotate(${-90 + ang * 360} ${size / 2} ${size / 2})"/>`;
+    ang = ate;
+  });
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
     <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--line)" stroke-width="6"/>
-    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${cor}" stroke-width="6" stroke-linecap="round"
-      stroke-dasharray="${c}" stroke-dashoffset="${o}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
+    ${tracos}
     <text x="50%" y="50%" text-anchor="middle" dy="4" fill="var(--tx)" font-size="${size > 50 ? 13 : 11}" font-weight="700"
       font-family="var(--ff)">${esc(txt)}</text></svg>`;
 }
@@ -865,11 +1092,34 @@ const TITULOS = {
 
 function go(v, keepSub) { VIEW = v; if (!keepSub) SUB = {}; window.scrollTo(0, 0); render(); }
 
+/* ---------- estado da sincronização em um ponto só ----------
+   Três situações interessam a quem está usando: está tudo salvo
+   no servidor, está subindo agora, ou tem coisa que ainda não
+   subiu. O resto (sem conta, sem internet, erro) cai em "parado". */
+function estadoSync() {
+  const st = SB.status || '';
+  if (/sincronizando|conectando/.test(st)) return { k: 'indo', cor: 'var(--res)', ic: 'nuvem', t: 'Sincronizando…' };
+  if (!logado() || SB.anon) return { k: 'off', cor: 'var(--tx3)', ic: 'nuvem',
+    t: SB.anon ? 'Só neste aparelho — sem conta' : 'Sem conta conectada' };
+  if (/^erro|Erro|Falta|Banco|Regras|Identificador|Sem conex/.test(st)) return { k: 'erro', cor: 'var(--bad)', ic: 'alerta', t: st };
+  if (DIRTY) return { k: 'pend', cor: 'var(--warn)', ic: 'nuvem', t: 'Tem alteração para subir' };
+  if (/sincronizado|conectado/.test(st)) return { k: 'ok', cor: 'var(--ac)', ic: 'nuvem',
+    t: 'Tudo sincronizado' + (DB.cfg.ultimoSync ? ' — ' + horaCurta(DB.cfg.ultimoSync) : '') };
+  return { k: 'off', cor: 'var(--tx3)', ic: 'nuvem', t: st || 'Sem sincronização' };
+}
+const horaCurta = iso => { try { const d = new Date(iso); return pad(d.getHours()) + ':' + pad(d.getMinutes()); } catch (e) { return ''; } };
+function selo() {
+  const e = estadoSync();
+  return `<button class="selo ${e.k}" data-a="verSync" title="${esc(e.t)}" aria-label="${esc(e.t)}"
+    style="color:${e.cor}">${ic(e.ic, 15)}</button>`;
+}
+ACT.verSync = () => { SUB._back = VIEW; go('config', true); SUB._back = VIEW; };
+
 function header() {
   const [t, s] = TITULOS[VIEW] || ['Vitta', ''];
   const voltar = !NAVITENS.some(n => n[0] === VIEW);
   return `<div class="hd">
-    ${voltar ? `<button class="iconbtn" data-a="voltar" aria-label="Voltar">${ic('esq', 20)}</button>` : ''}
+    ${voltar ? `<button class="iconbtn" data-a="voltar" aria-label="Voltar">${ic('esq', 20)}</button>` : selo()}
     <h1>${esc(t)}${s ? `<small>${esc(s)}</small>` : ''}</h1>
     ${VIEW === 'hoje' ? `<button class="iconbtn" data-a="ir" data-v="config" aria-label="Configurações">${ic('config')}</button>
       <button class="iconbtn" data-a="ir" data-v="perfil" aria-label="Perfil">${ic('perfil')}</button>` : ''}
@@ -894,12 +1144,42 @@ function render() {
   APP.innerHTML = (solo ? '' : header()) + (SCREENS[VIEW] ? SCREENS[VIEW]() : '<div class="empty">…</div>');
   $('#nav').innerHTML = solo ? '' : NAVITENS.map(([v, i, t]) =>
     `<button class="${VIEW === v ? 'on' : ''}" data-a="ir" data-v="${v}"><i>${ic(i, 19)}</i><span>${t}</span></button>`).join('');
+  $('#side').innerHTML = solo ? '' : lateral();
   $('#fab').innerHTML = (!solo && FAB[VIEW]) ? `<button class="fab" data-a="${FAB[VIEW]}" aria-label="Adicionar">${ic('mais', 26)}</button>` : '';
   const ds = APP.querySelector('.dstrip'), on = ds && ds.querySelector('.dchip.on');
   if (on) ds.scrollLeft = on.offsetLeft - ds.clientWidth / 2 + on.offsetWidth / 2;
   syncBadge();
 }
 const FAB = {};
+
+/* ---------- barra lateral (só aparece a partir de 960px) ----------
+   Mesmos destinos da barra de baixo, mas com espaço para o nome
+   inteiro, para os atalhos de teclado e para o que no celular está
+   escondido atrás de ícones no cabeçalho. */
+const SIDE_EXTRA = [['resumo', 'resumo', 'Resumo'], ['perfil', 'medidas', 'Minhas medidas'],
+  ['config', 'config', 'Configurações']];
+function lateral() {
+  const item = ([v, i, t], n) => `<button class="${VIEW === v ? 'on' : ''}" data-a="ir" data-v="${v}">
+    <i>${ic(i, 18)}</i><span>${esc(t)}</span>${n ? `<kbd class="kbd">${n}</kbd>` : ''}</button>`;
+  const e = estadoSync();
+  return `<div class="side-top">${logo(30)}<div><b>Vitta</b><span class="v">${VERSAO}</span></div></div>
+    <nav>${NAVITENS.map((n, i) => item(n, i + 1)).join('')}</nav>
+    <div class="side-sep"></div>
+    <nav>${SIDE_EXTRA.map(n => item(n)).join('')}</nav>
+    <div class="side-fim">
+      ${FAB[VIEW] ? `<button class="side-add" data-a="${FAB[VIEW]}">${ic('mais', 17)} ${esc(rotuloAdd())}</button>` : ''}
+      <button class="row" style="width:100%;border:0;padding:9px 10px;border-radius:11px" data-a="verSync">
+        <span style="line-height:0;color:${e.cor};flex:none">${ic(e.ic, 15)}</span>
+        <div class="g" style="text-align:left"><div class="s">${esc(e.t)}</div></div>
+      </button>
+    </div>`;
+}
+const ROTULOS_ADD = {
+  fichas: 'Nova ficha', pratos: 'Novo prato', alimentos: 'Novo alimento',
+  habitos: 'Novo hábito', lembretes: 'Novo lembrete', remedios: 'Novo medicamento',
+  medicamentos: 'Novo medicamento', treino: 'Nova atividade', dieta: 'Lançar refeição'
+};
+const rotuloAdd = () => ROTULOS_ADD[VIEW] || 'Adicionar';
 
 /* ---------- ações globais ---------- */
 ACT.ir = e => go(e.dataset.v);
@@ -948,11 +1228,59 @@ document.addEventListener('click', ev => {
   if (t.classList.contains('ov')) ACT.tentarFechar();
 });
 
+/* ---------- teclado (desktop) ----------
+   Quem usa o app no computador tem as duas mãos no teclado: trocar de
+   tela e de dia sem ir ao mouse é o que mais muda o ritmo do uso.
+   Nada dispara enquanto o foco está num campo ou com folha aberta. */
+const digitando = () => {
+  const e = document.activeElement;
+  return !!e && (/^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName) || e.isContentEditable);
+};
+const ATALHOS = {
+  r: 'resumo', p: 'perfil', c: 'config'
+};
 document.addEventListener('keydown', ev => {
-  if (ev.key !== 'Escape') return;
-  if ($('#modal2').innerHTML) return fecharPergunta();
-  if ($('#modal').innerHTML) ACT.tentarFechar();
+  if (ev.key === 'Escape') {
+    if ($('#modal2').innerHTML) return fecharPergunta();
+    if ($('#modal').innerHTML) return ACT.tentarFechar();
+    if (!NAVITENS.some(n => n[0] === VIEW) && VIEW !== 'boasVindas') return ACT.voltar();
+    return;
+  }
+  /* Ctrl+Enter salva a folha aberta — é o gesto que todo mundo já tem
+     no dedo de outros programas, e evita ir ao mouse para confirmar. */
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter') {
+    const b = $('#modal .sheet .btn.pri');
+    if (b) { ev.preventDefault(); b.click(); }
+    return;
+  }
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  if (digitando() || $('#modal').innerHTML || VIEW === 'boasVindas') return;
+
+  const k = ev.key.toLowerCase();
+  if (k >= '1' && k <= String(NAVITENS.length)) { ev.preventDefault(); return go(NAVITENS[+k - 1][0]); }
+  if (ATALHOS[k]) { ev.preventDefault(); return go(ATALHOS[k]); }
+  if (k === 'n' && FAB[VIEW]) { ev.preventDefault(); return ACT[FAB[VIEW]]({ dataset: {} }); }
+  if (k === 't') { ev.preventDefault(); D = today(); return render(); }
+  if (k === '?') { ev.preventDefault(); return ACT.atalhos(); }
+  if (ev.key === 'ArrowLeft') { ev.preventDefault(); D = addDays(D, -1); return render(); }
+  if (ev.key === 'ArrowRight') {
+    if (D >= addDays(today(), 1)) return;              // não passa de amanhã
+    ev.preventDefault(); D = addDays(D, 1); return render();
+  }
 });
+
+ACT.atalhos = () => sheet(`<h3>Atalhos do teclado</h3>
+  <p class="hint">Funcionam quando você não está digitando num campo.</p>
+  <div class="card tight" style="margin:0">
+    ${[...NAVITENS.map((n, i) => [String(i + 1), n[2]]),
+       ['R', 'Resumo'], ['P', 'Minhas medidas'], ['C', 'Configurações'],
+       ['N', 'Criar um novo item na tela atual'],
+       ['←  →', 'Dia anterior / próximo'], ['T', 'Voltar para hoje'],
+       ['Esc', 'Fechar a folha ou voltar'], ['?', 'Esta lista']]
+      .map(([t, d]) => `<div class="row"><div class="g"><div class="t">${esc(d)}</div></div>
+        <div class="v"><kbd class="kbd">${t}</kbd></div></div>`).join('')}
+  </div>
+  <button class="btn full" style="margin-top:12px" data-a="fechar">Fechar</button>`);
 document.addEventListener('change', ev => {
   const b = ev.target.closest('[data-ch]');
   if (b && ACT[b.dataset.ch]) ACT[b.dataset.ch](b, ev);
@@ -2363,16 +2691,29 @@ SCREENS.prato = () => {
    MÓDULO 3 — HÁBITOS
    ========================================================= */
 TITULOS.habito = ['Hábito', 'acompanhamento'];
-const ICONES = ['sono', 'estudo', 'meditar', 'agua', 'parar', 'celular', 'correr', 'manha',
-  'remedio', 'escrever', 'musica', 'treino', 'meta', 'faisca'];
+/* Agrupados por assunto: procurar o ícone certo numa grade de 40 sem
+   ordem nenhuma é pior do que ter poucos. */
+const ICONES_GRUPOS = [
+  ['Corpo', ['treino', 'correr', 'caminhar', 'bike', 'nadar', 'alongar', 'peso2', 'bola', 'respirar']],
+  ['Cuidado', ['sono', 'agua', 'remedio', 'dente', 'banho', 'sol', 'meditar', 'orar', 'gratidao']],
+  ['Cabeça', ['estudo', 'livro', 'escrever', 'idioma', 'codigo', 'musica', 'arte', 'foto', 'meta']],
+  ['Rotina', ['manha', 'cozinhar', 'limpeza', 'trabalho', 'dinheiro', 'planta', 'jardim', 'pet', 'casa2']],
+  ['Gente', ['familia', 'amigos', 'amor', 'ligar', 'festa', 'calendario', 'lista', 'relogio', 'faisca']],
+  ['Largar', ['parar', 'celular', 'semAlcool', 'semAcucar', 'pizza', 'fogo', 'alerta', 'lua', 'cafe']]
+];
+const ICONES = ICONES_GRUPOS.flatMap(g => g[1]);
 
 const habById = id => DB.habitos.find(h => h.id === id);
 function habDevidoEm(h, d) {
   if (d < h.inicio) return false;
   if (h.fim && d > h.fim) return false;
-  if (h.freqTipo === 'dias') return (h.dias || []).includes(parseD(d).getDay());
-  return true;                       // diário ou x vezes por semana (aparece todo dia)
+  return repeteEm({ tipo: h.freqTipo, dias: h.dias, diaMes: h.diaMes, mesAno: h.mesAno,
+    cada: h.cada, inicio: h.inicio, vezes: h.vezes }, d);
 }
+/* Um hábito pode ter mais de um horário de aviso (remédio de manhã e de
+   noite, alongar de 3 em 3 horas). O campo antigo era um só; ele continua
+   sendo lido para não perder o que já estava configurado. */
+const horasHab = h => (h.horas && h.horas.length) ? h.horas : (h.hora ? [h.hora] : []);
 /* leitura pura: NÃO usa dia(), que criaria o registro. Só desenhar a tela
    de hábitos materializava um dia vazio para cada data desde o início do
    hábito, e esses dias fantasmas entravam nas contas do Resumo. */
@@ -2403,8 +2744,8 @@ function habStats(h) {
 
 /* ---------- criar / editar ---------- */
 FAB.habitos = 'novoHabito';
-ACT.novoHabito = () => { SUB.habEdit = null; sheetHab(); };
-ACT.editHabito = e => { SUB.habEdit = e.dataset.h; sheetHab(); };
+ACT.novoHabito = () => { SUB.habEdit = null; SUB.icone = SUB.freqTipo = SUB.medida = SUB.hdias = SUB.hhoras = null; sheetHab(); };
+ACT.editHabito = e => { SUB.habEdit = e.dataset.h; SUB.icone = SUB.freqTipo = SUB.medida = SUB.hdias = SUB.hhoras = null; sheetHab(); };
 function sheetHab() {
   const h = SUB.habEdit ? habById(SUB.habEdit) : {
     nome: '', icone: 'meta', motivos: '', inicio: today(), fim: '', freqTipo: 'diario',
@@ -2412,10 +2753,14 @@ function sheetHab() {
   };
   SUB.icone = SUB.icone || h.icone; SUB.freqTipo = SUB.freqTipo || h.freqTipo;
   SUB.medida = SUB.medida || h.medida; SUB.hdias = SUB.hdias || (h.dias || []).slice();
+  SUB.hhoras = SUB.hhoras || horasHab(h).slice();
   sheet(`<h3>${SUB.habEdit ? 'Editar' : 'Novo'} hábito</h3>
     <p class="hint">Um hábito precisa de um porquê. Escreva o motivo — ele aparece toda vez que você abrir o hábito.</p>
     <div class="f"><label>Ícone</label><div class="chiprow">
-      ${ICONES.map(i => `<button class="chip ${SUB.icone === i ? 'on' : ''}" data-a="hIcone" data-i="${i}">${ic(i, 18)}</button>`).join('')}
+      ${ICONES_GRUPOS.map(([nome, lista]) => `<div class="mini" style="margin:6px 2px 4px">${nome}</div>
+        <div class="chiprow" style="margin-bottom:2px">${lista.map(i =>
+          `<button class="chip ico ${SUB.icone === i ? 'on' : ''}" data-a="hIcone" data-i="${i}"
+            title="${i}" aria-label="${i}">${ic(i, 18)}</button>`).join('')}</div>`).join('')}
     </div></div>
     <div class="f"><label>Nome</label><input class="in" id="h_nome" value="${esc(h.nome)}" placeholder="ex: Dormir 8 horas"></div>
     <div class="f"><label>Por que eu quero este hábito?</label>
@@ -2425,15 +2770,31 @@ function sheetHab() {
       <div class="f"><label>Fim (opcional)</label><input class="in" id="h_fim" type="date" value="${h.fim || ''}"></div>
     </div>
     <div class="f"><label>Me lembrar às (opcional)</label>
-      <input class="in" id="h_hora" type="time" value="${esc(h.hora || '')}">
-      <p class="mini" style="margin-top:6px">Com horário preenchido, o app manda uma notificação nesse
-      horário nos dias em que o hábito está previsto — e só se você ainda não tiver dado o check.</p></div>
+      ${SUB.hhoras.length ? SUB.hhoras.map((v, i) => `<div class="row" style="gap:8px;border:0;padding:4px 0">
+          <input class="in" type="time" id="h_h${i}" value="${esc(v)}" style="flex:1">
+          <button class="btn xs danger" data-a="hDelHora" data-i="${i}" data-sujo="1">${ic('x', 13)}</button>
+        </div>`).join('') : '<p class="mini">Sem aviso: o hábito aparece na tela Hoje do mesmo jeito.</p>'}
+      <button class="btn gh full sm" style="margin-top:7px" data-a="hAddHora" data-sujo="1">${ic('mais', 14)}
+        ${SUB.hhoras.length ? 'Outro horário' : 'Adicionar horário'}</button>
+      <p class="mini" style="margin-top:6px">Pode ter mais de um — manhã e noite, por exemplo. O aviso só
+      chega nos dias em que o hábito está previsto e enquanto você não tiver dado o check.</p></div>
     <div class="f"><label>Frequência</label>
-      <div class="segs">${[['diario', 'Todo dia'], ['dias', 'Dias fixos'], ['semana', 'X por semana']].map(t =>
+      <div class="segs" style="flex-wrap:wrap">${[...FREQS, ['semana', 'X por semana']].map(t =>
     `<button class="${SUB.freqTipo === t[0] ? 'on' : ''}" data-a="hFreq" data-t="${t[0]}">${t[1]}</button>`).join('')}</div></div>
     ${SUB.freqTipo === 'dias' ? `<div class="f"><div class="chiprow">
       ${DOW.map((d, i) => `<button class="chip ${SUB.hdias.includes(i) ? 'on' : ''}" data-a="hDia" data-d="${i}">${d}</button>`).join('')}
     </div></div>` : ''}
+    ${SUB.freqTipo === 'intervalo' ? `<div class="f"><label>A cada quantos dias</label>
+      <input class="in" id="h_cada" type="number" inputmode="numeric" min="1" max="365" value="${h.cada || 2}">
+      <p class="mini" style="margin-top:6px">Conta a partir da data de início. "A cada 2 dias" é dia sim, dia não.</p></div>` : ''}
+    ${SUB.freqTipo === 'mes' ? `<div class="f"><label>Dia do mês</label>
+      <input class="in" id="h_diames" type="number" inputmode="numeric" min="1" max="31" value="${h.diaMes || parseD(h.inicio || today()).getDate()}">
+      <p class="mini" style="margin-top:6px">Se o mês não tiver esse dia (30, 31), cai no último dia dele.</p></div>` : ''}
+    ${SUB.freqTipo === 'ano' ? `<div class="grid2">
+      <div class="f"><label>Dia</label><input class="in" id="h_diames" type="number" inputmode="numeric" min="1" max="31" value="${h.diaMes || parseD(h.inicio || today()).getDate()}"></div>
+      <div class="f"><label>Mês</label><select class="in" id="h_mesano">${MESL.map((m, i) =>
+        `<option value="${i}" ${(h.mesAno || 0) === i ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+    </div>` : ''}
     ${SUB.freqTipo === 'semana' ? `<div class="f"><label>Vezes por semana</label>
       <input class="in" id="h_vezes" type="number" inputmode="numeric" value="${h.vezes || 3}"></div>` : ''}
     <div class="f"><label>Como vou medir</label>
@@ -2447,13 +2808,17 @@ function sheetHab() {
       <button class="btn pri" data-a="salvarHabito">Salvar</button></div>
     ${SUB.habEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delHabito" data-h="${SUB.habEdit}">Excluir hábito</button>` : ''}`);
 }
-ACT.fecharHab = () => { SUB.icone = SUB.freqTipo = SUB.medida = SUB.hdias = null; fechar(); };
+ACT.fecharHab = () => { SUB.icone = SUB.freqTipo = SUB.medida = SUB.hdias = SUB.hhoras = null; fechar(); };
 function hCapturar() {
   SUB.tmp = SUB.tmp || {};
-  ['h_nome', 'h_mot', 'h_ini', 'h_fim', 'h_hora', 'h_vezes', 'h_un', 'h_meta'].forEach(k => {
-    const e = document.getElementById(k); if (e) SUB.tmp[k] = e.value;
+  ['h_nome', 'h_mot', 'h_ini', 'h_fim', 'h_vezes', 'h_un', 'h_meta', 'h_cada', 'h_diames', 'h_mesano']
+    .forEach(k => { const e = document.getElementById(k); if (e) SUB.tmp[k] = e.value; });
+  SUB.hhoras = (SUB.hhoras || []).map((v, i) => {
+    const e = document.getElementById('h_h' + i); return e ? e.value : v;
   });
 }
+ACT.hAddHora = () => { hCapturar(); SUB.hhoras.push(SUB.hhoras.length ? '20:00' : '08:00'); sheetHab(); restaurarHab(); };
+ACT.hDelHora = e => { hCapturar(); SUB.hhoras.splice(+e.dataset.i, 1); sheetHab(); restaurarHab(); };
 ACT.hIcone = e => { hCapturar(); SUB.icone = e.dataset.i; sheetHab(); restaurarHab(); };
 ACT.hFreq = e => { hCapturar(); SUB.freqTipo = e.dataset.t; sheetHab(); restaurarHab(); };
 ACT.hMed = e => { hCapturar(); SUB.medida = e.dataset.t; sheetHab(); restaurarHab(); };
@@ -2466,10 +2831,17 @@ function restaurarHab() {
   Object.keys(SUB.tmp).forEach(k => { const e = document.getElementById(k); if (e && SUB.tmp[k] !== undefined) e.value = SUB.tmp[k]; });
 }
 ACT.salvarHabito = () => {
+  hCapturar();      // pega os horários que estão na tela, não os do último redesenho
   const nome = valOf('h_nome').trim(); if (!nome) return toast('Dê um nome ao hábito');
   const o = {
-    nome, icone: SUB.icone, motivos: valOf('h_mot'), hora: valOf('h_hora') || '', inicio: valOf('h_ini') || today(),
+    nome, icone: SUB.icone, motivos: valOf('h_mot'),
+    horas: (SUB.hhoras || []).filter(Boolean).sort(),
+    hora: (SUB.hhoras || []).filter(Boolean).sort()[0] || '',   // compatível com versões antigas
+    inicio: valOf('h_ini') || today(),
     fim: valOf('h_fim') || null, freqTipo: SUB.freqTipo, dias: SUB.hdias, vezes: numOf('h_vezes') || 3,
+    cada: clamp(Math.round(numOf('h_cada') || 2), 1, 365),
+    diaMes: clamp(Math.round(numOf('h_diames') || parseD(valOf('h_ini') || today()).getDate()), 1, 31),
+    mesAno: Math.max(0, Math.min(11, Math.round(num(valOf('h_mesano', 0))))),
     medida: SUB.medida, unidade: valOf('h_un'), meta: numOf('h_meta'), ativo: true, upd: nowISO()
   };
   if (SUB.habEdit) Object.assign(habById(SUB.habEdit), o);
@@ -2592,7 +2964,8 @@ SCREENS.habitos = () => {
     html += `<div class="sec-title">Fora da frequência hoje</div><div class="card tight">
       ${ativos.filter(h => !habDevidoEm(h, D)).map(h => `<div class="row" data-a="abrirHabito" data-h="${h.id}">
         <div class="g"><div class="t">${icOu(h.icone, 15)} ${esc(h.nome)}</div>
-        <div class="s">${h.fim && D > h.fim ? 'período encerrado' : D < h.inicio ? 'começa em ' + esc(dLabel(h.inicio)) : 'não previsto para hoje'}</div></div>
+        <div class="s">${h.fim && D > h.fim ? 'período encerrado' : D < h.inicio ? 'começa em ' + esc(dLabel(h.inicio))
+          : 'não previsto para hoje · ' + esc(textoFreq({ tipo: h.freqTipo, dias: h.dias, cada: h.cada, diaMes: h.diaMes, mesAno: h.mesAno, vezes: h.vezes }))}</div></div>
         <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
   }
   if (enc.length) {
@@ -2661,8 +3034,8 @@ function lemDevidoEm(l, d) {
   if (l.repetir === 'uma') return (l.data || l.criado) === d;
   if (d < lemInicio(l)) return false;
   if (l.fim && d > l.fim) return false;
-  if (l.repetir === 'dias') return (l.dias || []).includes(parseD(d).getDay());
-  return true;                                   // diário
+  return repeteEm({ tipo: l.repetir, dias: l.dias, diaMes: l.diaMes, mesAno: l.mesAno,
+    cada: l.cada, inicio: lemInicio(l) }, d);
 }
 const lemFeito = (l, d) => !!(l.feito || {})[d];
 const minutos = h => { const [a, b] = String(h || '00:00').split(':').map(Number); return a * 60 + b; };
@@ -2707,7 +3080,16 @@ ACT.testarNotif = async () => {
   if (!ok) toast('Ainda sem permissão do sistema');
 };
 
+/* Dentro do APK Android não existe a API Notification do navegador; quem
+   avisa é o próprio Android, pela ponte. É também o único caminho que faz
+   o aviso chegar com o app fechado. */
+const NO_ANDROID = () => typeof AndroidVitta !== 'undefined' && !!AndroidVitta.notificar;
+
 async function avisar(titulo, corpo, tag) {
+  if (NO_ANDROID()) {
+    try { AndroidVitta.notificar(String(titulo), String(corpo), String(tag || 'vitta')); return true; }
+    catch (e) { console.warn('[aviso android]', e); }
+  }
   if (permNotif() === 'granted') {
     try {
       const reg = SW_REG || (navigator.serviceWorker ? await navigator.serviceWorker.ready.catch(() => null) : null);
@@ -2744,11 +3126,15 @@ function checarLembretes() {
   });
 
   (DB.habitos || []).forEach(h => {
-    if (h.ativo === false || !h.hora) return;
-    if (!habDevidoEm(h, d)) return;
+    if (h.ativo === false) return;
+    const horas = horasHab(h);
+    if (!horas.length || !habDevidoEm(h, d)) return;
     if ((regHab(d, h.id) || {}).feito) return;
-    if (mn < minutos(h.hora)) return;
-    const marca = d + 'T' + h.hora;
+    /* com vários horários, avisa o último que já venceu — não uma
+       enxurrada de avisos atrasados se o app passou o dia fechado */
+    const venceu = horas.filter(hh => mn >= minutos(hh)).sort();
+    if (!venceu.length) return;
+    const marca = d + 'T' + venceu[venceu.length - 1];
     if (h.alertado === marca) return;
     h.alertado = marca; mudou = true;
     avisar('Hábito de hoje', h.nome + ' — ainda falta o check de hoje.', 'hab-' + h.id);
@@ -2766,6 +3152,49 @@ function checarLembretes() {
   });
 
   if (mudou) { save(false); if (['lembretes', 'hoje', 'habitos', 'remedios'].includes(VIEW)) render(); }
+}
+
+/* =========================================================
+   AGENDA ENTREGUE AO ANDROID
+   O app web só consegue avisar enquanto está aberto (ou com o service
+   worker vivo, o que o sistema não garante). No APK, o Android marca
+   alarmes de verdade — mas para isso precisa saber O QUE avisar e A QUE
+   HORAS. Esta função monta essa lista e entrega.
+
+   Só entra o que se repete com hora marcada. Item de uma vez só já é
+   tratado pela própria tela quando o app abre.
+   ========================================================= */
+function agendaParaAndroid() {
+  const itens = [];
+  const diasDe = cfg => cfg.tipo === 'dias' ? (cfg.dias || []) : null;
+
+  (DB.lembretes || []).filter(l => l.ativo !== false && l.repetir !== 'uma').forEach(l => {
+    itens.push({ id: 'lem-' + l.id, hora: l.hora, titulo: 'Lembrete', corpo: l.texto,
+      dias: diasDe({ tipo: l.repetir, dias: l.dias }) });
+  });
+  (DB.habitos || []).filter(h => h.ativo !== false).forEach(h => {
+    horasHab(h).forEach(hora => itens.push({
+      id: 'hab-' + h.id + '-' + hora, hora, titulo: 'Hábito de hoje',
+      corpo: h.nome + ' — ainda falta o check de hoje.',
+      dias: diasDe({ tipo: h.freqTipo, dias: h.dias })
+    }));
+  });
+  (DB.medicamentos || []).filter(m => m.ativo !== false && m.freq !== 'necessario').forEach(m => {
+    (m.horarios || []).forEach(hora => itens.push({
+      id: 'med-' + m.id + '-' + hora, hora, titulo: 'Hora do medicamento',
+      corpo: m.nome + ' — ' + medRotulo(m) + (m.obs ? ' (' + m.obs + ')' : ''),
+      dias: diasDe({ tipo: m.freq, dias: m.dias })
+    }));
+  });
+  return itens.filter(i => /^\d{2}:\d{2}$/.test(i.hora || ''));
+}
+let AGENDA_ENVIADA = '';
+function mandarAgenda() {
+  if (typeof AndroidVitta === 'undefined' || !AndroidVitta.agendarAvisos) return;
+  const json = JSON.stringify(agendaParaAndroid());
+  if (json === AGENDA_ENVIADA) return;          // nada mudou: não mexe nos alarmes
+  AGENDA_ENVIADA = json;
+  try { AndroidVitta.agendarAvisos(json); } catch (e) { console.warn('[agenda]', e); }
 }
 
 /* ---------- criar / editar ---------- */
@@ -2788,11 +3217,22 @@ function sheetLem() {
         <input class="in" id="lm_d" type="date" value="${esc(l.data || today())}"></div>
     </div>
     <div class="f"><label>Repetição</label>
-      <div class="segs">${[['uma', 'Uma vez'], ['diario', 'Todo dia'], ['dias', 'Dias fixos']].map(t =>
+      <div class="segs" style="flex-wrap:wrap">${[['uma', 'Uma vez'], ...FREQS].map(t =>
     `<button class="${SUB.lemRep === t[0] ? 'on' : ''}" data-a="lemRep" data-t="${t[0]}">${t[1]}</button>`).join('')}</div></div>
     ${SUB.lemRep === 'dias' ? `<div class="f"><div class="chiprow">
       ${DOW.map((d, i) => `<button class="chip ${SUB.lemDias.includes(i) ? 'on' : ''}" data-a="lemDia" data-d="${i}">${d}</button>`).join('')}
     </div></div>` : ''}
+    ${SUB.lemRep === 'intervalo' ? `<div class="f"><label>A cada quantos dias</label>
+      <input class="in" id="lm_cada" type="number" inputmode="numeric" min="1" max="365" value="${l.cada || 2}">
+      <p class="mini" style="margin-top:6px">Conta a partir da data acima. "A cada 15 dias" é de duas em duas semanas.</p></div>` : ''}
+    ${SUB.lemRep === 'mes' ? `<div class="f"><label>Dia do mês</label>
+      <input class="in" id="lm_diames" type="number" inputmode="numeric" min="1" max="31" value="${l.diaMes || parseD(l.data || today()).getDate()}">
+      <p class="mini" style="margin-top:6px">Mês sem esse dia (30, 31) cai no último dia dele — conta de luz não some em fevereiro.</p></div>` : ''}
+    ${SUB.lemRep === 'ano' ? `<div class="grid2">
+      <div class="f"><label>Dia</label><input class="in" id="lm_diames" type="number" inputmode="numeric" min="1" max="31" value="${l.diaMes || parseD(l.data || today()).getDate()}"></div>
+      <div class="f"><label>Mês</label><select class="in" id="lm_mesano">${MESL.map((m, i) =>
+        `<option value="${i}" ${(l.mesAno == null ? parseD(l.data || today()).getMonth() : l.mesAno) === i ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+    </div>` : ''}
     ${SUB.lemRep !== 'uma' ? `<div class="f"><label>Parar em (opcional)</label>
       <input class="in" id="lm_f" type="date" value="${esc(l.fim || '')}"></div>` : ''}
     ${permNotif() === 'granted' ? '' : `<div class="warnbox">As notificações do sistema estão
@@ -2804,7 +3244,8 @@ function sheetLem() {
 }
 function lemCapturar() {
   SUB.lemTmp = SUB.lemTmp || {};
-  ['lm_t', 'lm_h', 'lm_d', 'lm_f'].forEach(k => { const e = document.getElementById(k); if (e) SUB.lemTmp[k] = e.value; });
+  ['lm_t', 'lm_h', 'lm_d', 'lm_f', 'lm_cada', 'lm_diames', 'lm_mesano']
+    .forEach(k => { const e = document.getElementById(k); if (e) SUB.lemTmp[k] = e.value; });
 }
 function lemRestaurar() {
   if (!SUB.lemTmp) return;
@@ -2818,9 +3259,14 @@ ACT.lemDia = e => {
 ACT.salvarLembrete = () => {
   const texto = valOf('lm_t').trim(); if (!texto) return toast('Escreva o lembrete');
   if (SUB.lemRep === 'dias' && !SUB.lemDias.length) return toast('Escolha ao menos um dia');
+  const base = valOf('lm_d') || today();
   const o = {
-    texto, hora: valOf('lm_h') || '08:00', data: valOf('lm_d') || today(),
-    fim: valOf('lm_f') || null, repetir: SUB.lemRep, dias: SUB.lemDias, ativo: true, upd: nowISO()
+    texto, hora: valOf('lm_h') || '08:00', data: base,
+    fim: valOf('lm_f') || null, repetir: SUB.lemRep, dias: SUB.lemDias,
+    cada: clamp(Math.round(numOf('lm_cada') || 2), 1, 365),
+    diaMes: clamp(Math.round(numOf('lm_diames') || parseD(base).getDate()), 1, 31),
+    mesAno: Math.max(0, Math.min(11, Math.round(num(valOf('lm_mesano', parseD(base).getMonth()))))),
+    ativo: true, upd: nowISO()
   };
   if (SUB.lemEdit) Object.assign(DB.lembretes.find(x => x.id === SUB.lemEdit), o);
   else DB.lembretes.push(Object.assign({ id: uid(), criado: today(), feito: {}, alertado: '' }, o));
@@ -2846,8 +3292,7 @@ ACT.lemPausa = e => {
 /* ---------- tela ---------- */
 function linhaLem(l, d, compacto) {
   const feito = lemFeito(l, d), atrasado = lemAtrasado(l, d);
-  const rep = l.repetir === 'diario' ? 'todo dia'
-    : l.repetir === 'dias' ? (l.dias || []).map(i => DOW[i]).join(', ') : 'uma vez';
+  const rep = textoFreq({ tipo: l.repetir, dias: l.dias, cada: l.cada, diaMes: l.diaMes, mesAno: l.mesAno });
   return `<div class="row">
     <button class="tick ${feito ? 'on' : ''}" data-a="lemTick" data-l="${l.id}">${ic('check')}</button>
     <div class="g" ${compacto ? '' : `data-a="editLembrete" data-l="${l.id}"`}>
@@ -2905,7 +3350,8 @@ SCREENS.lembretes = () => {
     h += `<div class="sec-title">Outros</div><div class="card tight">
       ${outros.map(l => `<div class="row" data-a="editLembrete" data-l="${l.id}">
         <div class="g"><div class="t wrap">${esc(l.texto)}</div>
-          <div class="s">${l.ativo === false ? 'pausado' : 'fora da frequência de hoje'} · ${esc(l.hora)}</div></div>
+          <div class="s">${l.ativo === false ? 'pausado'
+          : esc(textoFreq({ tipo: l.repetir, dias: l.dias, cada: l.cada, diaMes: l.diaMes, mesAno: l.mesAno }))} · ${esc(l.hora)}</div></div>
         <div class="v">${ic('dir',16,'op')}</div></div>`).join('')}</div>`;
   }
   return h + `<button class="btn pri full" data-a="novoLembrete" style="margin-bottom:14px">${ic('mais',15)} Novo lembrete</button>`;
@@ -3242,6 +3688,10 @@ function sonoNota(s) {
   const acordadas = Math.max(0, 1 - (+s.despertares || 0) * .15);
   return (dur * .45 + q * .40 + acordadas * .15) * 100;
 }
+/* Verde quando a noite foi boa, âmbar no meio, vermelho quando foi ruim:
+   o número sozinho não diz se 62% é bom ou péssimo. */
+const corSono = nota => nota >= 75 ? 'var(--ac)' : nota >= 50 ? 'var(--res)' : nota >= 30 ? 'var(--warn)' : 'var(--bad)';
+
 function sonoResumo(s) {
   if (!s) return 'não registrado';
   const p = [];
@@ -3369,7 +3819,7 @@ const W = 320;
 
 function chartBar(vals, o = {}) {
   const h = o.h || 118, pad = 16, n = vals.length || 1;
-  const max = Math.max(o.max || 0, ...vals.map(v => v || 0), 1);
+  const max = Math.max(o.max || 0, o.meta || 0, ...vals.map(v => v || 0), 1);
   const bw = (W - pad * 2) / n, bar = Math.max(2, bw * .62);
   let g = '';
   vals.forEach((v, i) => {
@@ -3505,7 +3955,7 @@ ACT.semHoje = () => { SUB.sem = segundaDe(today()); render(); };
 SCREENS.resumo = () => {
   const aba = SUB.res || 'dia';
   const corpo = aba === 'dia' ? resumoDia() : aba === 'sem' ? resumoSemana() : resumoMes();
-  let h = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:13px">
+  let h = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:13px;max-width:520px">
     <div class="segs" style="flex:1;margin:0">
       <button class="${aba === 'dia' ? 'on' : ''}" data-a="resAba" data-t="dia">Diário</button>
       <button class="${aba === 'sem' ? 'on' : ''}" data-a="resAba" data-t="sem">Semanal</button>
@@ -3536,21 +3986,28 @@ function resumoDia() {
   const refDia = REFS.map(r => [r, somaItens(x.refeicoes[r[0]] || [])]).filter(r => r[1].kcal > 0);
   const maiorRef = Math.max(1, ...refDia.map(r => r[1].kcal));
 
-  return dateStrip() + `<div class="card">
+  return dateStrip() + `<div class="colunas"><div class="card">
     <div class="ch"><h2>${esc(dLabel(D))}</h2><span class="sub">visão geral</span></div>
-    <div style="display:flex;justify-content:space-around;text-align:center">
+    <div class="aneis">
       <div>${ring(treinoOk ? 1 : estT === 'aberto' ? .4 : estT === 'falta' ? 1 : 0,
-        estT === 'falta' ? 'var(--bad)' : 'var(--tre)', 62, treinoOk ? '✓' : estT === 'falta' ? '✕' : '—')}
-        <div class="mini" style="margin-top:4px">${estT === 'falta' ? 'Falta' : 'Treino'}</div></div>
-      <div>${ring(t.kcal / m.kcal, 'var(--die)', 62, n0(t.kcal / m.kcal * 100) + '%')}
-        <div class="mini" style="margin-top:4px">Dieta</div></div>
-      <div>${ring((x.agua || 0) / metaAguaDia(D), 'var(--agua)', 62, n1((x.agua || 0) / 1000) + 'L')}
-        <div class="mini" style="margin-top:4px">Água</div></div>
-      <div>${ring(habs.length ? hf / habs.length : 0, 'var(--hab)', 62, `${hf}/${habs.length}`)}
-        <div class="mini" style="margin-top:4px">Hábitos</div></div>
-      <div>${ring(sn ? sonoMin(sn) / (metaSono() * 60) : 0, 'var(--res)', 62, sn ? n1(sonoHoras(sn)) + 'h' : '—')}
-        <div class="mini" style="margin-top:4px">Sono</div></div>
+        estT === 'falta' ? 'var(--bad)' : 'var(--tre)', 58, treinoOk ? '✓' : estT === 'falta' ? '✕' : '—')}
+        <div class="mini">${estT === 'falta' ? 'Falta' : 'Treino'}</div></div>
+      <div>${ring(0, '', 58, n0(t.kcal / m.kcal * 100) + '%', [
+        [(t.kcal - (t.escape || 0)) / m.kcal, 'var(--die)'],
+        [(t.escape || 0) / m.kcal, 'var(--warn)']])}
+        <div class="mini">Dieta</div></div>
+      <div>${ring((x.agua || 0) / metaAguaDia(D), 'var(--agua)', 58, n1((x.agua || 0) / 1000) + 'L')}
+        <div class="mini">Água</div></div>
+      <div>${ring(habs.length ? hf / habs.length : 0, 'var(--hab)', 58, `${hf}/${habs.length}`)}
+        <div class="mini">Hábitos</div></div>
+      <div>${ring(sn ? sonoNota(sn) / 100 : 0, corSono(sn ? sonoNota(sn) : 0), 58, sn ? n0(sonoNota(sn)) + '%' : '—')}
+        <div class="mini">Sono</div></div>
     </div>
+    ${t.escape ? `<p class="mini" style="margin-top:9px">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);vertical-align:-1px"></span>
+      A parte âmbar do anel da dieta é escape: ${n0(t.escape)} kcal, ${n0(t.escape / t.kcal * 100)}% do que você comeu hoje.</p>` : ''}
+    ${sn ? `<p class="mini" style="margin-top:${t.escape ? '4' : '9'}px">Sono: ${hhmm(sonoMin(sn))}${
+      sn.qual ? ' · ' + sn.qual + '/5 de qualidade' : ''}${+sn.despertares ? ' · acordou ' + sn.despertares + '×' : ''}.</p>` : ''}
     ${ant.length ? `<div class="sec-title" style="margin:16px 4px 8px">Comparado com a sua média dos últimos ${ant.length} dias</div>
       <div class="row"><div class="g"><div class="t">Calorias</div>
         <div class="s">média ${n0(mKcal)} kcal</div></div><div class="v">${n0(t.kcal)} ${dif(t.kcal, mKcal)}</div></div>
@@ -3647,7 +4104,7 @@ function resumoDia() {
       <div class="f" style="margin:0"><label>Como foi o dia</label>
         <input class="in" id="d_nota" value="${esc(x.nota || '')}" data-ch="salvarNota" placeholder="anotação livre"></div>
     </div>
-  </div>`;
+  </div></div>`;
 }
 ACT.salvarPeso = e => { const x = dia(D); x.peso = num(e.value) || null; tocaDia(D); save(); toast('Peso registrado'); };
 ACT.salvarNota = e => { const x = dia(D); x.nota = e.value; tocaDia(D); save(); };
@@ -3735,6 +4192,7 @@ function painelPeriodo(ds, opt) {
   const sonoQmed = (() => { const q = noites.filter(x => x.sonoQ); return q.length ? q.reduce((a, x) => a + x.sonoQ, 0) / q.length : 0; })();
   const sonoDespTot = noites.reduce((a, x) => a + x.sonoDesp, 0);
   const noitesOk = noites.filter(x => x.sonoH >= metaSono() - .5).length;
+  const sonoPct = noites.length ? noites.reduce((a, x) => a + (x.sonoNota || 0), 0) / noites.length : 0;
   const seqReg = sequencia(d => !!DB.dias[d] && !diaVazio(DB.dias[d]));
   const seqHab = sequencia(d => {
     const hs = DB.habitos.filter(h => habDevidoEm(h, d));
@@ -3795,7 +4253,7 @@ function painelPeriodo(ds, opt) {
     };
   });
 
-  return `<div class="card">
+  return `<div class="card larga">
     ${opt.cabec}
     <div class="kpi" style="margin-bottom:9px">
       <div><b style="color:var(--tre)">${treinos}</b><span>treinos</span></div>
@@ -3803,14 +4261,26 @@ function painelPeriodo(ds, opt) {
       <div><b style="color:var(--agua)">${n1(mediaAgua / 1000)}</b><span>água L</span></div>
       <div><b style="color:var(--hab)">${habPrev ? n0(habFeito / habPrev * 100) : 0}%</b><span>hábitos</span></div>
     </div>
-    <div class="mt" style="margin-top:4px"><span>Nota média ${perDo}</span><span>${n0(notaMedia)}/100</span></div>
-    ${bar(notaMedia, 100, notaMedia >= 70 ? 'var(--ac)' : notaMedia >= 40 ? 'var(--warn)' : 'var(--bad)')}
+    <div style="display:flex;gap:14px;align-items:center;margin-top:6px">
+      <div style="text-align:center;flex:none">
+        ${ring(sonoPct / 100, corSono(sonoPct), 66, noites.length ? n0(sonoPct) + '%' : '—')}
+        <div class="mini" style="margin-top:4px">Sono</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="mt"><span>Qualidade do sono</span><span>${noites.length
+          ? n1(sonoMedia) + ' h · ' + plural(noites.length, 'noite', 'noites') : 'sem registro'}</span></div>
+        ${bar(sonoPct, 100, corSono(sonoPct))}
+        <div class="mt" style="margin-top:9px"><span>Nota média ${perDo}</span><span>${n0(notaMedia)}/100</span></div>
+        ${bar(notaMedia, 100, notaMedia >= 70 ? 'var(--ac)' : notaMedia >= 40 ? 'var(--warn)' : 'var(--bad)')}
+      </div>
+    </div>
     <p class="mini" style="margin-top:9px">${comDado.length} de ${passados.length} dias com registro · volume total ${n0(volTot)} kg · escapes ${n0(escapes)} kcal</p>
     ${melhor ? `<div class="row" style="margin-top:6px"><div class="g">
         <div class="t">Melhor dia: ${esc(dLabel(melhor.d))}</div>
         <div class="s">${pior ? 'mais fraco: ' + esc(dLabel(pior.d)) + ' (' + n0(pior.v) + '/100)' : 'único dia avaliado'}</div></div>
       <div class="v">${n0(melhor.v)}/100</div></div>` : ''}
   </div>
+  <div class="colunas tres">
 
   <div class="card">
     <div class="ch"><span class="dot" style="background:var(--ac)"></span><h2>Consistência</h2>
@@ -4003,7 +4473,7 @@ function painelPeriodo(ds, opt) {
         ${[['Carboidrato', mc, m.c, 'var(--carb)'], ['Proteína', mp, m.p, 'var(--prot)'], ['Gordura', mg, m.g, 'var(--gord)']].map(r =>
           `<div><div class="mt"><span>${r[0]}</span><span>${n0(r[1])} / ${n0(r[2])} g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}</div>`;
       })()}
-  </div>`;
+  </div></div>`;
 }
 
 /* =========================================================
@@ -4156,7 +4626,7 @@ SCREENS.hoje = () => {
     <p class="mini">${esc(dLabel(D))} — ${D === today() ? 'lance seus dados do dia em poucos toques.'
       : D > today() ? 'este dia ainda não chegou: o que você lançar aqui já fica guardado para ele.'
       : 'você está editando um dia anterior.'}</p>
-  </div>` + dateStrip();
+  </div>` + dateStrip() + '<div class="colunas">';
 
   /* sono — a noite que acabou de terminar abre o dia */
   h += cardSono();
@@ -4190,9 +4660,12 @@ SCREENS.hoje = () => {
     <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>Dieta</h2>
       <span class="sub">${n0(t.kcal)} / ${n0(m.kcal)} kcal</span></div>
     <div style="display:flex;gap:13px;align-items:center">
-      ${ring(t.kcal / m.kcal, rest < -m.kcal * .05 ? 'var(--warn)' : 'var(--die)', 66, n0(Math.abs(rest)))}
+      ${ring(0, '', 66, n0(Math.abs(rest)), [
+        [(t.kcal - (t.escape || 0)) / m.kcal, rest < -m.kcal * .05 ? 'var(--bad)' : 'var(--die)'],
+        [(t.escape || 0) / m.kcal, 'var(--warn)']])}
       <div style="flex:1">
-        <div class="mini" style="margin-bottom:7px">${rest >= 0 ? 'kcal restantes hoje' : 'kcal acima da meta'}</div>
+        <div class="mini" style="margin-bottom:7px">${rest >= 0 ? 'kcal restantes hoje' : 'kcal acima da meta'}${
+          t.escape ? ' · <span style="color:var(--warn)">' + n0(t.escape) + ' de escape</span>' : ''}</div>
         <div class="macro" style="margin:0;flex-direction:column;gap:7px">
           ${[['C', t.c, m.c, 'var(--carb)'], ['P', t.p, m.p, 'var(--prot)'], ['G', t.g, m.g, 'var(--gord)']].map(r =>
       `<div><div class="mt"><span>${r[0]}</span><span>${n0(r[1])}/${n0(r[2])}g</span></div>${bar(r[1], r[2], r[3])}</div>`).join('')}
@@ -4280,7 +4753,7 @@ SCREENS.hoje = () => {
     <div class="row" data-a="irMeds"><div class="g"><div class="t">${ic('remedio',15)} Meus medicamentos</div>
       <div class="s">${(DB.medicamentos || []).filter(mm => mm.ativo !== false).length} em uso</div></div>
       <div class="v">${ic('dir',16,'op')}</div></div>
-  </div>`;
+  </div></div>`;
   return h;
 };
 /* =========================================================
@@ -4473,11 +4946,13 @@ const TABELAS = [
     up: l => ({
       id: l.id, user_id: SB.user, texto: l.texto, hora: l.hora, data: l.data || null, fim: l.fim || null,
       repetir: l.repetir, dias: l.dias || [], ativo: l.ativo !== false, feito: l.feito || {},
+      cada: l.cada || null, dia_mes: l.diaMes || null, mes_ano: l.mesAno == null ? null : l.mesAno,
       criado: l.criado || null, upd: l.upd
     }),
     down: r => ({
       id: r.id, texto: r.texto, hora: r.hora, data: r.data, fim: r.fim, repetir: r.repetir,
-      dias: r.dias || [], ativo: r.ativo, feito: r.feito || {}, criado: r.criado, alertado: '', upd: r.upd
+      dias: r.dias || [], ativo: r.ativo, feito: r.feito || {}, criado: r.criado, alertado: '',
+      cada: +r.cada || 0, diaMes: +r.dia_mes || 0, mesAno: r.mes_ano == null ? 0 : +r.mes_ano, upd: r.upd
     })
   },
   {
@@ -4504,12 +4979,16 @@ const TABELAS = [
     up: h => ({
       id: h.id, user_id: SB.user, nome: h.nome, icone: h.icone, motivos: h.motivos, inicio: h.inicio, fim: h.fim || null,
       freq_tipo: h.freqTipo, dias: h.dias || [], vezes: h.vezes || 0, medida: h.medida, unidade: h.unidade || '',
-      meta: h.meta || 0, hora: h.hora || null, ativo: h.ativo !== false, encerrado: h.encerrado, upd: h.upd
+      meta: h.meta || 0, hora: h.hora || null, horas: h.horas || [],
+      cada: h.cada || null, dia_mes: h.diaMes || null, mes_ano: h.mesAno == null ? null : h.mesAno,
+      ativo: h.ativo !== false, encerrado: h.encerrado, upd: h.upd
     }),
     down: r => ({
       id: r.id, nome: r.nome, icone: r.icone, motivos: r.motivos, inicio: r.inicio, fim: r.fim,
       freqTipo: r.freq_tipo, dias: r.dias || [], vezes: r.vezes, medida: r.medida, unidade: r.unidade,
-      meta: +r.meta || 0, hora: r.hora || '', ativo: r.ativo, encerrado: r.encerrado, upd: r.upd
+      meta: +r.meta || 0, hora: r.hora || '', horas: r.horas || (r.hora ? [r.hora] : []),
+      cada: +r.cada || 0, diaMes: +r.dia_mes || 0, mesAno: r.mes_ano == null ? 0 : +r.mes_ano,
+      ativo: r.ativo, encerrado: r.encerrado, upd: r.upd
     })
   }
 ];
@@ -4784,6 +5263,10 @@ iniciarSupabase(false);
    confere o que venceu — ao abrir, ao voltar ao app e a cada 30s. */
 registrarSW().then(() => checarLembretes());
 setInterval(checarLembretes, 30000);
+
+/* No APK Android, entrega a agenda ao sistema logo na abertura: é o que
+   faz o aviso chegar mesmo com o app fechado. Fora do APK não faz nada. */
+mandarAgenda();
 </script>
 </body>
 </html>
