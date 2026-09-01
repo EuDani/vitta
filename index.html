@@ -1038,13 +1038,38 @@ function cliqueSuja(b) {
     || !!b.closest('.segs') || b.dataset.sujo === '1';
 }
 
+/* ---------- travar a rolagem de fundo enquanto uma folha/pergunta está aberta ----------
+   `overflow:hidden` no body sozinho não é suficiente no celular: ao focar um
+   campo dentro da folha, o navegador rola a PÁGINA para trazer o campo para
+   cima do teclado. Como a folha é `position:fixed`, ela não acompanha essa
+   rolagem — e ao desfocar (teclado fecha) a página não volta ao lugar,
+   deixando a folha visualmente "fora da tela". Travar o body com
+   `position:fixed` tira a página do fluxo de rolagem por completo: não tem
+   mais o que o navegador rolar, então o problema não acontece.
+   O contador evita destravar cedo demais quando uma pergunta abre POR CIMA
+   de uma folha já aberta (duas travas pedidas, uma só destrava de verdade). */
+let TRAVAS_SCROLL = 0, SCROLL_ANTES = 0;
+function travarScroll() {
+  if (TRAVAS_SCROLL++ > 0) return;           // já travado por outra camada (folha + pergunta)
+  SCROLL_ANTES = window.scrollY || document.documentElement.scrollTop || 0;
+  const b = document.body.style;
+  b.position = 'fixed'; b.top = -SCROLL_ANTES + 'px'; b.left = '0'; b.right = '0'; b.overflow = 'hidden';
+}
+function destravarScroll() {
+  if (TRAVAS_SCROLL <= 0 || --TRAVAS_SCROLL > 0) return;
+  const b = document.body.style;
+  b.position = ''; b.top = ''; b.left = ''; b.right = ''; b.overflow = '';
+  window.scrollTo(0, SCROLL_ANTES);
+}
+
 function sheet(html) {
   SHEET_SUJO = false;
+  const jaAberta = !!$('#modal').innerHTML;
   $('#modal').innerHTML = `<div class="ov" data-ov="1"><div class="sheet">
     <div class="grab"></div>
     <button class="sheet-x" data-a="tentarFechar" aria-label="Fechar">${ic('x', 17)}</button>
     ${html}</div></div>`;
-  document.body.style.overflow = 'hidden';
+  if (!jaAberta) travarScroll();      // sheet() é chamada de novo a cada redesenho da mesma folha
   const s = $('#modal .sheet');
   if (s) {
     s.addEventListener('input', () => SHEET_SUJO = true);
@@ -1059,11 +1084,17 @@ function sheet(html) {
   }
 }
 function fechar() {
+  const havia = !!($('#modal').innerHTML || $('#modal2').innerHTML);
   $('#modal').innerHTML = ''; $('#modal2').innerHTML = '';
-  SHEET_SUJO = false; document.body.style.overflow = '';
+  SHEET_SUJO = false;
+  if (havia) destravarScroll();
 }
 /* Fecha só a pergunta, deixando a folha de baixo viva. */
-function fecharPergunta() { $('#modal2').innerHTML = ''; }
+function fecharPergunta() {
+  const havia = !!$('#modal2').innerHTML;
+  $('#modal2').innerHTML = '';
+  if (havia) destravarScroll();
+}
 
 ACT.tentarFechar = () => {
   if (!SHEET_SUJO) return fechar();
@@ -1078,6 +1109,7 @@ ACT.tentarFechar = () => {
    nunca destrói o formulário que está embaixo.                     */
 function pergunta({ titulo, texto, okLabel, cancelLabel, perigo, cb }) {
   window.__perguntaCb = cb;
+  travarScroll();
   $('#modal2').innerHTML = `<div class="ov ov2" data-ov2="1"><div class="ask">
     <h4>${esc(titulo)}</h4>
     ${texto ? `<p>${esc(texto)}</p>` : ''}
@@ -1857,7 +1889,7 @@ ACT.concluirTreino = () => {
   t.duracao = numOf('t_dur') || t.duracao; tocaDia(D); save();
   toast(t.feito ? 'Treino concluído' : 'Treino reaberto'); render();
 };
-ACT.durTreino = e => { dia(D).treino.duracao = num(e.value); tocaDia(D); save(false); };
+ACT.durTreino = e => { dia(D).treino.duracao = num(e.value); tocaDia(D); save(); };
 ACT.tickEx = e => {
   const t = dia(D).treino, i = t.itens[+e.dataset.i];
   i.feito = !i.feito;
@@ -2077,8 +2109,8 @@ ACT.atvRapida = e => {
 /* --- gerenciar minhas atividades --- */
 FAB.atividades = 'novaAtv';
 ACT.irAtividades = () => { SUB._back = 'treino'; go('atividades', true); SUB._back = 'treino'; };
-ACT.novaAtv = () => { SUB.atvEdit = null; sheetAtvEdit(); };
-ACT.editAtv = e => { SUB.atvEdit = e.dataset.atv; sheetAtvEdit(); };
+ACT.novaAtv = () => { SUB.atvEdit = null; SUB.atvDias = null; sheetAtvEdit(); };
+ACT.editAtv = e => { SUB.atvEdit = e.dataset.atv; SUB.atvDias = null; sheetAtvEdit(); };
 function sheetAtvEdit() {
   const a = SUB.atvEdit ? atvById(SUB.atvEdit) : { nome: '', met: 5, min: 45, int: 1, dias: [] };
   SUB.atvDias = SUB.atvDias || (a.dias || []).slice();
@@ -2155,7 +2187,7 @@ SCREENS.atividades = () => {
 
 /* ---------- tela ---------- */
 FAB.treino = 'fabTreino';
-ACT.fabTreino = () => (dia(D).treino ? ACT.addExtra() : ACT.escolherFicha());
+ACT.fabTreino = () => (treinoDoDia(D) ? ACT.addExtra() : ACT.escolherFicha());
 
 SCREENS.treino = () => {
   const x = dia(D), t = treinoDoDia(D), falta = faltaDoDia(D), sug = fichaDoDia(D);
@@ -3027,8 +3059,12 @@ function horaVenceu(d, hora) {
 }
 function habDias(h, ate = today()) {
   const out = []; let d = h.inicio;
+  /* o teto não pode ser fixo: um hábito com anos de histórico tinha as
+     estatísticas (sequência, adesão) travadas numa janela antiga depois de
+     ~2 anos. O teto aqui só existe para não travar com uma data corrompida. */
+  const guardMax = Math.max(0, diffDias(h.inicio, ate)) + 1;
   let guard = 0;
-  while (d <= ate && guard++ < 800) { if (habDevidoEm(h, d)) out.push(d); d = addDays(d, 1); }
+  while (d <= ate && guard++ < guardMax) { if (habDevidoEm(h, d)) out.push(d); d = addDays(d, 1); }
   return out;
 }
 function habStats(h) {
@@ -3148,6 +3184,8 @@ function restaurarHab() {
 ACT.salvarHabito = () => {
   hCapturar();      // pega os horários que estão na tela, não os do último redesenho
   const nome = valOf('h_nome').trim(); if (!nome) return toast('Dê um nome ao hábito');
+  if (SUB.freqTipo === 'dias' && !(SUB.hdias || []).length) return toast('Escolha ao menos um dia');
+  const existente = SUB.habEdit ? habById(SUB.habEdit) : null;
   const o = {
     nome, icone: SUB.icone, motivos: valOf('h_mot'),
     horas: (SUB.hhoras || []).filter(Boolean).sort(),
@@ -3157,9 +3195,10 @@ ACT.salvarHabito = () => {
     cada: clamp(Math.round(numOf('h_cada') || 2), 1, 365),
     diaMes: clamp(Math.round(numOf('h_diames') || parseD(valOf('h_ini') || today()).getDate()), 1, 31),
     mesAno: Math.max(0, Math.min(11, Math.round(num(valOf('h_mesano', 0))))),
-    medida: SUB.medida, unidade: valOf('h_un'), meta: numOf('h_meta'), ativo: true, upd: nowISO()
+    medida: SUB.medida, unidade: valOf('h_un'), meta: numOf('h_meta'),
+    ativo: existente ? existente.ativo !== false : true, upd: nowISO()
   };
-  if (SUB.habEdit) Object.assign(habById(SUB.habEdit), o);
+  if (existente) Object.assign(existente, o);
   else DB.habitos.push(Object.assign({ id: uid(), encerrado: null }, o));
   save(); SUB.tmp = null; ACT.fecharHab(); render();
 };
@@ -3428,6 +3467,30 @@ function lemAtrasado(l, d) {
   return agora.getHours() * 60 + agora.getMinutes() > minutos(l.hora);
 }
 
+/* ---------- aviso com antecedência ----------
+   Além do aviso na hora marcada, o lembrete pode ter um ou mais avisos
+   extras alguns minutos antes — "me lembrar 5 minutos antes" para se
+   preparar, sair de casa, etc. Cada valor em l.antecedencia é quantos
+   minutos antes da hora principal aquele aviso extra dispara. */
+const ANTECEDENCIAS = [[5, '5 min antes'], [10, '10 min antes'], [15, '15 min antes'],
+  [30, '30 min antes'], [60, '1 hora antes']];
+const rotuloAntecedencia = m => m >= 60 ? (m / 60) + (m === 60 ? ' hora' : ' horas') + ' antes' : m + ' min antes';
+const textoAntecedencias = l => (l.antecedencia || []).length
+  ? ' · aviso ' + l.antecedencia.slice().sort((a, b) => a - b).map(m => m >= 60 ? (m / 60) + 'h' : m + 'min').join(' e ') + ' antes'
+  : '';
+/* horário de um aviso, deslocado `min` minutos antes de `hora` — nunca antes da meia-noite */
+function horaMenos(hora, min) {
+  const total = Math.max(0, minutos(hora) - (min || 0));
+  return pad(Math.floor(total / 60)) + ':' + pad(total % 60);
+}
+/* todos os instantes de aviso de um lembrete no dia, em minutos desde a
+   meia-noite, do mais cedo (antecedência maior) ao mais tarde (a hora em si) */
+function instantesLem(l) {
+  const base = minutos(l.hora);
+  return [...new Set([0, ...(l.antecedencia || [])])]
+    .map(off => Math.max(0, base - off)).sort((a, b) => a - b);
+}
+
 /* =========================================================
    AVISOS NO SISTEMA
    Quem exibe a notificação é o service worker (sw.js), e não a
@@ -3501,11 +3564,16 @@ function checarLembretes() {
 
   (DB.lembretes || []).forEach(l => {
     if (!lemDevidoEm(l, d) || lemFeito(l, d)) return;
-    if (mn < minutos(l.hora)) return;
-    const marca = d + 'T' + l.hora;
+    /* pode haver mais de um instante vencido (o aviso de antecedência e o
+       da hora em si, se o app ficou fechado no meio) — avisa só o mais
+       recente, senão reabrir o app dispara os dois de uma vez. */
+    const venceu = instantesLem(l).filter(mi => mn >= mi);
+    if (!venceu.length) return;
+    const mi = venceu[venceu.length - 1], marca = d + 'T' + mi;
     if (l.alertado === marca) return;
     l.alertado = marca; mudou = true;
-    avisar('Lembrete', l.texto, 'lem-' + l.id);
+    const antes = minutos(l.hora) - mi;
+    avisar(antes > 0 ? `Lembrete em ${antes >= 60 ? (antes / 60) + 'h' : antes + ' min'}` : 'Lembrete', l.texto, 'lem-' + l.id);
   });
 
   (DB.habitos || []).forEach(h => {
@@ -3550,25 +3618,42 @@ function checarLembretes() {
    ========================================================= */
 function agendaParaAndroid() {
   const itens = [];
-  const diasDe = cfg => cfg.tipo === 'dias' ? (cfg.dias || []) : null;
+  /* Carrega a regra de repetição inteira — não só "dias da semana". Sem
+     diaMes/mesAno/cada/inicio/fim o Android não tem como saber que um
+     lembrete anual só vale um dia por ano: ele caía no "sem dias = todo
+     dia" e disparava diariamente, e um medicamento com tratamento
+     encerrado (fim no passado) nunca parava de avisar. */
+  const add = (id, hora, titulo, corpo, cfg) => {
+    itens.push({
+      id, hora, titulo, corpo,
+      tipo: cfg.tipo || 'diario',
+      dias: cfg.tipo === 'dias' ? (cfg.dias || []) : null,
+      diaMes: cfg.diaMes != null ? cfg.diaMes : null,
+      mesAno: cfg.mesAno != null ? cfg.mesAno : null,
+      cada: cfg.cada != null ? cfg.cada : null,
+      inicio: cfg.inicio || null,
+      fim: cfg.fim || null
+    });
+  };
 
   (DB.lembretes || []).filter(l => l.ativo !== false && l.repetir !== 'uma').forEach(l => {
-    itens.push({ id: 'lem-' + l.id, hora: l.hora, titulo: 'Lembrete', corpo: l.texto,
-      dias: diasDe({ tipo: l.repetir, dias: l.dias }) });
+    const cfg = { tipo: l.repetir, dias: l.dias, diaMes: l.diaMes, mesAno: l.mesAno, cada: l.cada, inicio: lemInicio(l), fim: l.fim };
+    add('lem-' + l.id, l.hora, 'Lembrete', l.texto, cfg);
+    (l.antecedencia || []).forEach(min => add('lem-' + l.id + '-' + min, horaMenos(l.hora, min),
+      `Lembrete em ${min >= 60 ? (min / 60) + 'h' : min + ' min'}`, l.texto, cfg));
   });
   (DB.habitos || []).filter(h => h.ativo !== false).forEach(h => {
-    horasHab(h).forEach(hora => itens.push({
-      id: 'hab-' + h.id + '-' + hora, hora, titulo: 'Hábito de hoje',
-      corpo: h.nome + (horasHab(h).length > 1 ? ` — check das ${hora}.` : ' — ainda falta o check de hoje.'),
-      dias: diasDe({ tipo: h.freqTipo, dias: h.dias })
-    }));
+    horasHab(h).forEach(hora => add('hab-' + h.id + '-' + hora, hora, 'Hábito de hoje',
+      h.nome + (horasHab(h).length > 1 ? ` — check das ${hora}.` : ' — ainda falta o check de hoje.'),
+      /* 'semana' (X vezes por semana) não tem dia fixo: repeteEm() trata como
+         todo dia, então o agendamento nativo faz o mesmo. */
+      { tipo: h.freqTipo === 'semana' ? 'diario' : h.freqTipo, dias: h.dias, diaMes: h.diaMes,
+        mesAno: h.mesAno, cada: h.cada, inicio: h.inicio, fim: h.fim }));
   });
   (DB.medicamentos || []).filter(m => m.ativo !== false && m.freq !== 'necessario').forEach(m => {
-    (m.horarios || []).forEach(hora => itens.push({
-      id: 'med-' + m.id + '-' + hora, hora, titulo: 'Hora do medicamento',
-      corpo: m.nome + ' — ' + medRotulo(m) + (m.obs ? ' (' + m.obs + ')' : ''),
-      dias: diasDe({ tipo: m.freq, dias: m.dias })
-    }));
+    (m.horarios || []).forEach(hora => add('med-' + m.id + '-' + hora, hora, 'Hora do medicamento',
+      m.nome + ' — ' + medRotulo(m) + (m.obs ? ' (' + m.obs + ')' : ''),
+      { tipo: m.freq, dias: m.dias, inicio: m.inicio, fim: m.fim }));
   });
   return itens.filter(i => /^\d{2}:\d{2}$/.test(i.hora || ''));
 }
@@ -3583,10 +3668,11 @@ function mandarAgenda() {
 
 /* ---------- criar / editar ---------- */
 FAB.lembretes = 'novoLembrete';
-ACT.novoLembrete = () => { SUB.lemEdit = null; SUB.lemRep = 'uma'; SUB.lemDias = [1, 2, 3, 4, 5]; sheetLem(); };
+ACT.novoLembrete = () => { SUB.lemEdit = null; SUB.lemRep = 'uma'; SUB.lemDias = [1, 2, 3, 4, 5]; SUB.lemAntes = []; sheetLem(); };
 ACT.editLembrete = e => {
   const l = DB.lembretes.find(x => x.id === e.dataset.l);
-  SUB.lemEdit = l.id; SUB.lemRep = l.repetir; SUB.lemDias = (l.dias || []).slice(); sheetLem();
+  SUB.lemEdit = l.id; SUB.lemRep = l.repetir; SUB.lemDias = (l.dias || []).slice();
+  SUB.lemAntes = (l.antecedencia || []).slice(); sheetLem();
 };
 function sheetLem() {
   const l = SUB.lemEdit ? DB.lembretes.find(x => x.id === SUB.lemEdit)
@@ -3619,6 +3705,11 @@ function sheetLem() {
     </div>` : ''}
     ${SUB.lemRep !== 'uma' ? `<div class="f"><label>Parar em (opcional)</label>
       <input class="in" id="lm_f" type="date" value="${esc(l.fim || '')}"></div>` : ''}
+    <div class="f"><label>Avisar também com antecedência (opcional)</label>
+      <div class="chiprow">${ANTECEDENCIAS.map(([m, t]) =>
+        `<button class="chip ${SUB.lemAntes.includes(m) ? 'on' : ''}" data-a="lemAntes" data-m="${m}">${t}</button>`).join('')}</div>
+      <p class="mini" style="margin-top:6px">Além do aviso na hora marcada, chega um aviso extra antes —
+      bom para sair de casa ou se preparar com tempo.</p></div>
     ${permNotif() === 'granted' ? '' : `<div class="warnbox">As notificações do sistema estão
       ${permNotif() === 'denied' ? 'bloqueadas nas permissões deste site' : 'desligadas'}.
       O lembrete continua aparecendo na tela Hoje.</div>`}
@@ -3640,19 +3731,25 @@ ACT.lemDia = e => {
   lemCapturar(); const d = +e.dataset.d, i = SUB.lemDias.indexOf(d);
   i < 0 ? SUB.lemDias.push(d) : SUB.lemDias.splice(i, 1); sheetLem(); lemRestaurar();
 };
+ACT.lemAntes = e => {
+  lemCapturar(); const m = +e.dataset.m, i = SUB.lemAntes.indexOf(m);
+  i < 0 ? SUB.lemAntes.push(m) : SUB.lemAntes.splice(i, 1); sheetLem(); lemRestaurar();
+};
 ACT.salvarLembrete = () => {
   const texto = valOf('lm_t').trim(); if (!texto) return toast('Escreva o lembrete');
   if (SUB.lemRep === 'dias' && !SUB.lemDias.length) return toast('Escolha ao menos um dia');
   const base = valOf('lm_d') || today();
+  const existente = SUB.lemEdit ? DB.lembretes.find(x => x.id === SUB.lemEdit) : null;
   const o = {
     texto, hora: valOf('lm_h') || '08:00', data: base,
     fim: valOf('lm_f') || null, repetir: SUB.lemRep, dias: SUB.lemDias,
     cada: clamp(Math.round(numOf('lm_cada') || 2), 1, 365),
     diaMes: clamp(Math.round(numOf('lm_diames') || parseD(base).getDate()), 1, 31),
     mesAno: Math.max(0, Math.min(11, Math.round(num(valOf('lm_mesano', parseD(base).getMonth()))))),
-    ativo: true, upd: nowISO()
+    antecedencia: (SUB.lemAntes || []).slice().sort((a, b) => a - b),
+    ativo: existente ? existente.ativo !== false : true, upd: nowISO()
   };
-  if (SUB.lemEdit) Object.assign(DB.lembretes.find(x => x.id === SUB.lemEdit), o);
+  if (existente) Object.assign(existente, o);
   else DB.lembretes.push(Object.assign({ id: uid(), criado: today(), feito: {}, alertado: '' }, o));
   SUB.lemTmp = null; save(); fechar(); render();
   if (permNotif() === 'default') ACT.pedirNotif();
@@ -3681,7 +3778,7 @@ function linhaLem(l, d, compacto) {
     <button class="tick ${feito ? 'on' : ''}" data-a="lemTick" data-l="${l.id}">${ic('check')}</button>
     <div class="g" ${compacto ? '' : `data-a="editLembrete" data-l="${l.id}"`}>
       <div class="t wrap">${esc(l.texto)}</div>
-      <div class="s">${esc(l.hora)} · ${esc(rep)}
+      <div class="s">${esc(l.hora)} · ${esc(rep)}${textoAntecedencias(l)}
         ${atrasado ? '<span class="pill bad">atrasado</span>' : ''}
         ${l.ativo === false ? '<span class="pill mut">pausado</span>' : ''}</div>
     </div>
@@ -3919,14 +4016,18 @@ ACT.salvarMed = () => {
   const nome = valOf('md_nome').trim();
   if (!nome) return toast('Dê um nome ao medicamento');
   if (SUB.medFreq === 'dias' && !SUB.medDias.length) return toast('Escolha ao menos um dia');
+  const inicio = valOf('md_ini') || today(), fim = valOf('md_fim') || null;
+  if (fim && fim < inicio) return toast('A data de fim não pode ser antes do início');
+  const existente = SUB.medId ? medById(SUB.medId) : null;
   const o = {
     nome, tipo: SUB.medTipo, dose: numOf('md_dose') || 1, unidade: valOf('md_un'),
     freq: SUB.medFreq, dias: SUB.medFreq === 'dias' ? SUB.medDias : [],
     horarios: SUB.medFreq === 'necessario' ? [] : SUB.medHoras.filter(Boolean),
-    inicio: valOf('md_ini') || today(), fim: valOf('md_fim') || null,
-    obs: valOf('md_obs'), motivo: valOf('md_motivo').trim(), ativo: true, upd: nowISO()
+    inicio, fim,
+    obs: valOf('md_obs'), motivo: valOf('md_motivo').trim(),
+    ativo: existente ? existente.ativo !== false : true, upd: nowISO()
   };
-  if (SUB.medId) Object.assign(medById(SUB.medId), o);
+  if (existente) Object.assign(existente, o);
   else (DB.medicamentos = DB.medicamentos || []).push(Object.assign({ id: uid() }, o));
   SUB.medTmp = null; save(); fechar(); render();
 };
@@ -4603,6 +4704,25 @@ function corVariacao(delta) {
   return 'var(--tx2)';
 }
 const sinal = v => (v > 0 ? '+' : '') + n1(v);
+/* Mesma lógica de corVariacao, para o balanço calórico: déficit só é "bom"
+   (verde) para quem quer emagrecer, e superávit só é "bom" para quem quer
+   ganhar massa. Sem isto, um dia em déficit aparecia sempre em verde,
+   inclusive para quem está tentando ganhar peso. */
+function balancoBom(bal, limiar = 0) {
+  if (Math.abs(bal) <= limiar) return null;
+  const obj = DB.perfil.objetivo, deficit = bal < 0;
+  if (obj === 'perder') return deficit;
+  if (obj === 'ganhar') return !deficit;
+  return null;                    // manter: nenhuma direção é "o objetivo"
+}
+const pillBalanco = (bal, limiar = 0) => {
+  const b = balancoBom(bal, limiar);
+  return b === true ? 'ok' : b === false ? 'esc' : 'mut';
+};
+const corBalanco = (bal, limiar = 0) => {
+  const b = balancoBom(bal, limiar);
+  return b === false ? 'var(--warn)' : b === true ? 'var(--ac)' : 'var(--tx2)';
+};
 
 /* ---------- registrar ---------- */
 ACT.pesar = e => {
@@ -4648,14 +4768,20 @@ ACT.salvarPesagem = () => {
   /* A pesagem mais recente é a que vale para a TMB. Sem isto, o peso
      das medidas envelhece e as metas de caloria vão ficando erradas. */
   const u = ultimaPesagem();
-  if (u && u.d === d) DB.perfil = Object.assign(DB.perfil, { peso: x.peso, upd: nowISO() });
+  if (u && DB.perfil.peso !== u.kg) DB.perfil = Object.assign(DB.perfil, { peso: u.kg, upd: nowISO() });
   save(); fechar(); render();
   const v = variacaoPeso({ d, kg: x.peso });
   toast(v ? `Pesagem salva — ${sinal(v.kg)} kg desde ${dLabel(v.de.d)}` : 'Pesagem salva');
 };
 ACT.apagarPesagem = e => confirmar('Apagar esta pesagem?', () => {
-  const x = dia(e.dataset.d); x.peso = null;
-  tocaDia(e.dataset.d); save(); fechar(); render();
+  const d = e.dataset.d, x = dia(d);
+  x.peso = null;
+  tocaDia(d);
+  /* mesma regra de salvarPesagem: se a apagada era a mais recente, o
+     perfil precisa voltar a apontar para a pesagem que sobrou. */
+  const u = ultimaPesagem();
+  if (u && DB.perfil.peso !== u.kg) DB.perfil = Object.assign(DB.perfil, { peso: u.kg, upd: nowISO() });
+  save(); fechar(); render();
 });
 ACT.irPesagens = () => { const b = VIEW; SUB = { _back: b }; go('pesagens', true); };
 ACT.pDiaPeso = e => {
@@ -4958,7 +5084,7 @@ function resumoDia() {
 
   <div class="card">
     <div class="ch"><h2>Balanço energético</h2>
-      <span class="pill ${bal < -50 ? 'ok' : bal > 50 ? 'esc' : 'mut'}">${bal > 0 ? '+' : ''}${n0(bal)} kcal</span></div>
+      <span class="pill ${pillBalanco(bal, 50)}">${bal > 0 ? '+' : ''}${n0(bal)} kcal</span></div>
     <div class="kpi">
       <div><b style="color:var(--die)">${n0(t.kcal)}</b><span>consumido</span></div>
       <div><b style="color:var(--tre)">${n0(gd.total)}</b><span>gasto est.</span></div>
@@ -5050,7 +5176,7 @@ ACT.salvarPeso = e => {
   const x = dia(D); x.peso = kg ? Math.round(kg * 10) / 10 : null; tocaDia(D);
   /* mesma regra da folha de pesagem: a mais recente é a que vale para a TMB */
   const u = typeof ultimaPesagem === 'function' ? ultimaPesagem() : null;
-  if (u && u.d === D) DB.perfil = Object.assign(DB.perfil, { peso: u.kg, upd: nowISO() });
+  if (u && DB.perfil.peso !== u.kg) DB.perfil = Object.assign(DB.perfil, { peso: u.kg, upd: nowISO() });
   save(); toast(kg ? 'Peso registrado' : 'Peso apagado');
 };
 ACT.salvarNota = e => { const x = dia(D); x.nota = e.value; tocaDia(D); save(); };
@@ -5251,11 +5377,11 @@ function painelPeriodo(ds, opt) {
 
   <div class="card">
     <div class="ch"><span class="dot" style="background:var(--die)"></span><h2>Balanço do período</h2>
-      <span class="pill ${balTot < 0 ? 'ok' : balTot > 0 ? 'esc' : 'mut'}">${balTot > 0 ? '+' : ''}${n0(balTot)} kcal</span></div>
+      <span class="pill ${pillBalanco(balTot)}">${balTot > 0 ? '+' : ''}${n0(balTot)} kcal</span></div>
     <div class="kpi">
       <div><b style="color:var(--die)">${n0(kcalTot)}</b><span>kcal consumidas</span></div>
       <div><b style="color:var(--tre)">${n0(gastoTot)}</b><span>kcal gastas</span></div>
-      <div><b style="color:${balTot < 0 ? 'var(--ac)' : 'var(--warn)'}">${kgEst > 0 ? '+' : ''}${n1(kgEst)}</b><span>kg estimados</span></div>
+      <div><b style="color:${corBalanco(balTot)}">${kgEst > 0 ? '+' : ''}${n1(kgEst)}</b><span>kg estimados</span></div>
     </div>
     <p class="mini" style="margin-top:9px">Soma apenas os ${comDado.length} dia(s) com registro.
     A estimativa usa 7700 kcal por quilo de gordura — é uma referência, não uma promessa:
@@ -5460,7 +5586,12 @@ function painelPeriodo(ds, opt) {
    ========================================================= */
 const csvNum = v => (v == null || v === '' ? '' : String(v).replace('.', ','));
 const csvTxt = v => {
-  const t = String(v == null ? '' : v);
+  let t = String(v == null ? '' : v);
+  /* Excel/Sheets tratam uma célula que começa com =, +, - ou @ como fórmula.
+     Sem isto, uma anotação livre ("=HYPERLINK(...)") vira código executável
+     para quem abre a planilha — a apóstrofe na frente neutraliza sem mudar
+     o texto visível. */
+  if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
   return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
 };
 
@@ -5558,7 +5689,7 @@ function arquivoPlanilha() {
   const ds = periodoDias(SUB.expTipo);
   const nome = 'vitta-' + (SUB.expTipo === 'tudo' ? 'historico' :
     SUB.expTipo === '30' ? 'ultimos-30-dias' :
-    SUB.expTipo === 'sem' ? 'semana-' + semanaAtual() : (SUB.mes || today().slice(0, 7))) + '.csv';
+    SUB.expTipo === 'sem' ? 'semana-' + semanaAtual() : (SUB.mes || D.slice(0, 7))) + '.csv';
   return { nome, texto: '\ufeff' + planilhaDias(ds) };
 }
 ACT.planilhaBaixar = () => {
@@ -6128,12 +6259,13 @@ const TABELAS = [
       id: l.id, user_id: SB.user, texto: l.texto, hora: l.hora, data: l.data || null, fim: l.fim || null,
       repetir: l.repetir, dias: l.dias || [], ativo: l.ativo !== false, feito: l.feito || {},
       cada: l.cada || null, dia_mes: l.diaMes || null, mes_ano: l.mesAno == null ? null : l.mesAno,
-      criado: l.criado || null, upd: l.upd
+      antecedencia: l.antecedencia || [], criado: l.criado || null, upd: l.upd
     }),
     down: r => ({
       id: r.id, texto: r.texto, hora: r.hora, data: r.data, fim: r.fim, repetir: r.repetir,
       dias: r.dias || [], ativo: r.ativo, feito: r.feito || {}, criado: r.criado, alertado: '',
-      cada: +r.cada || 0, diaMes: +r.dia_mes || 0, mesAno: r.mes_ano == null ? 0 : +r.mes_ano, upd: r.upd
+      cada: +r.cada || 0, diaMes: +r.dia_mes || 0, mesAno: r.mes_ano == null ? 0 : +r.mes_ano,
+      antecedencia: r.antecedencia || [], upd: r.upd
     })
   },
   {
