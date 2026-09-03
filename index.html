@@ -322,6 +322,17 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .sheet-x:active{transform:scale(.94)}
 .sheet h3{padding-right:40px}
 
+/* ---------- formulário em página cheia (dieta/exercício) ---------- */
+.ov.pagina{background:var(--bg);backdrop-filter:none;align-items:stretch;animation:none}
+.sheet.pagina{width:100%;max-width:none;height:100%;max-height:none;overflow-y:auto;
+  background:var(--bg);border:0;border-radius:0;animation:none;
+  padding:calc(var(--sat) + 10px) 16px calc(24px + var(--sab))}
+.pagina-voltar{position:static;margin-bottom:14px}
+@media (min-width:960px){
+  .ov.pagina{padding:0}
+  .sheet.pagina{max-width:640px;margin:0 auto;padding-top:30px}
+}
+
 /* pergunta curta, desenhada por cima da folha */
 .ov2{z-index:70;align-items:center;padding:20px;background:rgba(30,40,24,.42)}
 .ask{width:100%;max-width:400px;background:var(--bg2);border:1px solid var(--line2);
@@ -1075,13 +1086,23 @@ function destravarScroll() {
   window.scrollTo(0, SCROLL_ANTES);
 }
 
-function sheet(html) {
+/* Formulários de dieta e exercício abrem como página cheia (modo
+   'pagina'): mais espaço para listas e grades de campos, e a moldura
+   de tela — voltar no canto, sem cantos arredondados — reforça que é
+   um passo da tarefa, não um pop-up por cima dela. O resto do app
+   continua na folha de baixo de sempre. */
+function sheet(html, modo) {
   SHEET_SUJO = false;
   const jaAberta = !!$('#modal').innerHTML;
-  $('#modal').innerHTML = `<div class="ov" data-ov="1"><div class="sheet">
-    <div class="grab"></div>
-    <button class="sheet-x" data-a="tentarFechar" aria-label="Fechar">${ic('x', 17)}</button>
-    ${html}</div></div>`;
+  const pagina = modo === 'pagina';
+  $('#modal').innerHTML = pagina
+    ? `<div class="ov pagina" data-ov="1"><div class="sheet pagina">
+        <button class="iconbtn pagina-voltar" data-a="tentarFechar" aria-label="Voltar">${ic('esq', 20)}</button>
+        ${html}</div></div>`
+    : `<div class="ov" data-ov="1"><div class="sheet">
+        <div class="grab"></div>
+        <button class="sheet-x" data-a="tentarFechar" aria-label="Fechar">${ic('x', 17)}</button>
+        ${html}</div></div>`;
   if (!jaAberta) travarScroll();      // sheet() é chamada de novo a cada redesenho da mesma folha
   const s = $('#modal .sheet');
   if (s) {
@@ -1624,7 +1645,7 @@ ACT.ajustesHoje = () => {
       <input class="in" id="aj_a" type="number" inputmode="numeric" value="${x.ajusteAgua || ''}" placeholder="0" data-inp="ajPrev"></div>
     <div class="okbox" id="aj_prev"></div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
-      <button class="btn pri" data-a="ajSalvar">Salvar</button></div>`);
+      <button class="btn pri" data-a="ajSalvar">Salvar</button></div>`, 'pagina');
   ACT.ajPrev();
 };
 ACT.ajPrev = () => {
@@ -1869,7 +1890,7 @@ function sheetFalta() {
     <div class="f"><label>Quer detalhar? (opcional)</label>
       <textarea class="in" id="fa_obs" placeholder="ex: dormi 4h e acordei quebrado">${esc(SUB.motivoTxt || '')}</textarea></div>
     <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
-      <button class="btn pri" data-a="salvarFalta">Registrar falta</button></div>`);
+      <button class="btn pri" data-a="salvarFalta">Registrar falta</button></div>`, 'pagina');
 }
 ACT.faltaMotivo = e => {
   const el = document.getElementById('fa_obs'); if (el) SUB.motivoTxt = el.value;
@@ -1901,7 +1922,7 @@ ACT.escolherFicha = () => {
         ${esc(f.nome)} <span style="color:var(--tx3);font-weight:500">· ${(f.exercicios || []).length} ex.</span></button>`).join('')
       : `<div class="empty"><b>${ic('ficha')}</b>Você ainda não montou nenhuma ficha.</div>`}
     <button class="btn full" style="margin-bottom:8px" data-a="iniciarTreino" data-f="">${ic('meta',15)} Treino livre (sem ficha)</button>
-    <button class="btn gh full" data-a="irFichas">${ic('mais',15)} Montar uma ficha</button>`);
+    <button class="btn gh full" data-a="irFichas">${ic('mais',15)} Montar uma ficha</button>`, 'pagina');
 };
 ACT.irFichas = () => { fechar(); SUB._back = 'treino'; go('fichas', true); };
 ACT.iniciarTreino = e => {
@@ -1970,7 +1991,7 @@ function sheetEx() {
       <button class="btn" data-a="fechar">Cancelar</button>
       <button class="btn pri" data-a="salvarEx" data-n="${sets.length}">Salvar séries</button>
     </div>
-    ${i.extra ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delEx">Remover exercício</button>` : ''}`);
+    ${i.extra ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delEx">Remover exercício</button>` : ''}`, 'pagina');
 }
 function sheetExCardio(i) {
   const s = i.sets[0] || { dur: i.alvo ? i.alvo.dur : '', dist: i.alvo ? i.alvo.dist : '', vel: i.alvo ? i.alvo.vel : '' };
@@ -1986,7 +2007,7 @@ function sheetExCardio(i) {
       <button class="btn" data-a="fechar">Cancelar</button>
       <button class="btn pri" data-a="salvarExCardio">Salvar</button>
     </div>
-    ${i.extra ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delEx">Remover exercício</button>` : ''}`);
+    ${i.extra ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delEx">Remover exercício</button>` : ''}`, 'pagina');
 }
 ACT.salvarExCardio = () => {
   const t = dia(D).treino, i = t.itens[SUB.exI];
@@ -2055,7 +2076,7 @@ function sheetExtra() {
       <div class="f" style="${cardio ? 'grid-column:1/-1' : ''}"><label>Observação</label><input class="in" id="e_o" value="${esc(t.obs || '')}" placeholder="${cardio ? 'ritmo, inclinação…' : 'cadência, técnica…'}"></div>
     </div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
-    <button class="btn pri" data-a="salvarExtra">Adicionar</button></div>`);
+    <button class="btn pri" data-a="salvarExtra">Adicionar</button></div>`, 'pagina');
 }
 ACT.salvarExtra = () => {
   extraCapturar();
@@ -2173,7 +2194,7 @@ function sheetAtv() {
       <p class="mini" style="margin-top:6px">Nos dias marcados ela aparece como sugestão na tela de Exercícios, pronta para lançar.</p></div>` : ''}
 
     <div class="btnrow" style="margin-top:12px"><button class="btn" data-a="fechar">Cancelar</button>
-      <button class="btn pri" data-a="salvarEsporte">Lançar no dia</button></div>`);
+      <button class="btn pri" data-a="salvarEsporte">Lançar no dia</button></div>`, 'pagina');
 }
 const kcalEsporte2 = (met, min, peso = num(DB.perfil.peso)) => Math.round(met * 3.5 * peso / 200 * min);
 
@@ -2237,7 +2258,7 @@ function sheetAtvEdit() {
       <p class="mini" style="margin-top:6px">Sem nenhum dia marcado ela continua na lista, só não vira sugestão.</p></div>
     <div class="btnrow"><button class="btn" data-a="fecharAtv">Cancelar</button>
       <button class="btn pri" data-a="salvarAtv">Salvar</button></div>
-    ${SUB.atvEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delAtv" data-atv="${SUB.atvEdit}">Excluir atividade</button>` : ''}`);
+    ${SUB.atvEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delAtv" data-atv="${SUB.atvEdit}">Excluir atividade</button>` : ''}`, 'pagina');
 }
 ACT.fecharAtv = () => { SUB.atvDias = null; fechar(); };
 ACT.aeDia = e => {
@@ -2519,7 +2540,7 @@ function sheetFEx() {
     </div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
       <button class="btn pri" data-a="fSalvarEx">Salvar</button></div>
-    ${SUB.exEdit >= 0 ? `<button class="btn danger full sm" style="margin-top:9px" data-a="fDelEx">Excluir exercício</button>` : ''}`);
+    ${SUB.exEdit >= 0 ? `<button class="btn danger full sm" style="margin-top:9px" data-a="fDelEx">Excluir exercício</button>` : ''}`, 'pagina');
 }
 ACT.fSalvarEx = () => {
   fExCapturar();
@@ -2598,7 +2619,7 @@ ACT.aguaCustom = () => {
   sheet(`<h3>Registrar água</h3><p class="hint">Informe a quantidade em ml.</p>
     <div class="f"><input class="in" id="ag_v" type="number" inputmode="numeric" value="250"></div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
-    <button class="btn pri" data-a="aguaSalvar">Adicionar</button></div>`);
+    <button class="btn pri" data-a="aguaSalvar">Adicionar</button></div>`, 'pagina');
 };
 ACT.aguaSalvar = () => { const x = dia(D); x.agua = Math.max(0, (x.agua || 0) + numOf('ag_v')); tocaDia(D); save(); fechar(); render(); };
 
@@ -2656,7 +2677,7 @@ function sheetAdd(keepFocus) {
     <div class="segs" style="margin-bottom:12px">
       ${[['plano', 'Do plano'], ['alimento', 'Alimento'], ['livre', 'Livre']].map(t =>
     `<button class="${aba === t[0] ? 'on' : ''}" data-a="abaAdd" data-t="${t[0]}">${t[1]}</button>`).join('')}
-    </div>${corpo}`);
+    </div>${corpo}`, 'pagina');
   livreRestaurar();
   if (keepFocus) { const el = document.getElementById('q_alim'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
 }
@@ -2693,7 +2714,7 @@ ACT.addAlim = e => {
       <input class="in" id="qa_v" type="number" inputmode="decimal" value="${a.porcao}" data-inp="qaPrev"></div>
     <div class="okbox" id="qa_prev"></div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
-      <button class="btn pri" data-a="addAlimOk" data-i="${a.id}">Lançar</button></div>`);
+      <button class="btn pri" data-a="addAlimOk" data-i="${a.id}">Lançar</button></div>`, 'pagina');
   SUB.alimId = a.id; ACT.qaPrev();
 };
 ACT.qaPrev = () => {
@@ -2821,7 +2842,7 @@ function sheetItem() {
     <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
       <button class="btn pri" data-a="salvarItem">Salvar</button></div>
     <button class="btn full sm" style="margin-top:9px" data-a="salvarDuplicar">${ic('mais',14)} Salvar e duplicar lançamento</button>
-    <button class="btn danger full sm" style="margin-top:9px" data-a="delItemSheet">Excluir este item</button>`);
+    <button class="btn danger full sm" style="margin-top:9px" data-a="delItemSheet">Excluir este item</button>`, 'pagina');
 }
 ACT.salvarItem = () => {
   const it = itemEdit(); if (!it) return fechar();
@@ -2985,7 +3006,7 @@ ACT.novoAlim = e => {
     </div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
       <button class="btn pri" data-a="salvarAlim" data-i="${id || ''}">Salvar</button></div>
-    ${id ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delAlim" data-i="${id}">Excluir</button>` : ''}`);
+    ${id ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delAlim" data-i="${id}">Excluir</button>` : ''}`, 'pagina');
 };
 ACT.salvarAlim = e => {
   const nome = valOf('a_nome').trim(); if (!nome) return toast('Informe o nome');
@@ -3046,7 +3067,7 @@ ACT.prAddItem = () => {
   prCapturar(); const q = '';
   sheet(`<h3>Adicionar alimento ao prato</h3>
     <input class="in" id="q_alim2" placeholder="Buscar…" data-inp="prBusca" autocomplete="off">
-    <div id="pr_lista" style="max-height:46vh;overflow-y:auto;margin-top:8px">${listaPrAlim(q)}</div>`);
+    <div id="pr_lista" style="max-height:46vh;overflow-y:auto;margin-top:8px">${listaPrAlim(q)}</div>`, 'pagina');
 };
 ACT.prBusca = e => { document.getElementById('pr_lista').innerHTML = listaPrAlim(e.value); };
 function listaPrAlim(q) {
@@ -3061,7 +3082,7 @@ ACT.prPickAlim = e => {
   sheet(`<h3>${esc(a.nome)}</h3><p class="hint">Quanto entra neste prato?</p>
     <div class="f"><label>Quantidade (${a.un})</label><input class="in" id="pi_q" type="number" inputmode="decimal" value="${a.porcao}"></div>
     <div class="btnrow"><button class="btn" data-a="prAddItem">Voltar</button>
-      <button class="btn pri" data-a="prAddOk">Adicionar</button></div>`);
+      <button class="btn pri" data-a="prAddOk">Adicionar</button></div>`, 'pagina');
 };
 ACT.prAddOk = () => {
   const p = pratoAtual(); p.itens.push({ alimentoId: SUB.alimId, qtd: numOf('pi_q') });
