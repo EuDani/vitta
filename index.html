@@ -270,6 +270,10 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .bar{height:7px;border-radius:99px;background:var(--bg2);overflow:hidden;border:1px solid var(--line)}
 .bar i{display:block;height:100%;border-radius:99px;background:var(--ac);transition:width .35s}
 .bar.thin{height:5px}
+/* ---------- treino ao vivo ---------- */
+.card.treino-live{padding-top:17px}
+.treino-timer{text-align:center;font-family:var(--ff-tit);font-size:40px;font-weight:700;
+  letter-spacing:-1px;line-height:1.1;font-variant-numeric:tabular-nums;margin-top:2px}
 .kpi{display:flex;gap:9px}
 .kpi>div{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:10px 9px;text-align:center}
 .kpi b{display:block;font-size:17px;font-weight:750;letter-spacing:-.4px}
@@ -661,6 +665,8 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dLabel = s => { const d = parseD(s); return `${DOW[d.getDay()]}, ${d.getDate()} ${MES[d.getMonth()]}`; };
 /* "1 exercícios" ficava feio em três telas diferentes */
 const plural = (n, um, muitos) => n + ' ' + (n === 1 ? um : muitos);
+const fmtHora = iso => { try { const d = new Date(iso); return pad(d.getHours()) + ':' + pad(d.getMinutes()); } catch (e) { return ''; } };
+const fmtDur = min => { min = Math.max(0, Math.round(min || 0)); const h = Math.floor(min / 60), m = min % 60; return h ? `${h}h ${pad(m)}min` : `${m} min`; };
 
 /* ---------- storage (com fallback em memória) ---------- */
 let MEM = null, STORAGE_OK = true;
@@ -1250,6 +1256,8 @@ function render() {
   const ds = APP.querySelector('.dstrip'), on = ds && ds.querySelector('.dchip.on');
   if (on) ds.scrollLeft = on.offsetLeft - ds.clientWidth / 2 + on.offsetWidth / 2;
   syncBadge();
+  if (VIEW === 'treino' && typeof treinoDoDia === 'function') iniciarRelogioTreino(treinoDoDia(D));
+  else if (typeof pararRelogioTreino === 'function') pararRelogioTreino();
 }
 const FAB = {};
 
@@ -1879,7 +1887,7 @@ ACT.iniciarTreino = e => {
   const x = dia(D);
   x.treino = {
     fichaId: f ? f.id : null, nome: f ? f.nome : 'Treino livre', cor: f ? f.cor : 'var(--tre)',
-    feito: false, duracao: 60, obs: '',
+    feito: false, duracao: 0, obs: '', inicio: nowISO(), fim: null,
     itens: f ? (f.exercicios || []).map(ex => ({
       exId: ex.id, nome: ex.nome, grupo: ex.grupo,
       alvo: { series: ex.series, reps: ex.reps, carga: ex.carga },
@@ -1892,9 +1900,17 @@ ACT.cancelarTreino = () => confirmar('Remover o registro de treino deste dia?', 
   dia(D).treino = null; tocaDia(D); save(); render();
 });
 ACT.concluirTreino = () => {
-  const t = dia(D).treino; t.feito = !t.feito;
-  t.duracao = numOf('t_dur') || t.duracao; tocaDia(D); save();
-  toast(t.feito ? 'Treino concluído' : 'Treino reaberto'); render();
+  const t = dia(D).treino, vaiConcluir = !t.feito;
+  t.feito = vaiConcluir;
+  if (vaiConcluir) {
+    t.fim = nowISO();
+    /* com hora de início registrada, a duração é a diferença real —
+       o campo manual só entra como reserva para treinos antigos, sem
+       esse registro, ou lançados sem passar por "Iniciar treino". */
+    t.duracao = t.inicio ? Math.max(1, Math.round((new Date(t.fim) - new Date(t.inicio)) / 60000)) : (numOf('t_dur') || t.duracao || 0);
+  }
+  tocaDia(D); save();
+  toast(t.feito ? `Treino concluído · ${fmtDur(t.duracao)}` : 'Treino reaberto'); render();
 };
 ACT.durTreino = e => { dia(D).treino.duracao = num(e.value); tocaDia(D); save(); };
 ACT.tickEx = e => {
@@ -1959,14 +1975,24 @@ ACT.delEx = () => {
   const t = dia(D).treino; t.itens.splice(SUB.exI, 1); tocaDia(D); save(); fechar(); render();
 };
 
-/* --- exercício extra (fora da ficha) --- */
+/* --- exercício extra (fora da ficha) ---
+   Mesmo formulário usado para montar exercícios de ficha (fAddEx):
+   nome, grupo muscular, séries/reps/carga alvo, descanso e observação.
+   Entra como um exercício normal (não marcado como feito de cara) —
+   as séries reais são lançadas depois, como qualquer outro item. */
 ACT.addExtra = () => {
   sheet(`<h3>Exercício extra</h3><p class="hint">Algo que você fez além do que estava na ficha.</p>
     <div class="f"><label>Nome</label><input class="in" id="e_nome" placeholder="ex: Elevação lateral"></div>
+    <div class="f"><label>Grupo muscular</label><select class="in" id="e_grupo">
+      ${GRUPOS.map(g => `<option ${g === 'Outro' ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
     <div class="grid3">
       <div class="f"><label>Séries</label><input class="in" id="e_s" type="number" inputmode="numeric" value="3"></div>
-      <div class="f"><label>Reps</label><input class="in" id="e_r" type="number" inputmode="numeric" value="12"></div>
+      <div class="f"><label>Repetições</label><input class="in" id="e_r" type="number" inputmode="numeric" value="12"></div>
       <div class="f"><label>Carga kg</label><input class="in" id="e_c" type="number" inputmode="decimal" step="0.5" value="0"></div>
+    </div>
+    <div class="grid2">
+      <div class="f"><label>Descanso (s)</label><input class="in" id="e_d" type="number" inputmode="numeric" value="60"></div>
+      <div class="f"><label>Observação</label><input class="in" id="e_o" placeholder="cadência, técnica…"></div>
     </div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
     <button class="btn pri" data-a="salvarExtra">Adicionar</button></div>`);
@@ -1975,10 +2001,13 @@ ACT.salvarExtra = () => {
   const nome = valOf('e_nome').trim(); if (!nome) return toast('Dê um nome ao exercício');
   const x = dia(D);
   if (!x.treino) ACT.iniciarTreino({ dataset: { f: '' } });
-  const s = numOf('e_s') || 1, r = numOf('e_r'), c = numOf('e_c');
-  const sets = []; for (let k = 0; k < s; k++) sets.push({ reps: r, carga: c });
-  x.treino.itens.push({ exId: uid(), nome, grupo: 'Outro', extra: true, alvo: { series: s, reps: r, carga: c }, feito: true, sets, obs: '' });
-  tocaDia(D); save(); fechar(); render();
+  const s = numOf('e_s') || 1, r = numOf('e_r'), c = numOf('e_c'), desc = numOf('e_d') || 60;
+  x.treino.itens.push({
+    exId: uid(), nome, grupo: valOf('e_grupo'), extra: true,
+    alvo: { series: s, reps: r, carga: c }, desc,
+    feito: false, sets: [], obs: valOf('e_o')
+  });
+  tocaDia(D); save(); fechar(); render(); toast('Exercício adicionado ✓');
 };
 
 /* =========================================================
@@ -2196,6 +2225,27 @@ SCREENS.atividades = () => {
 FAB.treino = 'fabTreino';
 ACT.fabTreino = () => (treinoDoDia(D) ? ACT.addExtra() : ACT.escolherFicha());
 
+/* Minutos decorridos: se o treino já foi concluído, é a duração final
+   gravada; enquanto está rolando, é "agora menos o início" — recalculado
+   a cada render, e também a cada segundo pelo relógio ao vivo da tela. */
+function treinoElapsedMin(t) {
+  if (!t) return 0;
+  if (t.feito) return t.duracao || 0;
+  if (!t.inicio) return t.duracao || 0;
+  return Math.max(0, Math.round((Date.now() - new Date(t.inicio)) / 60000));
+}
+let TREINO_TICK = null;
+function pararRelogioTreino() { if (TREINO_TICK) { clearInterval(TREINO_TICK); TREINO_TICK = null; } }
+function iniciarRelogioTreino(t) {
+  pararRelogioTreino();
+  if (!t || t.feito || !t.inicio) return;
+  TREINO_TICK = setInterval(() => {
+    const el = document.getElementById('treino_timer');
+    if (!el) return pararRelogioTreino();
+    el.textContent = fmtDur(treinoElapsedMin(t));
+  }, 1000);
+}
+
 SCREENS.treino = () => {
   const x = dia(D), t = treinoDoDia(D), falta = faltaDoDia(D), sug = fichaDoDia(D);
   const passado = D < today();
@@ -2226,21 +2276,31 @@ SCREENS.treino = () => {
   } else {
     const feitos = t.itens.filter(i => i.feito).length, tot = t.itens.length;
     const vol = t.itens.reduce((a, i) => a + volSets(i.sets), 0);
-    h += `<div class="card">
+    const elapsed = treinoElapsedMin(t);
+    const proximo = t.itens.find(i => !i.feito);
+    h += `<div class="card treino-live">
       <div class="ch"><span class="dot" style="background:${t.cor || 'var(--tre)'}"></span>
         <h2>${esc(t.nome)}</h2>
-        <span class="pill ${t.feito ? 'ok' : 'mut'}">${t.feito ? 'concluído' : 'em aberto'}</span></div>
-      <div class="kpi" style="margin-bottom:11px">
+        <span class="pill ${t.feito ? 'ok' : 'mut'}">${t.feito ? 'concluído' : 'em andamento'}</span></div>
+      <div class="treino-timer" id="treino_timer">${fmtDur(elapsed)}</div>
+      <div class="mini" style="text-align:center;margin-top:1px">
+        ${t.inicio ? `iniciado às ${fmtHora(t.inicio)}` : 'duração'}${t.feito && t.fim ? ` · concluído às ${fmtHora(t.fim)}` : ''}
+      </div>
+      <div class="kpi" style="margin:14px 0 11px">
         <div><b>${feitos}/${tot}</b><span>exercícios</span></div>
         <div><b>${n0(vol)}</b><span>kg volume</span></div>
-        <div><b>${n0(t.duracao || 0)}</b><span>minutos</span></div>
       </div>
       ${bar(feitos, Math.max(tot, 1), 'var(--tre)')}
+      ${!t.feito && proximo ? `<div class="row" style="border:0;padding-top:12px" data-a="abrirEx" data-i="${t.itens.indexOf(proximo)}">
+        <div class="g"><div class="s" style="text-transform:uppercase;letter-spacing:.6px;font-weight:700;font-size:10px;color:var(--tx3);margin:0 0 2px">A seguir</div>
+          <div class="t">${esc(proximo.nome)}</div></div>
+        <div class="v">${ic('dir',18,'op')}</div>
+      </div>` : ''}
       <div class="grid2" style="margin-top:12px">
         <div class="f" style="margin:0"><label>Duração (min)</label>
-          <input class="in" id="t_dur" type="number" inputmode="numeric" value="${t.duracao || ''}" data-ch="durTreino"></div>
+          <input class="in" id="t_dur" type="number" inputmode="numeric" value="${t.duracao || ''}" data-ch="durTreino"${t.feito ? '' : ' disabled'}></div>
         <div class="f" style="margin:0"><label>&nbsp;</label>
-          <button class="btn ${t.feito ? '' : 'pri'} full" data-a="concluirTreino">${t.feito ? 'Reabrir' : 'Concluir treino'}</button></div>
+          <button class="btn ${t.feito ? '' : 'pri'} full" data-a="concluirTreino">${t.feito ? 'Reabrir' : ic('check', 15) + ' Concluir treino'}</button></div>
       </div>
     </div>`;
 
