@@ -1814,6 +1814,28 @@ TITULOS.ficha = ['Ficha de treino', 'exercícios, séries e cargas alvo'];
 const GRUPOS = ['Peito', 'Costas', 'Ombro', 'Bíceps', 'Tríceps', 'Quadríceps', 'Posterior', 'Glúteo', 'Abdômen', 'Panturrilha', 'Cardio', 'Outro'];
 const CORES = ['#A9743C', '#5F7346', '#7A6E9E', '#4A7B8A', '#A2657A', '#8A8A3C'];
 
+/* Cardio (esteira, bicicleta, elíptico…) não se descreve em séries e
+   carga — o formulário de exercício troca para velocidade, duração e
+   distância sempre que o grupo muscular escolhido é "Cardio". */
+const ehCardio = grupo => grupo === 'Cardio';
+function camposAlvoExercicio(pfx, ex) {
+  if (ehCardio(ex.grupo)) {
+    return `<div class="grid3">
+      <div class="f"><label>Duração (min)</label><input class="in" id="${pfx}_dur" type="number" inputmode="numeric" value="${ex.dur || ''}"></div>
+      <div class="f"><label>Distância (km)</label><input class="in" id="${pfx}_dist" type="number" inputmode="decimal" step="0.1" value="${ex.dist || ''}"></div>
+      <div class="f"><label>Velocidade (km/h)</label><input class="in" id="${pfx}_vel" type="number" inputmode="decimal" step="0.1" value="${ex.vel || ''}"></div>
+    </div>`;
+  }
+  return `<div class="grid3">
+    <div class="f"><label>Séries</label><input class="in" id="${pfx}_s" type="number" inputmode="numeric" value="${ex.series}"></div>
+    <div class="f"><label>Repetições</label><input class="in" id="${pfx}_r" type="number" inputmode="numeric" value="${ex.reps}"></div>
+    <div class="f"><label>Carga (kg)</label><input class="in" id="${pfx}_c" type="number" inputmode="decimal" step="0.5" value="${ex.carga}"></div>
+  </div>`;
+}
+const alvoTxt = ex => ehCardio(ex.grupo)
+  ? `${n1(ex.dist || 0)}km · ${n1(ex.vel || 0)}km/h · ${n0(ex.dur || 0)}min`
+  : `${ex.series}×${ex.reps} · ${ex.carga}kg${ex.desc ? ' · ' + ex.desc + 's' : ''}`;
+
 const volSets = sets => (sets || []).reduce((a, s) => a + num(s.reps) * num(s.carga), 0);
 function volDia(d) {
   const t = (DB.dias[d] || {}).treino; if (!t) return 0;
@@ -1890,7 +1912,7 @@ ACT.iniciarTreino = e => {
     feito: false, duracao: 0, obs: '', inicio: nowISO(), fim: null,
     itens: f ? (f.exercicios || []).map(ex => ({
       exId: ex.id, nome: ex.nome, grupo: ex.grupo,
-      alvo: { series: ex.series, reps: ex.reps, carga: ex.carga },
+      alvo: ehCardio(ex.grupo) ? { dur: ex.dur, dist: ex.dist, vel: ex.vel } : { series: ex.series, reps: ex.reps, carga: ex.carga },
       feito: false, sets: [], obs: ''
     })) : []
   };
@@ -1917,16 +1939,21 @@ ACT.tickEx = e => {
   const t = dia(D).treino, i = t.itens[+e.dataset.i];
   i.feito = !i.feito;
   if (i.feito && !i.sets.length && i.alvo) {
-    const s = Math.max(1, num(i.alvo.series) || 1);
-    for (let k = 0; k < s; k++) i.sets.push({ reps: num(i.alvo.reps), carga: num(i.alvo.carga) });
+    if (ehCardio(i.grupo)) {
+      i.sets.push({ dur: num(i.alvo.dur), dist: num(i.alvo.dist), vel: num(i.alvo.vel) });
+    } else {
+      const s = Math.max(1, num(i.alvo.series) || 1);
+      for (let k = 0; k < s; k++) i.sets.push({ reps: num(i.alvo.reps), carga: num(i.alvo.carga) });
+    }
   }
   tocaDia(D); save(); render();
 };
 
-/* --- sheet de lançamento de séries --- */
+/* --- sheet de lançamento de séries (ou da sessão, se for cardio) --- */
 ACT.abrirEx = e => { SUB.exI = +e.dataset.i; sheetEx(); };
 function sheetEx() {
   const t = dia(D).treino, i = t.itens[SUB.exI];
+  if (ehCardio(i.grupo)) return sheetExCardio(i);
   const sets = i.sets.length ? i.sets : [{ reps: i.alvo ? i.alvo.reps : '', carga: i.alvo ? i.alvo.carga : '' }];
   sheet(`<h3>${esc(i.nome)}</h3>
     <p class="hint">${i.alvo ? `Alvo: ${esc(i.alvo.series || '—')} × ${esc(i.alvo.reps || '—')} · ${esc(i.alvo.carga || 0)} kg` : 'Exercício extra'}</p>
@@ -1945,6 +1972,30 @@ function sheetEx() {
     </div>
     ${i.extra ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delEx">Remover exercício</button>` : ''}`);
 }
+function sheetExCardio(i) {
+  const s = i.sets[0] || { dur: i.alvo ? i.alvo.dur : '', dist: i.alvo ? i.alvo.dist : '', vel: i.alvo ? i.alvo.vel : '' };
+  sheet(`<h3>${esc(i.nome)}</h3>
+    <p class="hint">${i.alvo ? `Alvo: ${esc(i.alvo.dist || 0)} km · ${esc(i.alvo.vel || 0)} km/h · ${esc(i.alvo.dur || 0)} min` : 'Exercício extra'}</p>
+    <div class="grid3">
+      <div class="f"><label>Duração (min)</label><input class="in" id="c_dur" type="number" inputmode="numeric" value="${s.dur ?? ''}"></div>
+      <div class="f"><label>Distância (km)</label><input class="in" id="c_dist" type="number" inputmode="decimal" step="0.1" value="${s.dist ?? ''}"></div>
+      <div class="f"><label>Velocidade (km/h)</label><input class="in" id="c_vel" type="number" inputmode="decimal" step="0.1" value="${s.vel ?? ''}"></div>
+    </div>
+    <div class="f"><label>Observação</label><input class="in" id="s_obs" value="${esc(i.obs || '')}" placeholder="ex: ritmo, inclinação..."></div>
+    <div class="btnrow">
+      <button class="btn" data-a="fechar">Cancelar</button>
+      <button class="btn pri" data-a="salvarExCardio">Salvar</button>
+    </div>
+    ${i.extra ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delEx">Remover exercício</button>` : ''}`);
+}
+ACT.salvarExCardio = () => {
+  const t = dia(D).treino, i = t.itens[SUB.exI];
+  const dur = numOf('c_dur'), dist = numOf('c_dist'), vel = numOf('c_vel');
+  i.sets = (dur || dist || vel) ? [{ dur, dist, vel }] : [];
+  i.obs = valOf('s_obs');
+  if (i.sets.length) i.feito = true;
+  tocaDia(D); save(); fechar(); render();
+};
 function lerSets(n) {
   const s = [];
   for (let k = 0; k < n; k++) {
@@ -1976,36 +2027,48 @@ ACT.delEx = () => {
 };
 
 /* --- exercício extra (fora da ficha) ---
-   Mesmo formulário usado para montar exercícios de ficha (fAddEx):
-   nome, grupo muscular, séries/reps/carga alvo, descanso e observação.
-   Entra como um exercício normal (não marcado como feito de cara) —
-   as séries reais são lançadas depois, como qualquer outro item. */
+   Mesmo formulário usado para montar exercícios de ficha (fAddEx),
+   trocando para velocidade/duração/distância quando o grupo é
+   "Cardio". Entra como um exercício normal (não marcado como feito
+   de cara) — as séries (ou a sessão de cardio) são lançadas depois,
+   como qualquer outro item. */
 ACT.addExtra = () => {
+  SUB.extraTmp = { nome: '', grupo: 'Outro', series: 3, reps: 12, carga: 0, desc: 60, obs: '', dur: 30, dist: 0, vel: 0 };
+  sheetExtra();
+};
+ACT.extraGrupoMuda = () => { extraCapturar(); SUB.extraTmp.grupo = valOf('e_grupo'); sheetExtra(); };
+function extraCapturar() {
+  const g = id => { const el = document.getElementById(id); return el ? el.value : null; };
+  const t = SUB.extraTmp, set = (k, id) => { const v = g(id); if (v !== null) t[k] = v; };
+  set('nome', 'e_nome'); set('series', 'e_s'); set('reps', 'e_r'); set('carga', 'e_c');
+  set('desc', 'e_d'); set('obs', 'e_o'); set('dur', 'e_dur'); set('dist', 'e_dist'); set('vel', 'e_vel');
+}
+function sheetExtra() {
+  const t = SUB.extraTmp, cardio = ehCardio(t.grupo);
   sheet(`<h3>Exercício extra</h3><p class="hint">Algo que você fez além do que estava na ficha.</p>
-    <div class="f"><label>Nome</label><input class="in" id="e_nome" placeholder="ex: Elevação lateral"></div>
-    <div class="f"><label>Grupo muscular</label><select class="in" id="e_grupo">
-      ${GRUPOS.map(g => `<option ${g === 'Outro' ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
-    <div class="grid3">
-      <div class="f"><label>Séries</label><input class="in" id="e_s" type="number" inputmode="numeric" value="3"></div>
-      <div class="f"><label>Repetições</label><input class="in" id="e_r" type="number" inputmode="numeric" value="12"></div>
-      <div class="f"><label>Carga kg</label><input class="in" id="e_c" type="number" inputmode="decimal" step="0.5" value="0"></div>
-    </div>
+    <div class="f"><label>Nome</label><input class="in" id="e_nome" value="${esc(t.nome)}" placeholder="ex: Elevação lateral"></div>
+    <div class="f"><label>Grupo muscular</label><select class="in" id="e_grupo" data-ch="extraGrupoMuda">
+      ${GRUPOS.map(g => `<option ${g === t.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
+    ${camposAlvoExercicio('e', t)}
     <div class="grid2">
-      <div class="f"><label>Descanso (s)</label><input class="in" id="e_d" type="number" inputmode="numeric" value="60"></div>
-      <div class="f"><label>Observação</label><input class="in" id="e_o" placeholder="cadência, técnica…"></div>
+      ${cardio ? '' : `<div class="f"><label>Descanso (s)</label><input class="in" id="e_d" type="number" inputmode="numeric" value="${t.desc || 60}"></div>`}
+      <div class="f" style="${cardio ? 'grid-column:1/-1' : ''}"><label>Observação</label><input class="in" id="e_o" value="${esc(t.obs || '')}" placeholder="${cardio ? 'ritmo, inclinação…' : 'cadência, técnica…'}"></div>
     </div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
     <button class="btn pri" data-a="salvarExtra">Adicionar</button></div>`);
-};
+}
 ACT.salvarExtra = () => {
-  const nome = valOf('e_nome').trim(); if (!nome) return toast('Dê um nome ao exercício');
+  extraCapturar();
+  const t = SUB.extraTmp, nome = String(t.nome || '').trim();
+  if (!nome) return toast('Dê um nome ao exercício');
   const x = dia(D);
   if (!x.treino) ACT.iniciarTreino({ dataset: { f: '' } });
-  const s = numOf('e_s') || 1, r = numOf('e_r'), c = numOf('e_c'), desc = numOf('e_d') || 60;
+  const cardio = ehCardio(t.grupo);
+  const alvo = cardio ? { dur: num(t.dur), dist: num(t.dist), vel: num(t.vel) } : { series: num(t.series) || 1, reps: num(t.reps), carga: num(t.carga) };
   x.treino.itens.push({
-    exId: uid(), nome, grupo: valOf('e_grupo'), extra: true,
-    alvo: { series: s, reps: r, carga: c }, desc,
-    feito: false, sets: [], obs: valOf('e_o')
+    exId: uid(), nome, grupo: t.grupo, extra: true,
+    alvo, desc: cardio ? 0 : (num(t.desc) || 60),
+    feito: false, sets: [], obs: String(t.obs || '')
   });
   tocaDia(D); save(); fechar(); render(); toast('Exercício adicionado ✓');
 };
@@ -2307,12 +2370,15 @@ SCREENS.treino = () => {
     h += tot ? `<div class="card">
       <div class="ch"><h2>Exercícios</h2><span class="sub">toque para lançar séries</span></div>
       ${t.itens.map((i, k) => {
-      const done = i.sets.length ? i.sets.map(s => `${s.reps}×${s.carga || 0}`).join(' · ') : '';
+      const cardio = ehCardio(i.grupo);
+      const done = i.sets.length ? (cardio ? `${n1(i.sets[0].dist || 0)}km · ${n0(i.sets[0].dur || 0)}min${i.sets[0].vel ? ' · ' + n1(i.sets[0].vel) + 'km/h' : ''}`
+        : i.sets.map(s => `${s.reps}×${s.carga || 0}`).join(' · ')) : '';
+      const alvoTxtDia = i.alvo ? (cardio ? `alvo ${esc(i.alvo.dist || '?')}km · ${esc(i.alvo.dur || '?')}min` : `alvo ${esc(i.alvo.series || '?')}×${esc(i.alvo.reps || '?')} · ${esc(i.alvo.carga || 0)}kg`) : '—';
       return `<div class="row">
           <button class="tick ${i.feito ? 'on' : ''}" data-a="tickEx" data-i="${k}">${ic('check')}</button>
           <div class="g" data-a="abrirEx" data-i="${k}">
             <div class="t">${esc(i.nome)} ${i.extra ? '<span class="pill esc">extra</span>' : ''}</div>
-            <div class="s">${done ? esc(done) : i.alvo ? `alvo ${esc(i.alvo.series || '?')}×${esc(i.alvo.reps || '?')} · ${esc(i.alvo.carga || 0)}kg` : '—'}</div>
+            <div class="s">${done ? esc(done) : alvoTxtDia}</div>
           </div>
           <div class="v" data-a="abrirEx" data-i="${k}">${ic('dir',16,'op')}</div>
         </div>`;
@@ -2427,30 +2493,45 @@ ACT.fCor = e => { const f = fichaAtual(); fCapturar(); f.cor = e.dataset.c; f.up
 ACT.fAddEx = e => {
   SUB.exEdit = e && e.dataset.i !== undefined ? +e.dataset.i : -1;
   const f = fichaAtual(); fCapturar();
-  const ex = SUB.exEdit >= 0 ? f.exercicios[SUB.exEdit] : { nome: '', grupo: 'Peito', series: 3, reps: 12, carga: 0, desc: 60, obs: '' };
+  SUB.exTmp = SUB.exEdit >= 0 ? Object.assign({}, f.exercicios[SUB.exEdit])
+    : { nome: '', grupo: 'Peito', series: 3, reps: 12, carga: 0, desc: 60, obs: '', dur: 30, dist: 0, vel: 0 };
+  sheetFEx();
+};
+/* Trocar o grupo redesenha a folha (força ↔ cardio pedem campos
+   diferentes) — captura o que já foi digitado antes de redesenhar. */
+ACT.fGrupoMuda = () => { fExCapturar(); SUB.exTmp.grupo = valOf('x_grupo'); sheetFEx(); };
+function fExCapturar() {
+  const g = id => { const el = document.getElementById(id); return el ? el.value : null; };
+  const t = SUB.exTmp, set = (k, id) => { const v = g(id); if (v !== null) t[k] = v; };
+  set('nome', 'x_nome'); set('series', 'x_s'); set('reps', 'x_r'); set('carga', 'x_c');
+  set('desc', 'x_d'); set('obs', 'x_o'); set('dur', 'x_dur'); set('dist', 'x_dist'); set('vel', 'x_vel');
+}
+function sheetFEx() {
+  const t = SUB.exTmp, cardio = ehCardio(t.grupo);
   sheet(`<h3>${SUB.exEdit >= 0 ? 'Editar' : 'Novo'} exercício</h3>
-    <div class="f"><label>Nome</label><input class="in" id="x_nome" value="${esc(ex.nome)}" placeholder="ex: Supino reto com barra"></div>
-    <div class="f"><label>Grupo muscular</label><select class="in" id="x_grupo">
-      ${GRUPOS.map(g => `<option ${g === ex.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
-    <div class="grid3">
-      <div class="f"><label>Séries</label><input class="in" id="x_s" type="number" inputmode="numeric" value="${ex.series}"></div>
-      <div class="f"><label>Repetições</label><input class="in" id="x_r" type="number" inputmode="numeric" value="${ex.reps}"></div>
-      <div class="f"><label>Carga (kg)</label><input class="in" id="x_c" type="number" inputmode="decimal" step="0.5" value="${ex.carga}"></div>
-    </div>
+    <div class="f"><label>Nome</label><input class="in" id="x_nome" value="${esc(t.nome)}" placeholder="ex: Supino reto com barra"></div>
+    <div class="f"><label>Grupo muscular</label><select class="in" id="x_grupo" data-ch="fGrupoMuda">
+      ${GRUPOS.map(g => `<option ${g === t.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
+    ${camposAlvoExercicio('x', t)}
     <div class="grid2">
-      <div class="f"><label>Descanso (s)</label><input class="in" id="x_d" type="number" inputmode="numeric" value="${ex.desc || 60}"></div>
-      <div class="f"><label>Observação</label><input class="in" id="x_o" value="${esc(ex.obs || '')}" placeholder="cadência, técnica…"></div>
+      ${cardio ? '' : `<div class="f"><label>Descanso (s)</label><input class="in" id="x_d" type="number" inputmode="numeric" value="${t.desc || 60}"></div>`}
+      <div class="f" style="${cardio ? 'grid-column:1/-1' : ''}"><label>Observação</label><input class="in" id="x_o" value="${esc(t.obs || '')}" placeholder="${cardio ? 'ritmo, inclinação…' : 'cadência, técnica…'}"></div>
     </div>
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
       <button class="btn pri" data-a="fSalvarEx">Salvar</button></div>
     ${SUB.exEdit >= 0 ? `<button class="btn danger full sm" style="margin-top:9px" data-a="fDelEx">Excluir exercício</button>` : ''}`);
-};
+}
 ACT.fSalvarEx = () => {
-  const f = fichaAtual(), nome = valOf('x_nome').trim();
+  fExCapturar();
+  const f = fichaAtual(), t = SUB.exTmp, nome = String(t.nome || '').trim();
   if (!nome) return toast('Dê um nome ao exercício');
+  const cardio = ehCardio(t.grupo);
   const ex = {
-    id: SUB.exEdit >= 0 ? f.exercicios[SUB.exEdit].id : uid(), nome, grupo: valOf('x_grupo'),
-    series: numOf('x_s'), reps: numOf('x_r'), carga: numOf('x_c'), desc: numOf('x_d'), obs: valOf('x_o')
+    id: SUB.exEdit >= 0 ? f.exercicios[SUB.exEdit].id : uid(), nome, grupo: t.grupo,
+    series: cardio ? 0 : num(t.series), reps: cardio ? 0 : num(t.reps), carga: cardio ? 0 : num(t.carga),
+    desc: cardio ? 0 : (num(t.desc) || 60),
+    dur: cardio ? num(t.dur) : 0, dist: cardio ? num(t.dist) : 0, vel: cardio ? num(t.vel) : 0,
+    obs: String(t.obs || '')
   };
   SUB.exEdit >= 0 ? f.exercicios[SUB.exEdit] = ex : f.exercicios.push(ex);
   f.upd = nowISO(); save(); fechar(); render();
@@ -2479,7 +2560,7 @@ SCREENS.ficha = () => {
     <div class="ch"><h2>Exercícios</h2><span class="sub">${(f.exercicios || []).length}</span></div>
     ${(f.exercicios || []).map((ex, i) => `<div class="row">
       <div class="g" data-a="fAddEx" data-i="${i}"><div class="t">${esc(ex.nome)}</div>
-        <div class="s">${esc(ex.grupo)} · ${ex.series}×${ex.reps} · ${ex.carga}kg · ${ex.desc || 60}s</div></div>
+        <div class="s">${esc(ex.grupo)} · ${alvoTxt(ex)}</div></div>
       <button class="btn xs" data-a="fMove" data-i="${i}" data-dir="-1" aria-label="Subir">${ic('baixo',13,'up')}</button>
       <button class="btn xs" data-a="fMove" data-i="${i}" data-dir="1" aria-label="Descer">${ic('baixo',13)}</button>
     </div>`).join('') || `<div class="empty"><b>${ic('treino')}</b>Nenhum exercício ainda.</div>`}
