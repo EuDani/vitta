@@ -1,0 +1,70 @@
+name: Gerar o APK do Vitta
+
+# Roda sozinho a cada envio para o GitHub, e também quando você clicar
+# em "Run workflow" na aba Actions. O APK sai como arquivo para baixar.
+on:
+  push:
+    branches: [main, master]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Só uma compilação por vez. Sem isto, um envio atrás do outro deixa
+# execuções presas na fila — e execução presa na fila é a causa mais
+# comum de a seguinte falhar antes mesmo de começar.
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      # Falhar aqui, com o motivo escrito, é melhor do que falhar lá na
+      # frente com um erro do Gradle que não diz nada.
+      - name: Conferir se está tudo no lugar
+        run: |
+          erro=0
+          [ -f index.html ] || { echo "::error::index.html não está na raiz do repositório"; erro=1; }
+          [ -f android/settings.gradle.kts ] || { echo "::error::a pasta android/ não está na raiz do repositório"; erro=1; }
+          [ -f android/app/src/main/res/values/strings.xml ] || { echo "::error::android/app/src/main/res/values/strings.xml não existe"; erro=1; }
+          echo "--- raiz do repositório ---"; ls -la
+          exit $erro
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      # Leva o app (index.html e sw.js) para dentro do APK, para ele
+      # funcionar mesmo sem internet.
+      - name: Copiar o app para dentro do APK
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp index.html android/app/src/main/assets/index.html
+          if [ -f sw.js ]; then cp sw.js android/app/src/main/assets/sw.js; else echo "::warning::sem sw.js na raiz — o APK segue sem ele"; fi
+          ls -l android/app/src/main/assets
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Montar o APK
+        working-directory: android
+        run: gradle --no-daemon --stacktrace assembleRelease
+
+      - name: Publicar o APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitta-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 90
