@@ -2497,10 +2497,7 @@ function sheetAdd(keepFocus) {
       <button class="btn gh full sm" style="margin-top:10px" data-a="irAlimentos">Gerenciar alimentos</button>`;
   } else {
     corpo = `<div class="f"><label>O que você comeu/bebeu</label><input class="in" id="l_nome" placeholder="ex: Pizza de calabresa 2 fatias"></div>
-      <div class="grid2">
-        <div class="f"><label>Calorias (kcal)</label><input class="in" id="l_k" type="number" inputmode="numeric" placeholder="0"></div>
-        <div class="f"><label>Líquido (ml)</label><input class="in" id="l_l" type="number" inputmode="numeric" placeholder="0"></div>
-      </div>
+      <div class="f"><label>Calorias (kcal)</label><input class="in" id="l_k" type="number" inputmode="numeric" placeholder="0"></div>
       <div class="grid3">
         <div class="f"><label>Carbo (g)</label><input class="in" id="l_c" type="number" inputmode="decimal" placeholder="0"></div>
         <div class="f"><label>Prot (g)</label><input class="in" id="l_p" type="number" inputmode="decimal" placeholder="0"></div>
@@ -2525,7 +2522,7 @@ function sheetAdd(keepFocus) {
 ACT.togEscape = () => { livreCapturar(); SUB.escape = !SUB.escape; sheetAdd(); livreRestaurar(); };
 /* A folha se redesenha ao marcar o escape ou trocar de aba, e o formulário
    livre é longo (5 campos). Guardo e devolvo o que já estava digitado. */
-const CAMPOS_LIVRE = ['l_nome', 'l_k', 'l_l', 'l_c', 'l_p', 'l_g'];
+const CAMPOS_LIVRE = ['l_nome', 'l_k', 'l_c', 'l_p', 'l_g'];
 function livreCapturar() {
   if (!document.getElementById('l_nome')) return;
   SUB.livre = {};
@@ -2573,7 +2570,7 @@ ACT.addAlimOk = e => {
 ACT.addLivre = () => {
   const nome = valOf('l_nome').trim(); if (!nome) return toast('Descreva o que você consumiu');
   SUB.livre = null;
-  lancar({ nome, qtd: 1, un: '', kcal: numOf('l_k'), c: numOf('l_c'), p: numOf('l_p'), g: numOf('l_g'), liq: numOf('l_l'), fonte: 'livre' });
+  lancar({ nome, qtd: 1, un: '', kcal: numOf('l_k'), c: numOf('l_c'), p: numOf('l_p'), g: numOf('l_g'), liq: 0, fonte: 'livre' });
 };
 ACT.delItem = e => {
   const x = dia(D), l = x.refeicoes[e.dataset.r];
@@ -2592,7 +2589,7 @@ ACT.delItem = e => {
    mexer na quantidade recalcula tudo sozinho — que é o motivo
    mais comum de voltar aqui ("comi 150 g, não 100").
    ========================================================= */
-const CAMPOS_ITEM = ['it_nome', 'it_q', 'it_un', 'it_k', 'it_c', 'it_p', 'it_g', 'it_l'];
+const CAMPOS_ITEM = ['it_nome', 'it_q', 'it_un', 'it_k', 'it_c', 'it_p', 'it_g'];
 const itemEdit = () => ((dia(D).refeicoes[SUB.edRef] || [])[SUB.edIdx]) || null;
 
 function origemItem(it) {
@@ -2632,7 +2629,6 @@ ACT.itQtd = () => {
   set('it_c', +(o.c * f).toFixed(1));
   set('it_p', +(o.p * f).toFixed(1));
   set('it_g', +(o.g * f).toFixed(1));
-  set('it_l', Math.round((o.liq || 0) * f));
   const av = document.getElementById('it_calc');
   if (av) av.innerHTML = `<b>${n0(o.kcal * f)} kcal</b> · C ${n1(o.c * f)}g · P ${n1(o.p * f)}g · G ${n1(o.g * f)}g
     <span class="mini" style="display:block;margin-top:3px">recalculado a partir de ${esc(o.nome)}</span>`;
@@ -2658,12 +2654,8 @@ function sheetItem() {
     </div>
     ${o ? `<div class="okbox" id="it_calc">Porção base: ${n1(o.base)} ${esc(o.un)} = ${n0(o.kcal)} kcal</div>` : ''}
 
-    <div class="grid2">
-      <div class="f"><label>Calorias</label>
-        <input class="in" id="it_k" type="number" inputmode="decimal" value="${it.kcal || 0}"></div>
-      <div class="f"><label>Líquido (ml)</label>
-        <input class="in" id="it_l" type="number" inputmode="numeric" value="${it.liq || 0}"></div>
-    </div>
+    <div class="f"><label>Calorias</label>
+      <input class="in" id="it_k" type="number" inputmode="decimal" value="${it.kcal || 0}"></div>
     <div class="grid3">
       <div class="f"><label>Carbo (g)</label>
         <input class="in" id="it_c" type="number" inputmode="decimal" step="0.1" value="${it.c || 0}"></div>
@@ -2687,20 +2679,13 @@ function sheetItem() {
 
     <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
       <button class="btn pri" data-a="salvarItem">Salvar</button></div>
+    <button class="btn full sm" style="margin-top:9px" data-a="salvarDuplicar">${ic('mais',14)} Salvar e duplicar lançamento</button>
     <button class="btn danger full sm" style="margin-top:9px" data-a="delItemSheet">Excluir este item</button>`);
 }
 ACT.salvarItem = () => {
   const it = itemEdit(); if (!it) return fechar();
-  const nome = valOf('it_nome').trim();
-  if (!nome) return toast('Dê um nome ao item');
-  const kcal = numOf('it_k');
-  if (kcal < 0) return toast('Calorias não podem ser negativas');
-  Object.assign(it, {
-    nome, qtd: numOf('it_q'), un: valOf('it_un').trim(),
-    kcal: Math.round(kcal),
-    c: +numOf('it_c').toFixed(1), p: +numOf('it_p').toFixed(1), g: +numOf('it_g').toFixed(1),
-    liq: Math.round(numOf('it_l')), escape: !!SUB.edEscape
-  });
+  const campos = lerCamposItem(it); if (!campos) return;
+  Object.assign(it, campos);
   const dest = SUB.edDest || SUB.edRef, mudou = dest !== SUB.edRef;
   if (mudou) {
     const x = dia(D);
@@ -2711,6 +2696,41 @@ ACT.salvarItem = () => {
   SUB.edTmp = null;
   tocaDia(D); save(); fechar(); render();
   toast(mudou ? 'Movido para ' + refNome(dest) : 'Item atualizado ✓');
+};
+function lerCamposItem(it) {
+  const nome = valOf('it_nome').trim();
+  if (!nome) { toast('Dê um nome ao item'); return null; }
+  const kcal = numOf('it_k');
+  if (kcal < 0) { toast('Calorias não podem ser negativas'); return null; }
+  const qtd = numOf('it_q'), o = origemItem(it);
+  return {
+    nome, qtd, un: valOf('it_un').trim(),
+    kcal: Math.round(kcal),
+    c: +numOf('it_c').toFixed(1), p: +numOf('it_p').toFixed(1), g: +numOf('it_g').toFixed(1),
+    liq: o ? Math.round((o.liq || 0) * (qtd / (o.base || 1))) : (it.liq || 0),
+    escape: !!SUB.edEscape
+  };
+}
+/* "Salvar e duplicar": grava o que estiver editado e, além de manter o
+   item original, lança uma cópia igual na mesma refeição — útil para
+   quem repete o mesmo alimento em quantidades diferentes no dia. */
+ACT.salvarDuplicar = () => {
+  const it = itemEdit(); if (!it) return fechar();
+  const campos = lerCamposItem(it); if (!campos) return;
+  Object.assign(it, campos);
+  const dest = SUB.edDest || SUB.edRef, mudou = dest !== SUB.edRef;
+  const x = dia(D);
+  if (mudou) {
+    x.refeicoes[SUB.edRef].splice(SUB.edIdx, 1);
+    x.refeicoes[dest] = x.refeicoes[dest] || [];
+    x.refeicoes[dest].push(it);
+  }
+  const copia = Object.assign({}, it, { id: uid() });
+  x.refeicoes[dest] = x.refeicoes[dest] || [];
+  x.refeicoes[dest].push(copia);
+  SUB.edTmp = null;
+  tocaDia(D); save(); fechar(); render();
+  toast('Lançamento duplicado ✓');
 };
 ACT.delItemSheet = () => confirmar('Excluir este item da refeição?', () => {
   (dia(D).refeicoes[SUB.edRef] || []).splice(SUB.edIdx, 1);
