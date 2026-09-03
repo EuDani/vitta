@@ -322,16 +322,12 @@ select.in{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .sheet-x:active{transform:scale(.94)}
 .sheet h3{padding-right:40px}
 
-/* ---------- formulário em página cheia (dieta/exercício) ---------- */
+/* ---------- formulário em página cheia (só no celular — ver sheet() no JS) ---------- */
 .ov.pagina{background:var(--bg);backdrop-filter:none;align-items:stretch;animation:none}
 .sheet.pagina{width:100%;max-width:none;height:100%;max-height:none;overflow-y:auto;
   background:var(--bg);border:0;border-radius:0;animation:none;
   padding:calc(var(--sat) + 10px) 16px calc(24px + var(--sab))}
 .pagina-voltar{position:static;margin-bottom:14px}
-@media (min-width:960px){
-  .ov.pagina{padding:0}
-  .sheet.pagina{max-width:640px;margin:0 auto;padding-top:30px}
-}
 
 /* pergunta curta, desenhada por cima da folha */
 .ov2{z-index:70;align-items:center;padding:20px;background:rgba(30,40,24,.42)}
@@ -1086,15 +1082,22 @@ function destravarScroll() {
   window.scrollTo(0, SCROLL_ANTES);
 }
 
-/* Formulários de dieta e exercício abrem como página cheia (modo
-   'pagina'): mais espaço para listas e grades de campos, e a moldura
-   de tela — voltar no canto, sem cantos arredondados — reforça que é
-   um passo da tarefa, não um pop-up por cima dela. O resto do app
-   continua na folha de baixo de sempre. */
+/* No celular, formulários mais longos (dieta, exercício, hábitos,
+   medicamentos, lembretes) abrem como página cheia (modo 'pagina'):
+   mais espaço para listas e grades de campos, e a moldura de tela —
+   voltar no canto, sem cantos arredondados — reforça que é um passo
+   da tarefa, não um pop-up por cima dela. No computador continua
+   sendo só um modal, como sempre foi — não há razão para ocupar a
+   tela inteira quando sobra espaço ao redor.
+
+   A página cheia também dispensa o truque de travar o scroll do body
+   (position:fixed): como ela já cobre a tela sozinha, esse truque só
+   soma risco — é o que mais engana o layout no celular quando o app
+   volta de segundo plano e a barra de endereço muda de altura. */
 function sheet(html, modo) {
   SHEET_SUJO = false;
   const jaAberta = !!$('#modal').innerHTML;
-  const pagina = modo === 'pagina';
+  const pagina = modo === 'pagina' && matchMedia('(max-width:959px)').matches;
   $('#modal').innerHTML = pagina
     ? `<div class="ov pagina" data-ov="1"><div class="sheet pagina">
         <button class="iconbtn pagina-voltar" data-a="tentarFechar" aria-label="Voltar">${ic('esq', 20)}</button>
@@ -1103,7 +1106,7 @@ function sheet(html, modo) {
         <div class="grab"></div>
         <button class="sheet-x" data-a="tentarFechar" aria-label="Fechar">${ic('x', 17)}</button>
         ${html}</div></div>`;
-  if (!jaAberta) travarScroll();      // sheet() é chamada de novo a cada redesenho da mesma folha
+  if (!pagina && !jaAberta) travarScroll();      // sheet() é chamada de novo a cada redesenho da mesma folha
   const s = $('#modal .sheet');
   if (s) {
     s.addEventListener('input', () => SHEET_SUJO = true);
@@ -3346,7 +3349,7 @@ function sheetHab() {
     </div>` : ''}
     <div class="btnrow"><button class="btn" data-a="fecharHab">Cancelar</button>
       <button class="btn pri" data-a="salvarHabito">Salvar</button></div>
-    ${SUB.habEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delHabito" data-h="${SUB.habEdit}">Excluir hábito</button>` : ''}`);
+    ${SUB.habEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delHabito" data-h="${SUB.habEdit}">Excluir hábito</button>` : ''}`, 'pagina');
 }
 ACT.fecharHab = () => { SUB.icone = SUB.freqTipo = SUB.medida = SUB.hdias = SUB.hhoras = null; fechar(); };
 function hCapturar() {
@@ -3440,7 +3443,7 @@ function sheetCheckHab() {
       `<button class="chip ${(SUB.hq || r.qual) === q ? 'on' : ''}" data-a="hQual" data-q="${q}" style="flex:1;text-align:center">${estrelas(q, q)}</button>`).join('')}</div></div>
     <div class="f"><label>Observação</label><input class="in" id="hc_n" value="${esc(r.nota || '')}" placeholder="${varias ? 'como foi neste horário?' : 'como foi hoje?'}"></div>
     <div class="btnrow"><button class="btn" data-a="hNaoFiz" data-h="${h.id}">${varias ? 'Não fiz neste horário' : 'Não fiz hoje'}</button>
-      <button class="btn pri" data-a="hSalvarCheck" data-h="${h.id}">Confirmar ✓</button></div>`);
+      <button class="btn pri" data-a="hSalvarCheck" data-h="${h.id}">Confirmar ✓</button></div>`, 'pagina');
 }
 /* “08:00 ✓ · 14:00 ✓ · 20:00 —”: onde você está no dia, sem sair da folha */
 function resumoSlots(h, d) {
@@ -3524,7 +3527,7 @@ ACT.encerrar = e => {
     <div class="f"><label>Reflexão final</label>
       <textarea class="in" id="en_n" placeholder="o que funcionou, o que atrapalhou, o que fica daqui"></textarea></div>
     <div class="btnrow"><button class="btn" data-a="encerrarOk" data-h="${h.id}" data-ok="0">Não alcancei</button>
-      <button class="btn pri" data-a="encerrarOk" data-h="${h.id}" data-ok="1">Objetivo alcançado</button></div>`);
+      <button class="btn pri" data-a="encerrarOk" data-h="${h.id}" data-ok="1">Objetivo alcançado</button></div>`, 'pagina');
 };
 ACT.encerrarOk = e => {
   const h = habById(e.dataset.h);
@@ -3904,7 +3907,7 @@ function sheetLem() {
       O lembrete continua aparecendo na tela Hoje.</div>`}
     <div class="btnrow"><button class="btn" data-a="fechar">Cancelar</button>
       <button class="btn pri" data-a="salvarLembrete">Salvar</button></div>
-    ${SUB.lemEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delLembrete" data-l="${SUB.lemEdit}">Excluir</button>` : ''}`);
+    ${SUB.lemEdit ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delLembrete" data-l="${SUB.lemEdit}">Excluir</button>` : ''}`, 'pagina');
 }
 function lemCapturar() {
   SUB.lemTmp = SUB.lemTmp || {};
@@ -4175,7 +4178,7 @@ function sheetMed(m) {
 
     <div class="btnrow"><button class="btn" data-a="tentarFechar">Cancelar</button>
       <button class="btn pri" data-a="salvarMed">Salvar</button></div>
-    ${SUB.medId ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delMed" data-m="${SUB.medId}">Excluir</button>` : ''}`);
+    ${SUB.medId ? `<button class="btn danger full sm" style="margin-top:9px" data-a="delMed" data-m="${SUB.medId}">Excluir</button>` : ''}`, 'pagina');
 }
 function medCapturar() {
   SUB.medTmp = SUB.medTmp || {};
