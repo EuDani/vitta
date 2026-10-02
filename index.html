@@ -952,7 +952,10 @@ ACT.trocarTema = e => { DB.cfg.tema = e.dataset.t; save(false); aplicarTema(); r
    A falta mora dentro da própria coluna treino ({falta:true, motivo}),
    por isso nada muda no banco.                                        */
 function estadoTreino(d) {
-  const t = (DB.dias[d] || {}).treino;
+  const x = DB.dias[d] || {}, t = x.treino;
+  /* esporte/atividade lançado fora da ficha também é treino: conta
+     nos gráficos e nos resumos semanal e mensal */
+  if ((x.esportes || []).length) return 'feito';
   if (t && t.falta) return 'falta';
   if (t && t.feito) return 'feito';
   if (t) return 'aberto';
@@ -5937,7 +5940,7 @@ SCREENS.hoje = () => {
   const tr = treinoDoDia(D), falta = faltaDoDia(D);
   h += `<div class="card">
     <div class="ch"><span class="dot" style="background:${falta ? 'var(--bad)' : 'var(--tre)'}"></span><h2>Exercícios</h2>
-      <span class="sub">${falta ? 'falta registrada' : tr ? (tr.feito ? 'concluído' : 'em aberto') : 'não iniciado'}</span></div>
+      <span class="sub">${falta && !(x.esportes || []).length ? 'falta registrada' : tr ? (tr.feito ? 'concluído' : 'em aberto') : (x.esportes || []).length ? 'atividade registrada' : 'não iniciado'}</span></div>
     ${falta ? `<div class="row" style="border:0;padding:0" data-a="ir" data-v="treino">
         <div class="g"><div class="t wrap">${esc(falta.motivo)}</div>
           <div class="s">você marcou que não ia treinar hoje</div></div>
@@ -5947,6 +5950,7 @@ SCREENS.hoje = () => {
           <div class="s">${tr.itens.filter(i => i.feito).length} de ${tr.itens.length} exercícios · ${n0(volDia(D))} kg</div></div>
         <div class="v">${ic('dir',16,'op')}</div></div>
       ${bar(tr.itens.filter(i => i.feito).length, Math.max(tr.itens.length, 1), 'var(--tre)')}`
+      : (x.esportes || []).length ? ''     // já treinou com atividade: sem botões de iniciar/faltar
       : `<div class="row" style="border:0;padding:0 0 10px"><div class="g">
           <div class="t">${sug ? 'Hoje na agenda: ' + esc(sug.nome) : 'Nenhum treino registrado'}</div>
           <div class="s">${sug ? plural((sug.exercicios || []).length, 'exercício', 'exercícios') : 'escolha uma ficha ou registre livre'}</div></div></div>
@@ -5954,7 +5958,11 @@ SCREENS.hoje = () => {
           <button class="btn pri sm" data-a="escolherFicha">Iniciar treino</button>
           <button class="btn gh sm" data-a="marcarFalta">Não vou treinar</button>
         </div>`}
-    ${(x.esportes || []).length ? `<div class="mini" style="margin-top:9px">Atividades: ${x.esportes.map(e => esc(e.nome) + ' ' + e.min + 'min').join(' · ')}</div>` : ''}
+    ${(x.esportes || []).length ? `<div style="margin-top:${tr || falta ? 8 : 0}px">
+      ${x.esportes.map(e => `<div class="row" data-a="ir" data-v="treino" style="padding:7px 0">
+        <div class="g"><div class="t">${esc(e.nome)}</div><div class="s">${n0(e.min)} min${e.obs ? ' · ' + esc(e.obs) : ''}</div></div>
+        <div class="v">${n0(e.kcal)}<span style="font-size:10px;color:var(--tx2)"> kcal</span></div></div>`).join('')}
+    </div>` : ''}
   </div>`;
 
   /* dieta */
